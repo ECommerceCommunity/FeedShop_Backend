@@ -1,14 +1,15 @@
 package com.cMall.feedShop.user.application.service;
 
-import com.cMall.feedShop.user.application.dto.request.UserLoginRequest; // JWT 로그인 관련
+//import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
-//import com.cMall.feedShop.user.application.dto.response.AuthTokenResponse; // JWT 로그인 관련
+//import com.cMall.feedShop.user.application.dto.response.AuthTokenResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
-import com.cMall.feedShop.user.domain.model.User; // User 모델 임포트
-import com.cMall.feedShop.user.domain.enums.UserRole; // UserRole 임포트
-import com.cMall.feedShop.user.domain.enums.UserStatus; // UserStatus 임포트
-import com.cMall.feedShop.user.domain.repository.UserRepository; // UserRepository 임포트
+import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.enums.UserStatus;
+import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor; // Lombok 임포트
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     // private final JwtProvider jwtProvider;
+    private final PasswordEncoder passwordEncoder;
 
     public UserResponse signUp(UserSignUpRequest request) {
         // 1. 중복 체크

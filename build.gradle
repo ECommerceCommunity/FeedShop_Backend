@@ -42,7 +42,16 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.github.cdimascio:java-dotenv:5.2.2'
+
+	// JWT 라이브러리 추가
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
 }
 
 tasks.named('test') {
@@ -71,6 +80,7 @@ sonarqube {
 	properties {
 		property "sonar.projectKey", "ECommerceCommunity_FeedShop_Backend"
 		property "sonar.organization", "ecommercecommunity"
+		property "sonar.host.url", "https://sonarcloud.io"
 
 		// 코드 커버리지를 Jacoco 리포트와 연동
 		property "sonar.java.coveragePlugin", "jacoco"

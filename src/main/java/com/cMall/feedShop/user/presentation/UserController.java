@@ -1,34 +1,23 @@
 package com.cMall.feedShop.user.presentation;
 
-import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
-import com.cMall.feedShop.user.application.dto.response.UserProfileResponse; 
+import com.cMall.feedShop.user.application.dto.response.UserProfileResponse;
 import com.cMall.feedShop.user.application.service.UserProfileService;
-import com.cMall.feedShop.user.application.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/users") // 사용자 리소스에 대한 기본 경로
 @RequiredArgsConstructor
 public class UserController {
     private final UserProfileService userProfileService;
-    private final UserService userService;
+    // UserService 주입 제거 (signup이 AuthController로 이동했으므로)
 
-
+    // 사용자 프로필을 조회하는 예시 메서드
     @GetMapping("/{userId}/profile")
     public UserProfileResponse getUserProfile(@PathVariable Long userId) {
+        // userProfileService를 사용하여 실제 비즈니스 로직 호출
         UserProfileResponse response = userProfileService.getUserProfile(userId);
         return response;
-    }
-
-    @PostMapping("/signup")
-    public String signUp(@RequestBody UserSignUpRequest request) {
-        System.out.println("Received password (after AOP): " + request.getPassword());
-
-        // PasswordEncryptionAspect에 의해 이미 암호화된 DTO를 서비스 계층으로 전달
-        userService.signUp(request);
-
-        return "User signed up successfully";
     }
 
     // JWT 로그인 메서드도 있다면 여기에 추가

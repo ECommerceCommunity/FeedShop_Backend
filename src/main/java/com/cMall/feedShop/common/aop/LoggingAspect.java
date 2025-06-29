@@ -30,11 +30,11 @@ public class LoggingAspect {
     // =========================== Pointcut 정의 ===========================
 
     // Controller 레이어
-    @Pointcut("execution(* com.cMall.feedShop..controller.*.*(..))")
+    @Pointcut("execution(* com.cMall.feedShop..*controller.*.*(..)) || execution(* com.cMall.feedShop..presentation.*.*(..))")
     private void controllerMethods() {}
 
     // Service 레이어 (핵심 비즈니스 로직)
-    @Pointcut("execution(* com.cMall.feedShop..service.*.*(..))")
+    @Pointcut("execution(* com.cMall.feedShop..*service.*.*(..)) || execution(* com.cMall.feedShop..application.service.*.*(..))")
     private void serviceMethods() {}
 
     // Repository 레이어 (데이터베이스 접근)

@@ -12,7 +12,7 @@ public class UserProfile {
     @Column(name="user_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY) // 지연 로딩 (필요할 때만 로드)
+    @OneToOne(fetch = FetchType.LAZY)
     @MapsId // User 엔티티의 PK를 UserProfile의 PK로 사용 (공유 기본 키 전략)
     @JoinColumn(name = "user_id")
     private User user;

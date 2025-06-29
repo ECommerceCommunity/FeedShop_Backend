@@ -10,6 +10,7 @@ Thumbs.db             # Windows system files
 # Additions for sensitive configuration files
 .env
 application.properties
+application-test.properties
 application.yml
 logs/
 src/main/resources/keystore.p12
