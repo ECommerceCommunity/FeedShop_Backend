@@ -32,7 +32,7 @@ public class FeedRepositoryImpl implements FeedRepository {
     
     @Override
     public boolean existsByOrderItemIdAndUserId(Long orderItemId, Long userId) {
-        return feedJpaRepository.existsByOrderItemIdAndUserId(orderItemId, userId);
+        return feedJpaRepository.existsByOrderItemOrderItemIdAndUserId(orderItemId, userId);
     }
     
     @Override
@@ -57,6 +57,6 @@ public class FeedRepositoryImpl implements FeedRepository {
     
     @Override
     public List<Feed> findByOrderItemId(Long orderItemId) {
-        return feedJpaRepository.findByOrderItemId(orderItemId);
+        return feedJpaRepository.findByOrderItemOrderItemId(orderItemId);
     }
 } 

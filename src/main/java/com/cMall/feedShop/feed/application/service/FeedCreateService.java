@@ -3,9 +3,11 @@ package com.cMall.feedShop.feed.application.service;
 import com.cMall.feedShop.feed.application.dto.request.FeedCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.exception.DuplicateFeedException;
-import com.cMall.feedShop.feed.domain.exception.OrderItemNotFoundException;
-import com.cMall.feedShop.feed.domain.exception.EventNotAvailableException;
+import com.cMall.feedShop.feed.application.exception.DuplicateFeedException;
+import com.cMall.feedShop.feed.application.exception.OrderItemNotFoundException;
+import com.cMall.feedShop.feed.application.exception.EventNotAvailableException;
+import com.cMall.feedShop.common.exception.BusinessException;
+import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.order.application.service.PurchasedItemService;
 import com.cMall.feedShop.order.application.dto.response.info.PurchasedItemInfo;
@@ -39,7 +41,7 @@ public class FeedCreateService {
     public FeedCreateResponseDto createFeed(FeedCreateRequestDto requestDto, UserDetails userDetails) {
         // 1. 사용자 조회
         User user = userRepository.findByLoginId(userDetails.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. 구매한 상품 목록 조회 (API 활용)
         List<PurchasedItemInfo> purchasedItems = purchasedItemService.getPurchasedItems(userDetails).getItems();
@@ -63,7 +65,7 @@ public class FeedCreateService {
         Event event = null;
         if (requestDto.getEventId() != null) {
             event = eventRepository.findById(requestDto.getEventId())
-                    .orElseThrow(() -> new IllegalArgumentException("이벤트를 찾을 수 없습니다. eventId: " + requestDto.getEventId()));
+                    .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
             
             // 이벤트 참여 가능 여부 검증
             validateEventAvailability(event);

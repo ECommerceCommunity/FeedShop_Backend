@@ -12,8 +12,8 @@ import java.util.List;
 
 public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     
-    // 피드 생성 관련 - 중복 체크
-    boolean existsByOrderItemIdAndUserId(Long orderItemId, Long userId);
+    // 피드 생성 관련 - 중복 체크 (OrderItem의 orderItemId 필드에 접근)
+    boolean existsByOrderItemOrderItemIdAndUserId(Long orderItemId, Long userId);
     
     // 사용자별 피드 조회 (페이징)
     Page<Feed> findByUserId(Long userId, Pageable pageable);
@@ -24,8 +24,8 @@ public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     // 이벤트별 피드 조회
     List<Feed> findByEventId(Long eventId);
     
-    // 주문 아이템별 피드 조회
-    List<Feed> findByOrderItemId(Long orderItemId);
+    // 주문 아이템별 피드 조회 (OrderItem의 orderItemId 필드에 접근)
+    List<Feed> findByOrderItemOrderItemId(Long orderItemId);
     
     // 이벤트별 피드 조회 (페이징)
     Page<Feed> findByEventId(Long eventId, Pageable pageable);

@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +59,10 @@ public class Feed extends BaseTimeEntity {
     @Column(name = "participant_vote_count", nullable = false)
     private Integer participantVoteCount = 0;
     
+    // Soft Delete 필드
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+    
     // 연관관계 매핑
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FeedHashtag> hashtags = new ArrayList<>();
@@ -87,6 +92,11 @@ public class Feed extends BaseTimeEntity {
         this.instagramId = instagramId;
     }
     
+    // Soft Delete 메서드
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+    
     // 비즈니스 메서드
     public void addHashtag(String tag) {
         FeedHashtag hashtag = FeedHashtag.builder()
@@ -103,11 +113,12 @@ public class Feed extends BaseTimeEntity {
         }
     }
     
+    // 이미지 추가 메서드
     public void addImage(String imageUrl, Integer sortOrder) {
         FeedImage image = FeedImage.builder()
                 .feed(this)
                 .imageUrl(imageUrl)
-                .sortOrder(sortOrder != null ? sortOrder : this.images.size())
+                .sortOrder(sortOrder)
                 .build();
         this.images.add(image);
     }
@@ -121,36 +132,43 @@ public class Feed extends BaseTimeEntity {
         }
     }
     
+    // 좋아요 수 증가
     public void incrementLikeCount() {
         this.likeCount++;
     }
     
+    // 좋아요 수 감소
     public void decrementLikeCount() {
         if (this.likeCount > 0) {
             this.likeCount--;
         }
     }
     
+    // 댓글 수 증가
     public void incrementCommentCount() {
         this.commentCount++;
     }
     
+    // 댓글 수 감소
     public void decrementCommentCount() {
         if (this.commentCount > 0) {
             this.commentCount--;
         }
     }
     
+    // 투표 수 증가
     public void incrementVoteCount() {
         this.participantVoteCount++;
     }
     
+    // 투표 수 감소
     public void decrementVoteCount() {
         if (this.participantVoteCount > 0) {
             this.participantVoteCount--;
         }
     }
     
+    // 피드 내용 업데이트
     public void updateContent(String title, String content, String instagramId) {
         this.title = title;
         this.content = content;
