@@ -59,7 +59,7 @@ public class ResponseFormatAspect {
                 // ResponseEntity로 다시 래핑하여 반환해야 합니다.
                 // return new ResponseEntity<>(apiResponse, customStatus);
                 // 현재 코드에서는 ApiResponse만 반환하므로 HTTP 상태 코드는 200 OK가 됩니다.
-                return apiResponse;
+                return new ResponseEntity<>(apiResponse, customStatus);
             }
             // 3. 그 외의 경우 (ApiResponse나 ResponseEntity도 아닌 경우)
             // 예를 들어 컨트롤러가 String이나 다른 객체를 직접 반환하는 경우

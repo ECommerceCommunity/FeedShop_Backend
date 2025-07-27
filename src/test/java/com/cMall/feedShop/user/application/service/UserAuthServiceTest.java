@@ -51,7 +51,7 @@ class UserAuthServiceTest {
     private AuthenticationManager authenticationManager;
 
     @InjectMocks // Mock 객체들을 주입받을 테스트 대상 서비스
-    private UserAuthService userAuthService;
+    private UserAuthServiceImpl userAuthService;
 
     private UserLoginRequest loginRequest;
     private User testUser;

@@ -26,6 +26,5 @@ public interface UserService {
     void withdrawCurrentUserWithPassword(String email, String rawPassword);
 
     UserResponse findByUsernameAndPhoneNumber(String username, String phoneNumber);
-
 }
 
