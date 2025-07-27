@@ -6,7 +6,7 @@
 
 신발 전문 쇼핑몰 FeedShop의 백엔드 API 서버입니다. Spring Boot를 기반으로 쇼핑몰의 핵심 기능을 구현합니다.
 
-- **Frontend Repository**: [FeedShop Frontend (React)](https://github.com/your-frontend-repo) (링크를 실제 프론트엔드 레포지토리로 교체해주세요)
+- **Frontend Repository**: [FeedShop Frontend (React)](https://github.com/ECommerceCommunity/FeedShop_Frontend) (링크를 실제 프론트엔드 레포지토리로 교체해주세요)
 
 ---
 

@@ -6,19 +6,19 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "users_profile")
+@Table(name = "user_profiles")
 @Getter
 @Setter
 @NoArgsConstructor
 public class UserProfile {
 
     @Id
-    @Column(name="user_id")
+    @Column(name = "user_id")
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId // User 엔티티의 PK를 UserProfile의 PK로 사용 (공유 기본 키 전략)
-    @JoinColumn(name = "user_id")
+    @MapsId
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
     private User user;
 
     @Column(name="name")
@@ -35,5 +35,8 @@ public class UserProfile {
         this.name = name;
         this.nickname = nickname;
         this.phone = phone;
+        if (user != null) {
+            user.setUserProfile(this); // 양방향 관계 설정
+        }
     }
 }
