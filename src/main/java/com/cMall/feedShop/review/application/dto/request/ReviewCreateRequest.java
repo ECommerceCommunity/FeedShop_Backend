@@ -3,6 +3,7 @@ package com.cMall.feedShop.review.application.dto.request;
 import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
 import com.cMall.feedShop.review.domain.enums.Stability;
+import com.cMall.feedShop.review.domain.validation.ValidReviewElements;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@ValidReviewElements // 추가된 클래스 레벨 검증
 public class ReviewCreateRequest {
 
     @NotBlank(message = "리뷰 제목은 필수입니다.")
