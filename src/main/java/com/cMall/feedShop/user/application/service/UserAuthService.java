@@ -87,11 +87,11 @@ public class UserAuthService {
     // 1. 비밀번호 재설정 요청 (사용자 이메일 입력)
     public void requestPasswordReset(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND)); // 사용자 없음
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         // 활성 사용자만 비밀번호 재설정 가능 (선택 사항)
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new BusinessException(ErrorCode.USER_ACCOUNT_NOT_ACTIVE); // 계정이 활성화되지 않음
+            throw new BusinessException(ErrorCode.USER_ACCOUNT_NOT_ACTIVE);
         }
 
         // 기존에 해당 유저의 유효한 토큰이 있다면 삭제 (새로운 토큰 발급을 위해)
@@ -116,7 +116,7 @@ public class UserAuthService {
     @Transactional(readOnly = true) // 이 메서드는 조회만 하므로 읽기 전용 트랜잭션이 적합합니다.
     public void validatePasswordResetToken(String tokenValue) {
         PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN)); // 토큰이 존재하지 않으면 예외 발생
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
 
         if (token.isExpired()) {
             // 만료된 토큰은 여기서 삭제하지 않습니다.
