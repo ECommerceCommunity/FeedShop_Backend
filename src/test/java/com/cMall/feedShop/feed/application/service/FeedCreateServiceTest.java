@@ -330,4 +330,50 @@ class FeedCreateServiceTest {
         assertThatThrownBy(() -> feedCreateService.createFeed(requestDto, userDetails))
                 .isInstanceOf(EventNotAvailableException.class);
     }
+
+    @Test
+    @DisplayName("피드 생성 성공 - UserProfile이 null인 경우")
+    void createFeed_Success_WithNullUserProfile() {
+        // Given - UserProfile이 null인 사용자 설정
+        User userWithoutProfile = new User("testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
+        userWithoutProfile.setId(1L);
+        // UserProfile 설정하지 않음 (null 상태)
+
+        FeedCreateResponseDto responseDtoWithNullProfile = FeedCreateResponseDto.builder()
+                .feedId(1L)
+                .title("테스트 피드")
+                .content("테스트 내용")
+                .feedType(FeedType.EVENT)
+                .userId(1L)
+                .userNickname("알 수 없음") // null일 때 기본값
+                .orderItemId(1L)
+                .productName("알 수 없는 상품") // null일 때 기본값
+                .eventId(1L)
+                .eventTitle("테스트 이벤트")
+                .hashtags(Arrays.asList("테스트", "피드"))
+                .imageUrls(Arrays.asList("http://image1.jpg", "http://image2.jpg"))
+                .build();
+
+        when(userDetails.getUsername()).thenReturn("testuser");
+        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(userWithoutProfile));
+        when(purchasedItemService.getPurchasedItems(userDetails))
+                .thenReturn(PurchasedItemListResponse.from(Arrays.asList(purchasedItemInfo)));
+        when(orderItemRepository.findById(1L)).thenReturn(Optional.of(orderItem));
+        when(feedRepository.existsByOrderItemIdAndUserId(1L, 1L)).thenReturn(false);
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
+        when(feedMapper.toFeed(requestDto, orderItem, userWithoutProfile, event)).thenReturn(feed);
+        when(feedRepository.save(feed)).thenReturn(feed);
+        when(feedMapper.toFeedCreateResponseDto(feed)).thenReturn(responseDtoWithNullProfile);
+
+        // When
+        FeedCreateResponseDto result = feedCreateService.createFeed(requestDto, userDetails);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getFeedId()).isEqualTo(1L);
+        assertThat(result.getTitle()).isEqualTo("테스트 피드");
+        assertThat(result.getFeedType()).isEqualTo(FeedType.EVENT);
+        assertThat(result.getUserNickname()).isEqualTo("알 수 없음");
+        assertThat(result.getProductName()).isEqualTo("알 수 없는 상품");
+    }
 } 
