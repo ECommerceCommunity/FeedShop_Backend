@@ -47,7 +47,7 @@ public class EventCreateService {
                 .eventStartDate(requestDto.getEventStartDate())
                 .eventEndDate(requestDto.getEventEndDate())
                 .announcement(requestDto.getAnnouncement())
-                .rewards(requestDto.getRewards()) // 문자열로 저장
+                .rewards(convertRewardsToString(requestDto.getRewards())) // 리스트를 문자열로 변환하여 저장
                 .build();
         
         // 연관관계 설정
@@ -67,5 +67,26 @@ public class EventCreateService {
                 savedEvent.getMaxParticipants(),
                 savedEvent.getCreatedBy()
         );
+    }
+
+    /**
+     * 보상 리스트를 문자열로 변환
+     */
+    private String convertRewardsToString(java.util.List<EventCreateRequestDto.EventRewardRequestDto> rewards) {
+        if (rewards == null || rewards.isEmpty()) {
+            return "";
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rewards.size(); i++) {
+            EventCreateRequestDto.EventRewardRequestDto reward = rewards.get(i);
+            sb.append("🥇 ").append(reward.getConditionValue()).append("등: ")
+              .append(reward.getRewardValue());
+            
+            if (i < rewards.size() - 1) {
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
     }
 } 

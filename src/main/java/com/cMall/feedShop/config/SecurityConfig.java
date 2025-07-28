@@ -62,7 +62,6 @@ public class SecurityConfig {
                       "/swagger-resources/**",
                       "/api/products",
                       "/api/products/**",
-                      "/api/events",
                       "/api/events/**",
                       "/api/reviews/products/**",
                       "/api/reviews/{reviewId}"

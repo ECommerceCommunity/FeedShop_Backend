@@ -6,6 +6,8 @@ import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.QEvent;
 import com.cMall.feedShop.event.domain.QEventDetail;
+import com.cMall.feedShop.event.domain.QEventReward;
+import com.cMall.feedShop.event.domain.QRewardType;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.querydsl.core.BooleanBuilder;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -69,6 +72,23 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         // 실제 서비스에서는 DTO로 변환하여 반환해야 함
         // (여기서는 Event만 반환, Service에서 toSummaryDto에서 rewards 매핑 구현 필요)
         return new PageImpl<>(pagedEvents, pageable, total);
+    }
+
+    @Override
+    public Optional<Event> findDetailById(Long id) {
+        QEvent event = QEvent.event;
+        QEventDetail detail = QEventDetail.eventDetail;
+        QEventReward reward = QEventReward.eventReward;
+        QRewardType rewardType = QRewardType.rewardType;
+
+        Event result = queryFactory
+                .selectFrom(event)
+                .leftJoin(event.eventDetail, detail).fetchJoin()
+                .leftJoin(event.rewards, reward).fetchJoin()
+                .leftJoin(reward.rewardType, rewardType).fetchJoin()
+                .where(event.id.eq(id))
+                .fetchOne();
+        return Optional.ofNullable(result);
     }
 
     // sort 파라미터에 따라 동적 정렬 조건 반환
