@@ -19,7 +19,7 @@ public class EventValidator {
         validateRequiredInteger(requestDto.getMaxParticipants(), "최대 참여자 수는 필수입니다.");
         validateRequiredDate(requestDto.getEventStartDate(), "이벤트 시작일은 필수입니다.");
         validateRequiredDate(requestDto.getEventEndDate(), "이벤트 종료일은 필수입니다.");
-        validateRequiredString(requestDto.getRewards(), "이벤트 보상 정보는 필수입니다.");
+        validateRequiredRewards(requestDto.getRewards(), "이벤트 보상 정보는 필수입니다.");
 
         validateDateOrder(requestDto.getEventStartDate(), requestDto.getEventEndDate(), "이벤트 시작일은 종료일보다 이전이어야 합니다.");
         validateDateOrder(requestDto.getPurchaseStartDate(), requestDto.getPurchaseEndDate(), "구매 시작일은 종료일보다 이전이어야 합니다.");
@@ -49,6 +49,13 @@ public class EventValidator {
 //    날짜 순서 검증 (시작일이 종료일보다 늦으면 예외)
     private void validateDateOrder(java.time.LocalDate start, java.time.LocalDate end, String message) {
         if (start != null && end != null && start.isAfter(end)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+//    필수 보상 리스트 검증 (null이거나 비어있으면 예외)
+    private void validateRequiredRewards(java.util.List<EventCreateRequestDto.EventRewardRequestDto> rewards, String message) {
+        if (rewards == null || rewards.isEmpty()) {
             throw new IllegalArgumentException(message);
         }
     }

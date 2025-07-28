@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -37,7 +36,6 @@ public class EventCreateRequestDto {
     private List<EventRewardRequestDto> rewards;
     
     @Getter
-    @Setter
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @AllArgsConstructor
     @Builder
