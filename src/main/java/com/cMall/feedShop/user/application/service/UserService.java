@@ -1,78 +1,243 @@
 package com.cMall.feedShop.user.application.service;
 
-//import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
+import com.cMall.feedShop.common.exception.BusinessException; // develop 브랜치에서는 UserException만 사용했으나, BusinessException도 필요할 수 있으므로 유지
+import com.cMall.feedShop.common.exception.ErrorCode; // ErrorCode는 필수
+import com.cMall.feedShop.common.service.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
-//import com.cMall.feedShop.user.application.dto.response.AuthTokenResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
+import com.cMall.feedShop.user.domain.exception.UserException; // UserException은 필수
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
+import com.cMall.feedShop.user.domain.model.UserProfile;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
-import lombok.RequiredArgsConstructor; // Lombok 임포트
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger; // develop 브랜치에서 추가된 로거
+import org.slf4j.LoggerFactory; // develop 브랜치에서 추가된 로거
+import org.springframework.beans.factory.annotation.Value; // develop 브랜치에서 추가된 @Value
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority; // develop 브랜치에서 추가된 GrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// JWT 토큰 발급/검증을 위한 JwtProvider는 일단 주석 처리 (JWT 도입 전까지)
-// import com.cMall.feedShop.user.application.jwt.JwtProvider; // 가상의 JwtProvider
+import java.time.LocalDateTime;
+import java.util.Optional; // Optional 임포트 추가 (signUp 메서드에서 사용)
+import java.util.UUID;
+
+import static com.cMall.feedShop.common.exception.ErrorCode.*; // ErrorCode를 static import
 
 @Service
 @Transactional
-@RequiredArgsConstructor // final 필드를 인자로 받는 생성자를 자동 생성
+@RequiredArgsConstructor
 public class UserService {
 
+    // develop 브랜치에서 추가된 로거 초기화
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
-    // private final JwtProvider jwtProvider;
+    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+
+    @Value("${app.verification-url}")
+    private String verificationUrl;
+
 
     public UserResponse signUp(UserSignUpRequest request) {
-        // 1. 중복 체크
-        if (userRepository.existsByLoginId(request.getLoginId())) {
-            throw new RuntimeException("이미 존재하는 사용자입니다.");
+        // 이메일 중복 확인 및 상태에 따른 처리
+        Optional<User> existingUserOptional = userRepository.findByEmail(request.getEmail());
+
+        if (existingUserOptional.isPresent()) {
+            User existingUser = existingUserOptional.get();
+
+            if (existingUser.getStatus() == UserStatus.ACTIVE) {
+                // 이미 활성(ACTIVE) 상태의 사용자가 해당 이메일로 가입되어 있다면
+                throw new UserException(DUPLICATE_EMAIL); // ErrorCode 사용
+            } else if (existingUser.getStatus() == UserStatus.PENDING) {
+                // PENDING 상태의 사용자가 존재한다면 (이메일 인증 미완료)
+                updateVerificationToken(existingUser); // private 메서드로 분리된 로직 사용
+
+                userRepository.save(existingUser);
+
+                sendVerificationEmail(existingUser, "회원가입 재인증을 완료해주세요.", "회원가입 재인증을 요청하셨습니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
+                // 재인증 메일 발송 후 예외 처리 (DUPLICATE_EMAIL과 함께 메시지 전달)
+                throw new UserException(DUPLICATE_EMAIL, "재인증 메일이 발송되었습니다. 메일을 확인하여 인증을 완료해주세요.");
+            }
+            // 기타 다른 상태 (DELETED 등)에 대한 처리도 추가할 수 있습니다.
         }
 
-        String encodedPasswordFromRequest = request.getPassword();
+        // loginId 자동 생성 (UUID 사용)
+        String generatedLoginId = UUID.randomUUID().toString();
 
-        // 3. 사용자 생성 및 저장
+        // 비밀번호 암호화
+        String finalPasswordToSave;
+        if (request.getPassword().startsWith("$2a$") || request.getPassword().startsWith("$2b$") || request.getPassword().startsWith("$2y$")) {
+            finalPasswordToSave = request.getPassword();
+        } else {
+            finalPasswordToSave = passwordEncoder.encode(request.getPassword());
+        }
+
+        // User 엔티티 생성 및 초기화
         User user = new User(
-                request.getLoginId(),
-                encodedPasswordFromRequest, // 이미 암호화된 비밀번호 사용
+                generatedLoginId,
+                finalPasswordToSave,
                 request.getEmail(),
-                request.getPhone(),
-                UserRole.ROLE_USER
+                UserRole.USER
         );
-        userRepository.save(user);
+        user.setStatus(UserStatus.PENDING);
+        user.setPasswordChangedAt(LocalDateTime.now());
 
-        // 4. UserResponse로 변환해서 반환
+        // 개발 브랜치에서 분리된 updateVerificationToken 메서드 사용
+        updateVerificationToken(user);
+
+        UserProfile userProfile = new UserProfile(
+                user,
+                request.getName(),
+                request.getName(),
+                request.getPhone()
+        );
+
+        user.setUserProfile(userProfile);
+
+        // develop 브랜치의 createUser에서 반환하는 방식과 동일하게 변경
+        userRepository.save(user); // 저장 후 반환
+        sendVerificationEmail(user, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
+
         return UserResponse.from(user);
     }
 
+    // 이메일 인증 토큰 업데이트 로직
+    private void updateVerificationToken(User user) {
+        String newVerificationToken = UUID.randomUUID().toString();
+        LocalDateTime newExpiryTime = LocalDateTime.now().plusHours(1);
+        user.setVerificationToken(newVerificationToken);
+        user.setVerificationTokenExpiry(newExpiryTime);
+        // 이 메서드 내에서 save를 호출하지 않고, 호출하는 쪽에서 save하도록 하는 것이 트랜잭션 관리에 더 유연할 수 있습니다.
+        // 현재 signUp 메서드에서 save를 하고 있으므로 여기서는 save를 제거합니다.
+        // userRepository.save(user); // 이 부분은 호출하는 곳에서 처리
+    }
 
-//    public AuthTokenResponse login(UserLoginRequest request) {
-        // 1. 사용자 검증
-//        User user = userRepository.findByUsername(request.getUsername())
-//                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        // 2. 비밀번호 확인
-        // Aspect에서 사용한 PasswordEncryptionService의 matches 메서드를 사용해야 함
-        // 이를 위해 PasswordEncryptionService를 이 UserService에도 주입받아야 합니다.
-        // private final PasswordEncryptionService passwordEncryptionService;
-        // if (!passwordEncryptionService.matches(request.getPassword(), user.getPassword())) {
-        //     throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+    private void sendVerificationEmail(User user, String subject, String contentBody) {
+        String verificationLink = verificationUrl + user.getVerificationToken();
+        String emailSubject = "[cMall] " + subject;
+        String emailContent = "안녕하세요, " + user.getUserProfile().getName() + "!\n\n" +
+                contentBody + "\n\n" +
+                verificationLink + "\n\n" +
+                "본 링크는 1시간 후 만료됩니다.\n" +
+                "감사합니다.\ncMall 팀 드림";
+
+        emailService.sendSimpleEmail(user.getEmail(), emailSubject, emailContent);
+    }
+
+    // 아이디 중복 확인 메서드 (API 제공 시 활용)
+    @Transactional(readOnly = true)
+    public boolean isLoginIdDuplicated(String loginId) {
+        return userRepository.existsByLoginId(loginId);
+    }
+
+    // 이메일 중복 확인 메서드 (API 제공 시 활용)
+    @Transactional(readOnly = true)
+    public boolean isEmailDuplicated(String email) {
+        return userRepository.existsByEmail(email); // User Repository 사용
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new UserException(INVALID_VERIFICATION_TOKEN));
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            throw new UserException(ACCOUNT_ALREADY_VERIFIED);
+        }
+
+        // 토큰 만료 확인 전에 토큰이 일치하는지 확인하는 로직은 findByVerificationToken에서 이미 처리되므로 제거
+        // if (user.getVerificationToken() == null || !user.getVerificationToken().equals(token)) {
+        //     throw new UserException(INVALID_VERIFICATION_TOKEN); // 이 예외는 findByVerificationToken에서 던져짐
         // }
-        // 혹은, 여기에서 Spring Security의 PasswordEncoder를 다시 주입받아 사용할 수도 있습니다.
-        // private final PasswordEncoder passwordEncoder;
-        // if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-        //     throw new RuntimeException("비밀번호가 일치하지 않습니다.");
-        // }
 
+        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
+            user.setVerificationToken(null);
+            user.setVerificationTokenExpiry(null);
+            userRepository.save(user); // 만료된 토큰 정보 초기화 저장
+            throw new UserException(VERIFICATION_TOKEN_EXPIRED);
+        }
 
-        // 3. JWT 토큰 생성 (JWT 미도입 시 이 부분은 주석 처리 또는 제거)
-        // String accessToken = jwtProvider.createAccessToken(user.getUsername(), user.getRole().name());
-        // String refreshToken = jwtProvider.createRefreshToken(user.getUsername());
+        user.setStatus(UserStatus.ACTIVE);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        userRepository.save(user); // 최종 상태 변경 및 토큰 초기화 저장
+    }
 
-        // 4. 토큰 반환 (JWT 미도입 시 적절한 응답으로 변경)
-        // return new AuthTokenResponse(accessToken, refreshToken);
-//        throw new UnsupportedOperationException("JWT is not enabled yet for login."); // 임시
-//    }
+    // 공통 삭제 로직을 private 메서드로 분리
+    private void deleteUser(User user) {
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new UserException(USER_ALREADY_DELETED); // 이미 탈퇴된 계정 예외
+        }
+        user.setStatus(UserStatus.DELETED);
+        userRepository.save(user);
+        // TODO: 사용자와 관련된 다른 데이터 (주문, 게시글, 댓글 등) 처리 로직 추가
+        // - 해당 사용자의 모든 게시글/댓글을 삭제 (Hard Delete) 또는 작성자를 '탈퇴한 사용자' 등으로 변경 (Soft Delete)
+        // - 해당 사용자의 주문 내역은 유지하되, 사용자 정보는 비식별화 (개인정보보호)
+        // - 예시: orderService.anonymizeUserOrders(userId);
+        // - 예시: boardService.updateAuthorToWithdrawn(userId);
+    }
+
+    // 관리자 권한 확인 로직
+    private void checkAdminAuthority(String methodName) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() ||
+                authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .noneMatch(role -> role.equals("ROLE_ADMIN"))) {
+            String requester = (authentication != null) ? authentication.getName() : "anonymous";
+            log.warn("Unauthorized access attempt to '{}' by user '{}'", methodName, requester);
+            throw new UserException(FORBIDDEN, "관리자 권한이 필요합니다.");
+        }
+    }
+
+    // 1. 사용자 ID로 회원 탈퇴 (관리자용 또는 내부 로직)
+    @Transactional
+    public void withdrawUser(Long userId) {
+        checkAdminAuthority("withdrawUser"); // 관리자 권한 확인 추가
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(USER_NOT_FOUND, "사용자를 찾을 수 없습니다. ID: " + userId)); // UserException 사용
+        deleteUser(user); // 공통 삭제 로직 호출
+    }
+
+    // 2. 관리자용: 이메일로 사용자 탈퇴 (비밀번호 확인 불필요)
+    @Transactional
+    public void adminWithdrawUserByEmail(String email) {
+        checkAdminAuthority("adminWithdrawUserByEmail"); // 관리자 권한 확인 추가
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserException(USER_NOT_FOUND, "사용자를 찾을 수 없습니다. 이메일: " + email)); // UserException 사용
+        deleteUser(user); // 공통 삭제 로직 호출
+    }
+
+    // 3. 사용자용: 이메일과 비밀번호 확인으로 회원 탈퇴 (보안 강화)
+    @Transactional
+    public void withdrawCurrentUserWithPassword(String email, String rawPassword) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UserException(UNAUTHORIZED, "로그인된 사용자만 탈퇴할 수 있습니다."); // UserException 사용
+        }
+        String currentLoggedInUserEmail = authentication.getName();
+        if (!currentLoggedInUserEmail.equals(email)) {
+            log.warn("Forbidden withdrawal attempt: User '{}' tried to delete account of '{}'.", currentLoggedInUserEmail, email); // 로그 추가
+            throw new UserException(FORBIDDEN, "다른 사용자의 계정을 탈퇴할 수 없습니다."); // UserException 사용
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserException(USER_NOT_FOUND, "사용자를 찾을 수 없습니다. 이메일: " + email)); // UserException 사용
+
+        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+            throw new UserException(INVALID_PASSWORD); // UserException 사용
+        }
+
+        deleteUser(user); // 공통 삭제 로직 호출
+    }
 }
+

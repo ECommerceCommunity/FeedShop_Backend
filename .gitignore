@@ -10,10 +10,10 @@ Thumbs.db             # Windows system files
 # Additions for sensitive configuration files
 .env
 application.properties
-application-test.properties
+application-dev.properties
+src/main/resources/application-dev.properties
 application.yml
 logs/
-src/main/resources/keystore.p12
 
 # Gradle
 .gradle/
@@ -47,6 +47,9 @@ out/
 # VS Code
 .vscode/
 
-
 # Keystore files
+src/main/resources/keystore.p12
 keystore.p12
+
+# etc
+sonar_debug.log

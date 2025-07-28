@@ -2,6 +2,7 @@ package com.cMall.feedShop.common.exception;
 
 import com.cMall.feedShop.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -9,7 +10,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -55,7 +58,40 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(response);
     }
+    // 추가: Path Variable이나 Request Parameter의 타입 변환 실패
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
+        log.error("Type mismatch error: {}", e.getMessage());
 
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message("잘못된 형식의 파라미터입니다.")
+                .data(null)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
+
+    // 추가: Bean Validation 제약조건 위반 (@Validated 사용 시)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
+            ConstraintViolationException e) {
+        log.error("Constraint violation: {}", e.getMessage());
+
+        String message = e.getConstraintViolations()
+                .stream()
+                .map(violation -> violation.getMessage())
+                .collect(Collectors.joining(", "));
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(message.isEmpty() ? "입력값 검증에 실패했습니다." : message)
+                .data(null)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
     // 인증 예외
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(AuthenticationException e) {
@@ -83,7 +119,19 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
+    // 추가: IllegalArgumentException 처리 (서비스 레이어에서 발생하는 일반적인 예외)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
+        log.error("Illegal argument error: {}", e.getMessage());
 
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
+    }
     // 일반 예외
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {

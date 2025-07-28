@@ -1,15 +1,19 @@
 package com.cMall.feedShop.user.domain.model;
 
+import com.cMall.feedShop.cart.domain.model.Cart;
+import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority; // <-- 추가
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
@@ -22,16 +26,20 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class User implements UserDetails {
+@Slf4j
+//@EntityListeners(AuditingEntityListener.class)
+public class User extends BaseTimeEntity implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name="user_id")
+    @OneToOne(mappedBy ="user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private UserProfile userProfile;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Cart cart;
 
     @Column(name = "login_id", unique = true, nullable = false, length = 100)
     private String loginId;
@@ -45,36 +53,27 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false, length = 255)
     private String email;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'BLOCKED', 'DELETED') DEFAULT 'ACTIVE'")
+    @Column(nullable = false, columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'BLOCKED', 'PENDING', 'DELETED') DEFAULT 'ACTIVE'")
     private UserStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('ROLE_USER', 'ROLE_ADMIN', 'ROLE_SELLER') DEFAULT 'ROLE_USER'") // ERD의 role
+    @Column(nullable = false, columnDefinition = "ENUM('USER', 'ADMIN', 'SELLER') DEFAULT 'USER'") // ERD의 role
     private UserRole role;
 
-    @Column(nullable = false, length = 20)
-    private String phone;
+    @Column(name = "verification_token", length = 36)
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry;
 
     //(회원가입 시 사용)
-    public User(String loginId, String password, String email, String phone, UserRole role) {
+    public User(String loginId, String password, String email, UserRole role) {
         this.loginId = loginId;
         this.password = password;
         this.email = email;
-        this.phone = phone;
         this.role = role;
-        this.status = UserStatus.ACTIVE; // 기본 상태 활성화
-        // @CreatedDate, @LastModifiedDate가 자동 처리하므로 생성자에서 초기화 제거 가능
-        // this.createdAt = LocalDateTime.now();
-        // this.updatedAt = LocalDateTime.now();
+        this.status = UserStatus.PENDING;
         this.passwordChangedAt = LocalDateTime.now(); // 초기 비밀번호 변경 시간 설정
     }
 
@@ -88,12 +87,13 @@ public class User implements UserDetails {
         return loginId;
     }
 
-    // UserDetails 인터페이스의 다른 메서드 구현 (중요!)
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 사용자의 역할을 Spring Security의 권한(GrantedAuthority)으로 변환하여 반환합니다.
-        // UserRole.ROLE_USER -> new SimpleGrantedAuthority("ROLE_USER")
-        return List.of(new SimpleGrantedAuthority(this.role.name()));
+        // UserRole.USER -> new SimpleGrantedAuthority("USER")
+        Collection<? extends GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_"+this.role.name()));
+        log.debug("User entity authorities: {}", authorities);
+        return authorities;
     }
 
     @Override
@@ -105,7 +105,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        // 계정 잠금 여부. UserStatus를 활용하여 BLOCKED 상태일 경우 잠긴 것으로 간주할 수 있습니다.
         return this.status != UserStatus.BLOCKED;
     }
 
@@ -118,7 +117,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        // 계정 활성화 여부. UserStatus가 ACTIVE일 때만 활성화된 것으로 간주합니다.
         return this.status == UserStatus.ACTIVE;
     }
 

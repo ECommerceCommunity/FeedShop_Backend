@@ -1,5 +1,7 @@
-package com.cMall.feedShop.user.presentation; // 현재 패키지 유지, 필요시 com.cMall.feedShop.auth.presentation으로 변경 권장
+package com.cMall.feedShop.user.presentation;
 
+import com.cMall.feedShop.common.aop.ApiResponseFormat;
+import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
@@ -10,34 +12,37 @@ import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor; // Lombok 임포트
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth") // 인증 관련 엔드포인트 기본 경로
-@RequiredArgsConstructor // final 필드를 인자로 받는 생성자를 자동 생성
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class UserAuthController {
 
-    private final UserService userService; // 회원가입 등 기본적인 사용자 CRUD를 담당하는 서비스
-    private final UserAuthService userAuthService; // 로그인 등 인증 관련 로직을 담당하는 서비스
+    private final UserService userService;
+    private final UserAuthService userAuthService;
 
-    // @RequiredArgsConstructor가 생성자를 자동으로 만들어주므로 수동 생성자 삭제
-    // public AuthController(UserService userService, UserAuthService userAuthService) {
-    //     this.userService = userService;
-    //     this.userAuthService = userAuthService;
-    // }
-
-    @PostMapping("/signup") // POST /api/auth/signup 요청 처리
-    public ResponseEntity<UserResponse> signUp(@Valid @RequestBody UserSignUpRequest request) {
-        // 회원가입은 UserService에 위임 (사용자 생성 로직)
-        return ResponseEntity.ok(userService.signUp(request));
+    @PostMapping("/signup")
+    @ApiResponseFormat(message = "회원가입이 성공적으로 완료되었습니다.")
+    public ApiResponse<UserResponse> signUp(@Valid @RequestBody UserSignUpRequest request) {
+        return ApiResponse.success(userService.signUp(request));
     }
 
-    @PostMapping("/login") // POST /api/auth/login 요청 처리 (React 코드와 일치)
-    public ResponseEntity<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
-        // 로그인 인증은 AuthService에 위임
-        return ResponseEntity.ok(userAuthService.login(request));
+    @PostMapping("/login")
+    @ApiResponseFormat(message = "로그인이 성공적으로 완료되었습니다.")
+    public ApiResponse<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
+        return ApiResponse.success(userAuthService.login(request));
+    }
+
+    @GetMapping("/verify-email")
+    @ApiResponseFormat(message = "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.") // AOP 적용
+    public ApiResponse<String> verifyEmail(@RequestParam("token") String token) {
+        userService.verifyEmail(token);
+        // String을 반환하지만 AOP가 ApiResponse.success("이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.", "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.")
+        // 형태로 래핑할 것입니다. 만약 데이터 부분에 메시지 문자열을 다시 넣고 싶지 않다면,
+        // ApiResponse.success(message)만 반환하도록 Aspect에서 로직을 조정해야 할 수도 있습니다.
+        // 현재 Aspect 로직은 `ApiResponse.success(message, result)` 형태이므로 result가 "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다." 문자열이 됩니다.
+        // 만약 result가 String일 때 데이터를 null로 처리하고 싶다면 Aspect 로직을 수정해야 합니다.
+        return ApiResponse.success("이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.");
     }
 }

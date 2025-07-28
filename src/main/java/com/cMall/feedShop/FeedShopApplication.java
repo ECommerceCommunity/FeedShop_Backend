@@ -13,5 +13,6 @@ public class FeedShopApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(FeedShopApplication.class, args);
 	}
+
 }
 

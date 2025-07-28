@@ -1,0 +1,52 @@
+# Generic Project Files
+.DS_Store             # macOS system files
+Thumbs.db             # Windows system files
+*.log                 # Log files
+*.jar                 # Packaged application JARs
+*.war                 # Packaged application WARs
+*.zip                 # Archive files (e.g., generated distributions)
+*.tar.gz              # Archive files
+
+# Additions for sensitive configuration files
+.env
+application.properties
+application-test.properties
+application.yml
+logs/
+src/main/resources/keystore.p12
+
+# Gradle
+.gradle/
+!build/
+!gradle/wrapper/gradle-wrapper.jar # Keep gradle wrapper JAR
+
+# Eclipse / Spring Tool Suite (STS)
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+
+# Keystore files
+keystore.p12

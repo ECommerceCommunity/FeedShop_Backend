@@ -2,10 +2,14 @@ package com.cMall.feedShop.user.domain.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users_profile")
 @Getter
+@Setter
+@NoArgsConstructor
 public class UserProfile {
 
     @Id
@@ -22,4 +26,14 @@ public class UserProfile {
 
     @Column(name="nickname")
     private String nickname;
+
+    @Column(nullable = false, length = 20)
+    private String phone;
+
+    public UserProfile(User user, String name, String nickname, String phone) {
+        this.user = user;
+        this.name = name;
+        this.nickname = nickname;
+        this.phone = phone;
+    }
 }
