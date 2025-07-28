@@ -7,11 +7,13 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventCreateService {
@@ -23,6 +25,8 @@ public class EventCreateService {
      */
     @Transactional
     public EventCreateResponseDto createEvent(EventCreateRequestDto requestDto) {
+        log.info("이벤트 생성 시작: {}", requestDto.getTitle());
+        
         // 입력값 검증
         eventValidator.validateEventCreateRequest(requestDto);
         
@@ -59,6 +63,8 @@ public class EventCreateService {
         // 저장
         Event savedEvent = eventRepository.save(event);
         
+        log.info("이벤트 생성 완료: ID={}, 제목={}", savedEvent.getId(), savedEvent.getEventDetail().getTitle());
+        
         return EventCreateResponseDto.of(
                 savedEvent.getId(),
                 savedEvent.getEventDetail().getTitle(),
@@ -78,9 +84,12 @@ public class EventCreateService {
         }
         
         StringBuilder sb = new StringBuilder();
+        String[] medals = {"🥇", "🥈", "🥉", "🏅", "🎖️"};
+        
         for (int i = 0; i < rewards.size(); i++) {
             EventCreateRequestDto.EventRewardRequestDto reward = rewards.get(i);
-            sb.append("🥇 ").append(reward.getConditionValue()).append("등: ")
+            String medal = i < medals.length ? medals[i] : "🏆";
+            sb.append(medal).append(" ").append(reward.getConditionValue()).append("등: ")
               .append(reward.getRewardValue());
             
             if (i < rewards.size() - 1) {

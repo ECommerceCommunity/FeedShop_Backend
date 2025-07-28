@@ -28,6 +28,7 @@ public class EventCreateController {
         @ModelAttribute EventCreateRequestDto requestDto,
         @RequestPart(value = "image", required = false) MultipartFile image
     ) {
+        
         // 이미지 파일 처리
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
@@ -56,6 +57,9 @@ public class EventCreateController {
                 .announcement(requestDto.getAnnouncement())
                 .rewards(requestDto.getRewards())
                 .build();
+        } else {
+            // 이미지가 없는 경우에도 기존 DTO 사용
+            finalRequestDto = requestDto;
         }
         
         EventCreateResponseDto responseDto = eventCreateService.createEvent(finalRequestDto);

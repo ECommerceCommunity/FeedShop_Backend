@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.ArrayList;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -32,8 +33,8 @@ public class EventCreateRequestDto {
     private LocalDate eventEndDate;
     private LocalDate announcement;
     
-    // 이벤트 보상 정보 (구조화된 객체 리스트로 전송)
-    private List<EventRewardRequestDto> rewards;
+    // 이벤트 보상 정보 (FormData 배열 파라미터로 전송)
+    private List<EventRewardRequestDto> rewards = new ArrayList<>();
     
     @Getter
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
