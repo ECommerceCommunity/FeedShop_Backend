@@ -48,30 +48,30 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
 
-      # - name: Upload Test Results
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: test-results
-      #     path: build/test-results/test/*.xml
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/test-results/test/*.xml
 
-      # - name: Upload Test Coverage
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: test-coverage
-      #     path: build/reports/jacoco/test/jacocoTestReport.xml
+      - name: Upload Test Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: build/reports/jacoco/test/jacocoTestReport.xml
 
       # SONAR_TOKEN 디버그 스텝은 꼭 필요한 경우에만 사용
-      # - name: Debug SONAR_TOKEN
-      #   run: |
-      #     if [ -z "$SONAR_TOKEN" ]; then
-      #       echo "SONAR_TOKEN is not set"
-      #     else
-      #       echo "SONAR_TOKEN is set (length: ${#SONAR_TOKEN})"
-      #     fi
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Debug SONAR_TOKEN
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN is not set"
+          else
+            echo "SONAR_TOKEN is set (length: ${#SONAR_TOKEN})"
+          fi
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       # SonarCloud Organization secret이 올바르게 설정되었는지 확인하는 디버그 스텝 추가
       - name: Debug SonarCloud Organization
@@ -79,7 +79,7 @@ jobs:
           if [ -z "${{ secrets.SONAR_ORGANIZATION }}" ]; then
             echo "SONAR_ORGANIZATION secret is NOT set or is empty!"
           else
-            echo "SONAR_ORGANIZATION secret is set (length: ${{ secrets.SONAR_ORGANIZATION_LENGTH }})"
+            echo "SONAR_ORGANIZATION secret is set (length: ${{ secrets.SONAR_ORGANIZATION && secrets.SONAR_ORGANIZATION.length || 0 }})"
           fi
         env:
           SONAR_ORGANIZATION_LENGTH: ${{ secrets.SONAR_ORGANIZATION && secrets.SONAR_ORGANIZATION.length || 0 }}
@@ -87,12 +87,22 @@ jobs:
       - name: Analyze with SonarCloud
         run: |
           SONAR_PARAMS=""
+          # Pull Request 이벤트인 경우 PR 관련 파라미터 설정
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "--- Pull Request Event Detected ---"
+            echo "PR Number: ${{ github.event.pull_request.number }}"
+            echo "Head Ref: ${{ github.head_ref }}"
+            echo "Base Ref: ${{ github.base_ref }}"
+            echo "--- End Debug ---"
             SONAR_PARAMS="-Dsonar.pullrequest.key=${{ github.event.pull_request.number }} -Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }}"
+          # Push 이벤트인 경우 브랜치 관련 파라미터 설정
           elif [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "--- Push Event Detected ---"
+            echo "Branch Name: ${{ github.ref_name }}"
+            echo "--- End Debug ---"
             SONAR_PARAMS="-Dsonar.branch.name=${{ github.ref_name }}"
           fi
-          
+
           ./gradlew sonar \
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
@@ -105,3 +115,5 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # JWT_SECRET과 APP_VERIFICATION_URL은 SonarCloud 분석 자체에는 직접적으로 필요하지 않으므로 제거했습니다.
+          # 만약 SonarCloud 분석 중에도 이 변수들이 필요하다면 다시 추가해야 합니다.

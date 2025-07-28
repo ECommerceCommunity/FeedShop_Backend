@@ -96,7 +96,7 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         String sort = requestDto.getSort();
         if (sort == null || sort.equalsIgnoreCase("latest")) {
             // 최신순: 생성일 내림차순
-            return new OrderSpecifier<>(Order.DESC, event.createdBy);
+            return new OrderSpecifier<>(Order.DESC, event.createdAt);
         } else if (sort.equalsIgnoreCase("ending")) {
             // 종료임박순: 이벤트 종료일 오름차순
             return new OrderSpecifier<>(Order.ASC, detail.eventEndDate);
@@ -105,6 +105,6 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
             return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
         }
         // 기본값: 최신순
-        return new OrderSpecifier<>(Order.DESC, event.createdBy);
+        return new OrderSpecifier<>(Order.DESC, event.createdAt);
     }
 }
