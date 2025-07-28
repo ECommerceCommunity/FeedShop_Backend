@@ -33,8 +33,8 @@ public class UserAuthController {
 
     @PostMapping("/login")
     @ApiResponseFormat(message = "로그인이 성공적으로 완료되었습니다.")
-    public ApiResponse<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
-        return ApiResponse.success(userAuthService.login(request));
+    public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
     }
 
     @GetMapping("/verify-email")
