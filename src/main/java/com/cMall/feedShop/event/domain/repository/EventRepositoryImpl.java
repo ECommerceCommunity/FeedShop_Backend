@@ -23,6 +23,11 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
+    public Optional<Event> findDetailById(Long id) {
+        return eventQueryRepository.findDetailById(id);
+    }
+
+    @Override
     public Event save(Event event) {
         return eventJpaRepository.save(event);
     }

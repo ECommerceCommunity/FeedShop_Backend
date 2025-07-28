@@ -1,8 +1,11 @@
 package com.cMall.feedShop.event.application.service;
 
 import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
+import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
+import com.cMall.feedShop.event.domain.EventReward;
+import com.cMall.feedShop.event.domain.RewardType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -40,6 +43,30 @@ public class EventMapper {
                 .build();
     }
 
+    public EventDetailResponseDto toDetailDto(Event event) {
+        EventDetail detail = event.getEventDetail();
+        return EventDetailResponseDto.builder()
+                .eventId(event.getId())
+                .title(getSafeString(detail, EventDetail::getTitle))
+                .description(getSafeString(detail, EventDetail::getDescription))
+                .type(getEventType(event))
+                .status(getRealTimeEventStatus(event))
+                .eventStartDate(getSafeLocalDateString(detail, EventDetail::getEventStartDate))
+                .eventEndDate(getSafeLocalDateString(detail, EventDetail::getEventEndDate))
+                .purchaseStartDate(getSafeLocalDateString(detail, EventDetail::getPurchaseStartDate))
+                .purchaseEndDate(getSafeLocalDateString(detail, EventDetail::getPurchaseEndDate))
+                .announcementDate(getSafeLocalDateString(detail, EventDetail::getAnnouncement))
+                .participationMethod(getSafeString(detail, EventDetail::getParticipationMethod))
+                .selectionCriteria(getSafeString(detail, EventDetail::getSelectionCriteria))
+                .imageUrl(getSafeString(detail, EventDetail::getImageUrl))
+                .precautions(getSafeString(detail, EventDetail::getPrecautions))
+                .maxParticipants(event.getMaxParticipants())
+                .createdBy(event.getCreatedUser() != null ? event.getCreatedUser().getUsername() : null)
+                .createdAt(event.getCreatedBy() != null ? event.getCreatedBy().toString() : null)
+                .rewards(mapDetailRewards(event))
+                .build();
+    }
+
     private List<EventSummaryDto.Reward> mapRewards(Event event) {
         return event.getRewards() != null ? event.getRewards().stream()
                 .map(r -> EventSummaryDto.Reward.builder()
@@ -47,6 +74,22 @@ public class EventMapper {
                         .reward(r.getRewardValue())
                         .build())
                 .toList() : Collections.emptyList();
+    }
+
+    private List<EventDetailResponseDto.RewardDto> mapDetailRewards(Event event) {
+        return event.getRewards() != null ? event.getRewards().stream()
+                .map(this::toRewardDto)
+                .toList() : Collections.emptyList();
+    }
+
+    private EventDetailResponseDto.RewardDto toRewardDto(EventReward reward) {
+        RewardType rewardType = reward.getRewardType();
+        return EventDetailResponseDto.RewardDto.builder()
+                .rank(reward.getConditionValue())
+                .reward(reward.getRewardValue())
+                .rewardType(rewardType != null ? rewardType.getType().name() : null)
+                .maxRecipients(reward.getMaxRecipients())
+                .build();
     }
 
     private String createPurchasePeriod(EventDetail detail) {
