@@ -66,74 +66,28 @@ public class Event extends BaseTimeEntity {
         }
     }
 
-    /**
-     * 이벤트 상태를 자동으로 계산하여 업데이트
-     */
     public void updateStatusAutomatically() {
-        if (eventDetail == null) {
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return;
         }
-
         LocalDate today = LocalDate.now();
-        LocalDate eventStartDate = eventDetail.getEventStartDate();
-        LocalDate eventEndDate = eventDetail.getEventEndDate();
-
-        if (eventStartDate == null || eventEndDate == null) {
-            return;
-        }
-
-        if (today.isBefore(eventStartDate)) {
+        if (today.isBefore(eventDetail.getEventStartDate())) {
             this.status = EventStatus.UPCOMING;
-        } else if (today.isAfter(eventEndDate)) {
+        } else if (today.isAfter(eventDetail.getEventEndDate())) {
             this.status = EventStatus.ENDED;
         } else {
             this.status = EventStatus.ONGOING;
         }
     }
 
-    /**
-     * 현재 상태가 자동 계산된 상태와 일치하는지 확인
-     */
-    public boolean isStatusUpToDate() {
-        EventStatus calculatedStatus = calculateStatus();
-        return this.status == calculatedStatus;
-    }
-
-    /**
-     * 현재 날짜 기준으로 이벤트 상태 계산
-     */
     public EventStatus calculateStatus() {
-        if (eventDetail == null) {
-            return this.status; // 기존 상태 유지
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
+            return this.status;
         }
-
         LocalDate today = LocalDate.now();
-        LocalDate eventStartDate = eventDetail.getEventStartDate();
-        LocalDate eventEndDate = eventDetail.getEventEndDate();
-
-        if (eventStartDate == null || eventEndDate == null) {
-            return this.status; // 기존 상태 유지
-        }
-
-        if (today.isBefore(eventStartDate)) {
-            return EventStatus.UPCOMING;
-        } else if (today.isAfter(eventEndDate)) {
-            return EventStatus.ENDED;
-        } else {
-            return EventStatus.ONGOING;
-        }
-    }
-
-    /**
-     * 이벤트 정보 수정 (빌더 패턴 활용)
-     */
-    public void updateFromDto(com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto dto) {
-        this.type = dto.getType() != null ? com.cMall.feedShop.event.domain.enums.EventType.valueOf(dto.getType()) : this.type;
-        this.status = dto.getStatus() != null ? com.cMall.feedShop.event.domain.enums.EventStatus.valueOf(dto.getStatus()) : this.status;
-        this.maxParticipants = dto.getMaxParticipants() != null ? dto.getMaxParticipants() : this.maxParticipants;
-        if (this.eventDetail != null) {
-            this.eventDetail.updateFromDto(dto);
-        }
+        if (today.isBefore(eventDetail.getEventStartDate())) return EventStatus.UPCOMING;
+        if (today.isAfter(eventDetail.getEventEndDate())) return EventStatus.ENDED;
+        return EventStatus.ONGOING;
     }
 
     // 기타 연관관계 필요시 여기에 추가

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -29,7 +30,12 @@ class EventValidatorTest {
                 .eventEndDate(LocalDate.now().plusDays(7))
                 .purchaseStartDate(LocalDate.now())
                 .purchaseEndDate(LocalDate.now().plusDays(5))
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
     }
 
@@ -49,6 +55,12 @@ class EventValidatorTest {
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
                 .maxParticipants(10)
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
 
         // When & Then
@@ -133,7 +145,12 @@ class EventValidatorTest {
                 .maxParticipants(10)
                 .eventStartDate(LocalDate.now().plusDays(7))
                 .eventEndDate(LocalDate.now())
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
@@ -154,7 +171,12 @@ class EventValidatorTest {
                 .eventEndDate(LocalDate.now().plusDays(1))
                 .purchaseStartDate(LocalDate.now().plusDays(5))
                 .purchaseEndDate(LocalDate.now())
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
@@ -173,7 +195,12 @@ class EventValidatorTest {
                 .maxParticipants(null)
                 .eventStartDate(LocalDate.now())
                 .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
@@ -192,7 +219,12 @@ class EventValidatorTest {
                 .maxParticipants(10)
                 .eventStartDate(null)
                 .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
@@ -211,7 +243,12 @@ class EventValidatorTest {
                 .maxParticipants(10)
                 .eventStartDate(LocalDate.now())
                 .eventEndDate(null)
-                .rewards("1등: 상품")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("상품")
+                        .build()
+                ))
                 .build();
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
@@ -243,7 +280,7 @@ class EventValidatorTest {
                 .maxParticipants(10)
                 .eventStartDate(LocalDate.now())
                 .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards("")
+                .rewards(List.of())
                 .build();
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
                 .isInstanceOf(IllegalArgumentException.class)

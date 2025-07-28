@@ -58,7 +58,6 @@ public class EventDetail extends BaseTimeEntity {
     @Column(name = "rewards", columnDefinition = "TEXT")
     private String rewards;
 
-    // 연관관계 설정 메서드
     public void setEvent(Event event) {
         this.event = event;
     }

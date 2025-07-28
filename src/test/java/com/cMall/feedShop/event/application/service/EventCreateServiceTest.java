@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -58,7 +59,20 @@ class EventCreateServiceTest {
                 .eventEndDate(LocalDate.now().plusDays(8))
                 .announcement(LocalDate.now().plusDays(9))
                 .maxParticipants(100)
-                .rewards("🥇 1등: 프리미엄 스니커즈 (가치 30만원)\n🥈 2등: 트렌디한 운동화 (가치 15만원)\n🥉 3등: 스타일리시한 슈즈 (가치 8만원)")
+                .rewards(List.of(
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(1)
+                        .rewardValue("프리미엄 스니커즈 (가치 30만원)")
+                        .build(),
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(2)
+                        .rewardValue("트렌디한 운동화 (가치 15만원)")
+                        .build(),
+                    EventCreateRequestDto.EventRewardRequestDto.builder()
+                        .conditionValue(3)
+                        .rewardValue("스타일리시한 슈즈 (가치 8만원)")
+                        .build()
+                ))
                 .build();
 
         // 저장된 이벤트 설정

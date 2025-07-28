@@ -4,8 +4,6 @@ import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.event.application.dto.request.EventCreateRequestDto;
 import com.cMall.feedShop.event.application.dto.response.EventCreateResponseDto;
 import com.cMall.feedShop.event.application.service.EventCreateService;
-import com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto;
-import com.cMall.feedShop.event.application.service.EventUpdateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +18,6 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class EventCreateController {
     private final EventCreateService eventCreateService;
-    private final EventUpdateService eventUpdateService;
 
     /**
      * 이벤트 생성
@@ -32,14 +29,36 @@ public class EventCreateController {
         @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         // 이미지 파일 처리
+        String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             // TODO: 실제 이미지 업로드 로직 구현
             // 임시로 파일명을 imageUrl로 설정
             String fileName = StringUtils.cleanPath(image.getOriginalFilename());
-            requestDto.setImageUrl("/uploads/events/" + fileName);
+            imageUrl = "/uploads/events/" + fileName;
         }
         
-        EventCreateResponseDto responseDto = eventCreateService.createEvent(requestDto);
+        // 이미지 URL이 있는 경우 새로운 DTO 생성
+        EventCreateRequestDto finalRequestDto = requestDto;
+        if (imageUrl != null) {
+            finalRequestDto = EventCreateRequestDto.builder()
+                .type(requestDto.getType())
+                .maxParticipants(requestDto.getMaxParticipants())
+                .title(requestDto.getTitle())
+                .description(requestDto.getDescription())
+                .imageUrl(imageUrl)
+                .participationMethod(requestDto.getParticipationMethod())
+                .selectionCriteria(requestDto.getSelectionCriteria())
+                .precautions(requestDto.getPrecautions())
+                .purchaseStartDate(requestDto.getPurchaseStartDate())
+                .purchaseEndDate(requestDto.getPurchaseEndDate())
+                .eventStartDate(requestDto.getEventStartDate())
+                .eventEndDate(requestDto.getEventEndDate())
+                .announcement(requestDto.getAnnouncement())
+                .rewards(requestDto.getRewards())
+                .build();
+        }
+        
+        EventCreateResponseDto responseDto = eventCreateService.createEvent(finalRequestDto);
         ApiResponse<EventCreateResponseDto> response = ApiResponse.<EventCreateResponseDto>builder()
                 .success(true)
                 .message("이벤트가 성공적으로 생성되었습니다.")

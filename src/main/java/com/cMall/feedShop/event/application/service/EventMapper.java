@@ -128,13 +128,6 @@ public class EventMapper {
     }
 
     /**
-     * 저장된 상태 반환 (기존 방식)
-     */
-    private String getEventStatus(Event event) {
-        return event.getStatus() != null ? event.getStatus().name().toLowerCase() : null;
-    }
-
-    /**
      * 실시간으로 계산된 상태 반환 (새로운 방식)
      */
     private String getRealTimeEventStatus(Event event) {
