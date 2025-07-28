@@ -8,6 +8,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.UUID;
@@ -45,7 +46,6 @@ public class LoggingAspect {
 
     @Around("controllerMethods()")
     public Object logController(ProceedingJoinPoint joinPoint) throws Throwable {
-        // API 요청별 고유 추적 ID 생성
         String traceId = generateTraceId();
         MDC.put("traceId", traceId);
 
@@ -55,8 +55,7 @@ public class LoggingAspect {
 
         long start = System.currentTimeMillis();
 
-        log.info("🌐 [API-START] {}.{}() | TraceID: {}",
-                className, methodName, traceId);
+        log.info("🌐 [API-START] {}.{}() | TraceID: {}", className, methodName, traceId);
 
         if (args.length > 0) {
             log.info("📥 [REQUEST] Args: {}", formatArgs(args));
@@ -66,8 +65,13 @@ public class LoggingAspect {
             Object result = joinPoint.proceed();
             long duration = System.currentTimeMillis() - start;
 
+            Object loggableResult = result;
+            if (result instanceof ResponseEntity<?> responseEntity) {
+                loggableResult = responseEntity.getBody();
+            }
+
             log.info("📤 [RESPONSE] Return: {} | Duration: {}ms",
-                    formatResult(result), duration);
+                    formatResult(loggableResult), duration);
             log.info("✅ [API-END] {}.{}() SUCCESS | TraceID: {}",
                     className, methodName, traceId);
 
@@ -179,13 +183,18 @@ public class LoggingAspect {
     private String formatResult(Object result) {
         if (result == null) return "null";
 
-        String resultStr = result.toString();
-        // 너무 긴 결과는 요약
-        if (resultStr.length() > 200) {
-            return result.getClass().getSimpleName() + "[" + resultStr.substring(0, 100) + "...]";
+        Object loggableResult = result;
+        if (result instanceof ResponseEntity<?> responseEntity) {
+            loggableResult = responseEntity.getBody(); // 내부 body 추출
         }
 
-        return maskSensitiveData(result).toString();
+        String resultStr = loggableResult.toString();
+        // 너무 긴 결과는 요약
+        if (resultStr.length() > 200) {
+            return loggableResult.getClass().getSimpleName() + "[" + resultStr.substring(0, 100) + "...]";
+        }
+
+        return maskSensitiveData(loggableResult).toString();
     }
 
     /**
