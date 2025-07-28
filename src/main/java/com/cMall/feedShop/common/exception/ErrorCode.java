@@ -54,14 +54,11 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(404, "O001", "주문을 찾을 수 없습니다."),
     INVALID_ORDER_STATUS(400, "O002", "잘못된 주문 상태입니다."),
 
-
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),
     DUPLICATE_REVIEW(409, "R002", "이미 해당 상품에 대한 리뷰를 작성하셨습니다."),
     REVIEW_ACCESS_DENIED(403, "R003", "해당 리뷰에 대한 권한이 없습니다."),
     INVALID_REVIEW_DATA(400, "R004", "잘못된 리뷰 데이터입니다."),
-
-
 
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),

@@ -6,6 +6,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import com.cMall.feedShop.common.BaseTimeEntity;
 import java.util.List;
@@ -63,6 +64,30 @@ public class Event extends BaseTimeEntity {
         if (rewards != null) {
             rewards.forEach(reward -> reward.setEvent(this));
         }
+    }
+
+    public void updateStatusAutomatically() {
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(eventDetail.getEventStartDate())) {
+            this.status = EventStatus.UPCOMING;
+        } else if (today.isAfter(eventDetail.getEventEndDate())) {
+            this.status = EventStatus.ENDED;
+        } else {
+            this.status = EventStatus.ONGOING;
+        }
+    }
+
+    public EventStatus calculateStatus() {
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
+            return this.status;
+        }
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(eventDetail.getEventStartDate())) return EventStatus.UPCOMING;
+        if (today.isAfter(eventDetail.getEventEndDate())) return EventStatus.ENDED;
+        return EventStatus.ONGOING;
     }
 
     // 기타 연관관계 필요시 여기에 추가
