@@ -41,7 +41,7 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
+                .requiresChannel(channel -> channel.anyRequest().requiresSecure())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // 예외 처리 (인증되지 않은 사용자가 보호된 리소스에 접근 시 처리)
@@ -52,6 +52,8 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                    // 이벤트 생성(POST)은 ADMIN만, 나머지 조회는 모두 permitAll
+                    .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
                       "/api/auth/**",
                       "/public/**",
@@ -60,7 +62,11 @@ public class SecurityConfig {
                       "/swagger-resources/**",
                       "/api/products/**",
                       "/api/events/**",
-                      "/api/reviews/**"
+                      "/api/reviews/**",
+                      "/api/products/**",
+                      "/api/events/**",
+                      "/api/reviews/products/**",
+                      "/api/reviews/{reviewId}"
                     ).permitAll()
                     .requestMatchers("/api/users/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/seller/**").hasRole("SELLER")
@@ -79,8 +85,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app/", // 프론트엔드 실제 배포 주소
-                "https://www.feedshop.store/",
+                "https://feedshop-frontend.vercel.app", // 프론트엔드 실제 배포 주소
+                "https://www.feedshop.store",
                 "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

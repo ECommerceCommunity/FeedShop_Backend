@@ -2,6 +2,7 @@ package com.cMall.feedShop.event.presentation;
 
 import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
 import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
+import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.application.service.EventReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -27,5 +28,13 @@ public class EventReadController {
     @GetMapping("/search")
     public EventListResponseDto searchEvents(@ModelAttribute EventListRequestDto requestDto) {
         return eventReadService.searchEvents(requestDto);
+    }
+
+    /**
+     * 이벤트 상세 조회
+     */
+    @GetMapping("/{eventId}")
+    public EventDetailResponseDto getEventDetail(@PathVariable Long eventId) {
+        return eventReadService.getEventDetail(eventId);
     }
 } 
