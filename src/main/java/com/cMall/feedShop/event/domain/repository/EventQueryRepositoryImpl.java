@@ -6,6 +6,8 @@ import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.QEvent;
 import com.cMall.feedShop.event.domain.QEventDetail;
+import com.cMall.feedShop.event.domain.QEventReward;
+import com.cMall.feedShop.event.domain.QRewardType;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.querydsl.core.BooleanBuilder;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -71,17 +74,37 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         return new PageImpl<>(pagedEvents, pageable, total);
     }
 
+    @Override
+    public Optional<Event> findDetailById(Long id) {
+        QEvent event = QEvent.event;
+        QEventDetail detail = QEventDetail.eventDetail;
+        QEventReward reward = QEventReward.eventReward;
+        QRewardType rewardType = QRewardType.rewardType;
+
+        Event result = queryFactory
+                .selectFrom(event)
+                .leftJoin(event.eventDetail, detail).fetchJoin()
+                .leftJoin(event.rewards, reward).fetchJoin()
+                .leftJoin(reward.rewardType, rewardType).fetchJoin()
+                .where(event.id.eq(id))
+                .fetchOne();
+        return Optional.ofNullable(result);
+    }
+
     // sort 파라미터에 따라 동적 정렬 조건 반환
     private OrderSpecifier<?> getOrderSpecifier(EventListRequestDto requestDto, QEvent event, QEventDetail detail) {
         String sort = requestDto.getSort();
-        if (sort == null || sort.equals("latest")) {
-            return new OrderSpecifier<>(Order.DESC, event.createdBy);
-        } else if (sort.equals("participants")) {
-            return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
-        } else if (sort.equals("ending")) {
+        if (sort == null || sort.equalsIgnoreCase("latest")) {
+            // 최신순: 생성일 내림차순
+            return new OrderSpecifier<>(Order.DESC, event.createdAt);
+        } else if (sort.equalsIgnoreCase("ending")) {
+            // 종료임박순: 이벤트 종료일 오름차순
             return new OrderSpecifier<>(Order.ASC, detail.eventEndDate);
+        } else if (sort.equalsIgnoreCase("participants")) {
+            // 참여자순: 최대 참여자수 내림차순
+            return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
         }
         // 기본값: 최신순
-        return new OrderSpecifier<>(Order.DESC, event.createdBy);
+        return new OrderSpecifier<>(Order.DESC, event.createdAt);
     }
 }

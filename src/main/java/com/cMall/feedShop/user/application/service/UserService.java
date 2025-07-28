@@ -19,6 +19,8 @@ public interface UserService {
 
     void deleteUser(User user);
 
+    void checkAdminAuthority(String methodName);
+
     void withdrawUser(Long userId);
 
     void adminWithdrawUserByEmail(String email);
