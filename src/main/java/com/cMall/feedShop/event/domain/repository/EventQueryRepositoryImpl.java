@@ -74,14 +74,17 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
     // sort 파라미터에 따라 동적 정렬 조건 반환
     private OrderSpecifier<?> getOrderSpecifier(EventListRequestDto requestDto, QEvent event, QEventDetail detail) {
         String sort = requestDto.getSort();
-        if (sort == null || sort.equals("latest")) {
-            return new OrderSpecifier<>(Order.DESC, event.createdBy);
-        } else if (sort.equals("participants")) {
-            return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
-        } else if (sort.equals("ending")) {
+        if (sort == null || sort.equalsIgnoreCase("latest")) {
+            // 최신순: 생성일 내림차순
+            return new OrderSpecifier<>(Order.DESC, event.createdAt);
+        } else if (sort.equalsIgnoreCase("ending")) {
+            // 종료임박순: 이벤트 종료일 오름차순
             return new OrderSpecifier<>(Order.ASC, detail.eventEndDate);
+        } else if (sort.equalsIgnoreCase("participants")) {
+            // 참여자순: 최대 참여자수 내림차순
+            return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
         }
         // 기본값: 최신순
-        return new OrderSpecifier<>(Order.DESC, event.createdBy);
+        return new OrderSpecifier<>(Order.DESC, event.createdAt);
     }
 }

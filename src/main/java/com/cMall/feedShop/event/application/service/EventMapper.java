@@ -22,7 +22,7 @@ public class EventMapper {
                 .eventId(event.getId())
                 .title(getSafeString(detail, EventDetail::getTitle))
                 .type(getEventType(event))
-                .status(getEventStatus(event))
+                .status(getRealTimeEventStatus(event)) // 실시간 상태 계산
                 .eventStartDate(getSafeLocalDateString(detail, EventDetail::getEventStartDate))
                 .eventEndDate(getSafeLocalDateString(detail, EventDetail::getEventEndDate))
                 .imageUrl(getSafeString(detail, EventDetail::getImageUrl))
@@ -84,7 +84,16 @@ public class EventMapper {
         return event.getType() != null ? event.getType().name().toLowerCase() : null;
     }
 
-    private String getEventStatus(Event event) {
-        return event.getStatus() != null ? event.getStatus().name().toLowerCase() : null;
+    /**
+     * 실시간으로 계산된 상태 반환 (새로운 방식)
+     */
+    private String getRealTimeEventStatus(Event event) {
+        if (event.getStatus() == null) {
+            return null;
+        }
+        
+        // 실시간으로 상태 계산
+        var calculatedStatus = event.calculateStatus();
+        return calculatedStatus != null ? calculatedStatus.name().toLowerCase() : null;
     }
 } 
