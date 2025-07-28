@@ -41,6 +41,9 @@ public class Event extends BaseTimeEntity {
     @Column(name = "updated_by")
     private LocalDateTime updatedBy;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User createdUser;
@@ -95,9 +98,9 @@ public class Event extends BaseTimeEntity {
     /**
      * 이벤트 정보 업데이트 (영속성 유지)
      */
-    public void update(String type, Integer maxParticipants) {
+    public void update(EventType type, Integer maxParticipants) {
         if (type != null) {
-            this.type = EventType.valueOf(type);
+            this.type = type;
         }
         if (maxParticipants != null) {
             this.maxParticipants = maxParticipants;
@@ -111,5 +114,19 @@ public class Event extends BaseTimeEntity {
     public void updateStatus(EventStatus status) {
         this.status = status;
         this.updatedBy = LocalDateTime.now();
+    }
+
+    /**
+     * 소프트 딜리트
+     */
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 삭제 여부 확인
+     */
+    public boolean isDeleted() {
+        return this.deletedAt != null;
     }
 }

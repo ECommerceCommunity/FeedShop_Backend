@@ -34,6 +34,7 @@ public class EventCreateRequestDto {
     private LocalDate announcement;
     
     // 이벤트 보상 정보 (FormData 배열 파라미터로 전송)
+    @Builder.Default
     private List<EventRewardRequestDto> rewards = new ArrayList<>();
     
     @Getter

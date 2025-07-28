@@ -1,5 +1,6 @@
 package com.cMall.feedShop.event.application.dto.request;
 
+import com.cMall.feedShop.event.domain.enums.EventType;
 import lombok.*;
 import java.time.LocalDate;
 
@@ -11,7 +12,7 @@ public class EventUpdateRequestDto {
     private Long eventId;
     private String title;
     private String description;
-    private String type;
+    private EventType type;
     private String status;
     private Integer maxParticipants;
     private LocalDate purchaseStartDate;

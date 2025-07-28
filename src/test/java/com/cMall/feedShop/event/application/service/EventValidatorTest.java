@@ -26,8 +26,8 @@ class EventValidatorTest {
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
                 .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(7))
+                .eventStartDate(LocalDate.now().plusDays(7))
+                .eventEndDate(LocalDate.now().plusDays(14))
                 .purchaseStartDate(LocalDate.now())
                 .purchaseEndDate(LocalDate.now().plusDays(5))
                 .rewards(List.of(
