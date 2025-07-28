@@ -26,50 +26,8 @@ public class EventCreateController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEvent(
         @ModelAttribute EventCreateRequestDto requestDto,
-        @RequestPart(value = "image", required = false) MultipartFile image,
-        @RequestParam(value = "rewards[0].conditionValue", required = false) Integer reward0Condition,
-        @RequestParam(value = "rewards[0].rewardValue", required = false) String reward0Value,
-        @RequestParam(value = "rewards[1].conditionValue", required = false) Integer reward1Condition,
-        @RequestParam(value = "rewards[1].rewardValue", required = false) String reward1Value,
-        @RequestParam(value = "rewards[2].conditionValue", required = false) Integer reward2Condition,
-        @RequestParam(value = "rewards[2].rewardValue", required = false) String reward2Value,
-        @RequestParam(value = "rewards[3].conditionValue", required = false) Integer reward3Condition,
-        @RequestParam(value = "rewards[3].rewardValue", required = false) String reward3Value,
-        @RequestParam(value = "rewards[4].conditionValue", required = false) Integer reward4Condition,
-        @RequestParam(value = "rewards[4].rewardValue", required = false) String reward4Value
+        @RequestPart(value = "image", required = false) MultipartFile image
     ) {
-        // rewards 파라미터 처리
-        if (reward0Condition != null && reward0Value != null) {
-            requestDto.getRewards().add(EventCreateRequestDto.EventRewardRequestDto.builder()
-                .conditionValue(reward0Condition)
-                .rewardValue(reward0Value)
-                .build());
-        }
-        if (reward1Condition != null && reward1Value != null) {
-            requestDto.getRewards().add(EventCreateRequestDto.EventRewardRequestDto.builder()
-                .conditionValue(reward1Condition)
-                .rewardValue(reward1Value)
-                .build());
-        }
-        if (reward2Condition != null && reward2Value != null) {
-            requestDto.getRewards().add(EventCreateRequestDto.EventRewardRequestDto.builder()
-                .conditionValue(reward2Condition)
-                .rewardValue(reward2Value)
-                .build());
-        }
-        if (reward3Condition != null && reward3Value != null) {
-            requestDto.getRewards().add(EventCreateRequestDto.EventRewardRequestDto.builder()
-                .conditionValue(reward3Condition)
-                .rewardValue(reward3Value)
-                .build());
-        }
-        if (reward4Condition != null && reward4Value != null) {
-            requestDto.getRewards().add(EventCreateRequestDto.EventRewardRequestDto.builder()
-                .conditionValue(reward4Condition)
-                .rewardValue(reward4Value)
-                .build());
-        }
-        
         // 이미지 파일 처리
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
@@ -102,7 +60,7 @@ public class EventCreateController {
             // 이미지가 없는 경우에도 기존 DTO 사용
             finalRequestDto = requestDto;
         }
-        
+
         EventCreateResponseDto responseDto = eventCreateService.createEvent(finalRequestDto);
         ApiResponse<EventCreateResponseDto> response = ApiResponse.<EventCreateResponseDto>builder()
                 .success(true)
