@@ -21,26 +21,18 @@ public class EventUpdateService {
         Event event = eventRepository.findDetailById(dto.getEventId())
                 .orElseThrow(() -> new EventNotFoundException(dto.getEventId()));
         
-        // 이벤트 기본 정보 업데이트
-        if (dto.getType() != null) {
-            event = Event.builder()
-                    .id(event.getId())
-                    .type(com.cMall.feedShop.event.domain.enums.EventType.valueOf(dto.getType()))
-                    .status(event.getStatus())
-                    .maxParticipants(dto.getMaxParticipants() != null ? dto.getMaxParticipants() : event.getMaxParticipants())
-                    .createdBy(event.getCreatedBy())
-                    .updatedBy(event.getUpdatedBy())
-                    .createdUser(event.getCreatedUser())
-                    .eventDetail(event.getEventDetail())
-                    .rewards(event.getRewards())
-                    .build();
-        }
+        // 이벤트 기본 정보 업데이트 (영속성 유지)
+        event.update(dto.getType(), dto.getMaxParticipants());
         
         // EventDetail 업데이트는 별도로 처리
         if (event.getEventDetail() != null) {
             event.getEventDetail().updateFromDto(dto);
         }
         
+        // 상태 자동 업데이트
+        event.updateStatusAutomatically();
+        
+        // 저장 (변경사항이 자동으로 감지됨)
         eventRepository.save(event);
     }
 } 

@@ -91,4 +91,25 @@ public class Event extends BaseTimeEntity {
     }
 
     // 기타 연관관계 필요시 여기에 추가
+
+    /**
+     * 이벤트 정보 업데이트 (영속성 유지)
+     */
+    public void update(String type, Integer maxParticipants) {
+        if (type != null) {
+            this.type = EventType.valueOf(type);
+        }
+        if (maxParticipants != null) {
+            this.maxParticipants = maxParticipants;
+        }
+        this.updatedBy = LocalDateTime.now();
+    }
+
+    /**
+     * 이벤트 상태 업데이트
+     */
+    public void updateStatus(EventStatus status) {
+        this.status = status;
+        this.updatedBy = LocalDateTime.now();
+    }
 }
