@@ -73,6 +73,7 @@ public class EventMapper {
                         .rank(r.isRankCondition() ? r.getRank() : null)
                         .reward(r.getRewardValue())
                         .conditionType(r.getConditionType())
+                        .conditionDescription(r.getConditionDescription())
                         .build())
                 .toList() : Collections.emptyList();
     }
@@ -88,6 +89,7 @@ public class EventMapper {
                 .rank(reward.isRankCondition() ? reward.getRank() : null)
                 .reward(reward.getRewardValue())
                 .conditionType(reward.getConditionType())
+                .conditionDescription(reward.getConditionDescription())
                 .maxRecipients(reward.getMaxRecipients())
                 .build();
     }

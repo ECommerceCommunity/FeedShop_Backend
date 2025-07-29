@@ -1,6 +1,7 @@
 // 이벤트 목록의 단일 이벤트 요약 응답 DTO
 package com.cMall.feedShop.event.application.dto.response;
 
+import com.cMall.feedShop.event.domain.enums.RewardConditionType;
 import lombok.*;
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class EventSummaryDto {
     public static class Reward {
         private Integer rank;
         private String reward;
-        private String conditionType; // "RANK", "PARTICIPATION", "VOTERS", "VIEWS", "LIKES", "RANDOM"
+        private RewardConditionType conditionType;
+        private String conditionDescription;
     }
 } 

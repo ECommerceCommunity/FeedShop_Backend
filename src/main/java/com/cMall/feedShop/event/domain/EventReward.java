@@ -1,5 +1,6 @@
 package com.cMall.feedShop.event.domain;
 
+import com.cMall.feedShop.event.domain.enums.RewardConditionType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,12 +42,7 @@ public class EventReward extends BaseTimeEntity {
      * 조건값이 등수인지 확인
      */
     public boolean isRankCondition() {
-        try {
-            Integer.parseInt(conditionValue);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        return getConditionType() != null && getConditionType().isRank();
     }
 
     /**
@@ -62,10 +58,23 @@ public class EventReward extends BaseTimeEntity {
     /**
      * 조건 타입 반환
      */
-    public String getConditionType() {
-        if (isRankCondition()) {
-            return "RANK";
+    public RewardConditionType getConditionType() {
+        return RewardConditionType.fromString(conditionValue);
+    }
+
+    /**
+     * 조건 설명 반환
+     */
+    public String getConditionDescription() {
+        RewardConditionType type = getConditionType();
+        if (type == null) {
+            return conditionValue;
         }
-        return conditionValue.toUpperCase();
+        
+        if (type.isRank()) {
+            return conditionValue + "등";
+        }
+        
+        return type.getDescription();
     }
 }
