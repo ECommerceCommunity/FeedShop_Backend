@@ -1,5 +1,6 @@
 package com.cMall.feedShop.event.domain.repository;
 
+import com.cMall.feedShop.common.util.TimeUtil;
 import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
 import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
 import com.cMall.feedShop.event.domain.Event;
@@ -42,14 +43,18 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         builder.and(event.deletedAt.isNull());
         
         if (StringUtils.hasText(requestDto.getStatus()) && !"all".equalsIgnoreCase(requestDto.getStatus())) {
-            // 상태별 필터링: upcoming, ongoing, completed
+            // 상태별 필터링: upcoming, ongoing, ended (실시간 계산된 상태 기준)
             String status = requestDto.getStatus().toLowerCase();
             if ("upcoming".equals(status)) {
-                builder.and(event.status.eq(EventStatus.UPCOMING));
+                // 이벤트 시작일이 현재 날짜보다 미래인 경우
+                builder.and(detail.eventStartDate.gt(TimeUtil.nowDate()));
             } else if ("ongoing".equals(status)) {
-                builder.and(event.status.eq(EventStatus.ONGOING));
-            } else if ("completed".equals(status)) {
-                builder.and(event.status.eq(EventStatus.ENDED));
+                // 현재 날짜가 이벤트 시작일과 종료일 사이인 경우
+                builder.and(detail.eventStartDate.loe(TimeUtil.nowDate())
+                        .and(detail.eventEndDate.goe(TimeUtil.nowDate())));
+            } else if ("ended".equals(status)) {
+                // 이벤트 종료일이 현재 날짜보다 과거인 경우
+                builder.and(detail.eventEndDate.lt(TimeUtil.nowDate()));
             }
         }
         if (StringUtils.hasText(requestDto.getType()) && !"all".equalsIgnoreCase(requestDto.getType())) {
