@@ -61,6 +61,7 @@ public class EventReward extends BaseTimeEntity {
      * <p>기본값은 1이며, 특별 조건에 따라 조정될 수 있습니다.</p>
      */
     @Column(name = "max_recipients")
+    @Builder.Default
     private Integer maxRecipients = 1;
 
     /**
@@ -111,5 +112,14 @@ public class EventReward extends BaseTimeEntity {
         }
         
         return type.getDescription();
+    }
+
+    /**
+     * 이벤트와의 연관관계 설정
+     * 
+     * @param event 연결할 이벤트
+     */
+    public void setEvent(Event event) {
+        this.event = event;
     }
 }
