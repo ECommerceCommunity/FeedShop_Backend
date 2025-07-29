@@ -53,27 +53,17 @@ public class EventCreateService {
                 .build();
 
         // EventDetail 엔티티 생성 (팩토리 메서드 활용)
-        EventDetail eventDetail = EventDetail.createForEvent(event, 
+        EventDetail eventDetail = EventDetail.createForEventWithDates(event, 
                 requestDto.getTitle(),
                 requestDto.getDescription(),
                 requestDto.getParticipationMethod(),
                 requestDto.getSelectionCriteria(),
-                requestDto.getPrecautions());
-        
-        // 날짜 정보 설정
-        eventDetail = EventDetail.builder()
-                .title(requestDto.getTitle())
-                .description(requestDto.getDescription())
-                .participationMethod(requestDto.getParticipationMethod())
-                .selectionCriteria(requestDto.getSelectionCriteria())
-                .precautions(requestDto.getPrecautions())
-                .purchaseStartDate(requestDto.getPurchaseStartDate())
-                .purchaseEndDate(requestDto.getPurchaseEndDate())
-                .eventStartDate(requestDto.getEventStartDate())
-                .eventEndDate(requestDto.getEventEndDate())
-                .announcement(requestDto.getAnnouncement())
-                .build();
-        eventDetail.setEvent(event);
+                requestDto.getPrecautions(),
+                requestDto.getPurchaseStartDate(),
+                requestDto.getPurchaseEndDate(),
+                requestDto.getEventStartDate(),
+                requestDto.getEventEndDate(),
+                requestDto.getAnnouncement());
 
         // EventReward 엔티티들 생성 (팩토리 메서드 활용)
         List<EventReward> eventRewards = createEventRewards(requestDto.getRewards());

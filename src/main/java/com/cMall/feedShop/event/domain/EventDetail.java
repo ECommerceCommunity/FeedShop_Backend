@@ -78,6 +78,29 @@ public class EventDetail extends BaseTimeEntity {
     }
 
     /**
+     * 팩토리 메서드: 날짜 정보와 함께 상세정보 생성 (빌더 패턴 활용)
+     */
+    public static EventDetail createForEventWithDates(Event event, String title, String description, 
+                                                    String participationMethod, String selectionCriteria, String precautions,
+                                                    LocalDate purchaseStartDate, LocalDate purchaseEndDate,
+                                                    LocalDate eventStartDate, LocalDate eventEndDate, LocalDate announcement) {
+        EventDetail eventDetail = EventDetail.builder()
+                .title(title)
+                .description(description)
+                .participationMethod(participationMethod)
+                .selectionCriteria(selectionCriteria)
+                .precautions(precautions)
+                .purchaseStartDate(purchaseStartDate)
+                .purchaseEndDate(purchaseEndDate)
+                .eventStartDate(eventStartDate)
+                .eventEndDate(eventEndDate)
+                .announcement(announcement)
+                .build();
+        eventDetail.setEvent(event);
+        return eventDetail;
+    }
+
+    /**
      * 이벤트 상세 정보 수정 (빌더 패턴 활용)
      */
     public void updateFromDto(com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto dto) {
@@ -87,7 +110,7 @@ public class EventDetail extends BaseTimeEntity {
         this.purchaseEndDate = dto.getPurchaseEndDate() != null ? dto.getPurchaseEndDate() : this.purchaseEndDate;
         this.eventStartDate = dto.getEventStartDate() != null ? dto.getEventStartDate() : this.eventStartDate;
         this.eventEndDate = dto.getEventEndDate() != null ? dto.getEventEndDate() : this.eventEndDate;
-        this.announcement = dto.getAnnouncementDate() != null ? dto.getAnnouncementDate() : this.announcement;
+        this.announcement = dto.getAnnouncement() != null ? dto.getAnnouncement() : this.announcement;
         this.participationMethod = dto.getParticipationMethod() != null ? dto.getParticipationMethod() : this.participationMethod;
         this.selectionCriteria = dto.getSelectionCriteria() != null ? dto.getSelectionCriteria() : this.selectionCriteria;
         this.imageUrl = dto.getImageUrl() != null ? dto.getImageUrl() : this.imageUrl;

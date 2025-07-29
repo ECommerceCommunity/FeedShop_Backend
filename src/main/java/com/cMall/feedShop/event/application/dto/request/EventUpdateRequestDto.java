@@ -19,7 +19,7 @@ public class EventUpdateRequestDto {
     private LocalDate purchaseEndDate;
     private LocalDate eventStartDate;
     private LocalDate eventEndDate;
-    private LocalDate announcementDate;
+    private LocalDate announcement;
     private String participationMethod;
     private String selectionCriteria;
     private String imageUrl;
