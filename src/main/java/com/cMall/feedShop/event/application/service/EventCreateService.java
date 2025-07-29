@@ -16,36 +16,45 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
+/**
+ * 이벤트 생성 서비스
+ * 
+ * <p>이벤트와 관련된 상세 정보, 보상 정보를 함께 생성합니다.</p>
+ * 
+ * @author FeedShop Team
+ * @since 1.0
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class EventCreateService {
+
     private final EventRepository eventRepository;
     private final EventValidator eventValidator;
 
     /**
-     * 이벤트 생성
+     * 이벤트를 생성합니다.
+     * 
+     * @param requestDto 이벤트 생성 요청 DTO
+     * @return 생성된 이벤트 ID
      */
-    @Transactional
-    public EventCreateResponseDto createEvent(EventCreateRequestDto requestDto) {
-        log.info("이벤트 생성 시작: {}", requestDto.getTitle());
+    public Long createEvent(EventCreateRequestDto requestDto) {
+        log.info("이벤트 생성 시작 - 제목: {}", requestDto.getTitle());
         
-        // 입력값 검증
+        // 검증 수행
         eventValidator.validateEventCreateRequest(requestDto);
-        
-        // Event 엔티티 생성 (상태는 자동 계산)
+        log.debug("이벤트 생성 요청 검증 완료");
+
+        // Event 엔티티 생성
         Event event = Event.builder()
                 .type(requestDto.getType())
-                .status(EventStatus.UPCOMING) // 임시 상태, 나중에 자동 계산
                 .maxParticipants(requestDto.getMaxParticipants())
-                .createdBy(LocalDateTime.now())
+                .status(EventStatus.UPCOMING)
                 .build();
-        
+
         // EventDetail 엔티티 생성
         EventDetail eventDetail = EventDetail.builder()
-                .title(requestDto.getTitle())
-                .description(requestDto.getDescription())
-                .imageUrl(requestDto.getImageUrl())
                 .participationMethod(requestDto.getParticipationMethod())
                 .selectionCriteria(requestDto.getSelectionCriteria())
                 .precautions(requestDto.getPrecautions())
@@ -54,82 +63,84 @@ public class EventCreateService {
                 .eventStartDate(requestDto.getEventStartDate())
                 .eventEndDate(requestDto.getEventEndDate())
                 .announcement(requestDto.getAnnouncement())
-
                 .build();
-        
+
         // EventReward 엔티티들 생성
         List<EventReward> eventRewards = createEventRewards(requestDto.getRewards());
-        
+        log.info("보상 정보 생성 완료 - 보상 개수: {}", eventRewards.size());
+
         // 연관관계 설정
         event.setEventDetail(eventDetail);
         event.setRewards(eventRewards);
-        
-        // 상태 자동 계산 및 업데이트
-        event.updateStatusAutomatically();
-        
+
         // 저장
         Event savedEvent = eventRepository.save(event);
-        
-        log.info("이벤트 생성 완료: ID={}, 제목={}", savedEvent.getId(), savedEvent.getEventDetail().getTitle());
-        
-        return EventCreateResponseDto.of(
-                savedEvent.getId(),
-                savedEvent.getEventDetail().getTitle(),
-                savedEvent.getType().name().toLowerCase(),
-                savedEvent.getStatus().name().toLowerCase(),
-                savedEvent.getMaxParticipants(),
-                savedEvent.getCreatedBy()
-        );
+        log.info("이벤트 생성 완료 - ID: {}, 제목: {}", savedEvent.getId(), requestDto.getTitle());
+
+        return savedEvent.getId();
     }
 
     /**
-     * EventReward 엔티티 리스트 생성
+     * 보상 엔티티들을 생성합니다.
+     * 
+     * @param rewards 보상 요청 DTO 리스트
+     * @return 생성된 EventReward 엔티티 리스트
      */
     private List<EventReward> createEventRewards(List<EventCreateRequestDto.EventRewardRequestDto> rewards) {
-        if (rewards == null || rewards.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
         List<EventReward> eventRewards = new ArrayList<>();
-        for (EventCreateRequestDto.EventRewardRequestDto rewardDto : rewards) {
+        
+        for (int i = 0; i < rewards.size(); i++) {
+            EventCreateRequestDto.EventRewardRequestDto rewardDto = rewards.get(i);
+            
+            log.debug("보상 {} 생성 중 - 조건값: {}, 보상내용: {}", 
+                    i + 1, rewardDto.getConditionValue(), rewardDto.getRewardValue());
+            
+            Integer maxRecipients = calculateMaxRecipients(rewardDto.getConditionValue());
+            
             EventReward eventReward = EventReward.builder()
                     .conditionValue(rewardDto.getConditionValue())
                     .rewardValue(rewardDto.getRewardValue())
-                    .maxRecipients(calculateMaxRecipients(rewardDto.getConditionValue()))
+                    .maxRecipients(maxRecipients)
                     .build();
+            
             eventRewards.add(eventReward);
+            
+            log.debug("보상 {} 생성 완료 - 최대수령자수: {}", i + 1, maxRecipients);
         }
+        
         return eventRewards;
     }
 
     /**
-     * 조건에 따른 최대 수혜자 수 계산
+     * 조건값에 따라 최대 수령자 수를 계산합니다.
+     * 
+     * @param conditionValue 조건값
+     * @return 최대 수령자 수
      */
     private Integer calculateMaxRecipients(String conditionValue) {
-        if (conditionValue == null) {
-            return 1;
-        }
-        
-        // 등수 조건인 경우
         try {
+            // 숫자인 경우 (등수 조건)
             int rank = Integer.parseInt(conditionValue);
-            return 1; // 각 등수당 1명
+            log.debug("등수 조건 감지 - 등수: {}, 최대수령자수: {}", rank, 1);
+            return 1;
         } catch (NumberFormatException e) {
-            // 특별 조건인 경우
+            // 문자열 조건인 경우
             switch (conditionValue.toLowerCase()) {
                 case "participation":
-                    return 10; // 참여자 중 랜덤 10명
+                    log.debug("참여자 조건 감지 - 최대수령자수: 무제한");
+                    return null; // 무제한
                 case "voters":
                 case "views":
                 case "likes":
-                    return 5; // TOP 5명
+                    log.debug("TOP 조건 감지 - 조건: {}, 최대수령자수: {}", conditionValue, 10);
+                    return 10; // TOP 10
                 case "random":
-                    return 3; // 랜덤 3명
+                    log.debug("랜덤 조건 감지 - 최대수령자수: {}", 5);
+                    return 5; // 랜덤 5명
                 default:
+                    log.warn("알 수 없는 조건값: {} - 기본값 1 사용", conditionValue);
                     return 1;
             }
         }
     }
-
-
 } 
