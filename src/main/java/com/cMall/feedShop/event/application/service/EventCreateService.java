@@ -45,12 +45,12 @@ public class EventCreateService {
         eventValidator.validateEventCreateRequest(requestDto);
         log.debug("이벤트 생성 요청 검증 완료");
 
-        // Event 엔티티 생성 (팩토리 메서드 활용)
-        Event event = Event.builder()
-                .type(requestDto.getType())
-                .maxParticipants(requestDto.getMaxParticipants())
-                .status(EventStatus.UPCOMING)
-                .build();
+        // Event 엔티티 생성 (정적 팩토리 메서드 활용)
+        Event event = Event.createWithDetail(
+                requestDto.getType(),
+                requestDto.getMaxParticipants(),
+                null  // EventDetail은 나중에 설정
+        );
 
         // EventDetail 엔티티 생성 (팩토리 메서드 활용)
         EventDetail eventDetail = EventDetail.createForEventWithDates(event, 

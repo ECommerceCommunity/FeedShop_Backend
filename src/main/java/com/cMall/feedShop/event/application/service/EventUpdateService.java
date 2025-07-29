@@ -50,7 +50,7 @@ public class EventUpdateService {
                 // 기존 rewards 삭제
                 event.getRewards().clear();
                 
-                // 새로운 rewards 생성 및 추가
+                // 새로운 rewards 생성 및 추가 (정적 팩토리 메서드 활용)
                 for (EventCreateRequestDto.EventRewardRequestDto rewardDto : rewardDtos) {
                     EventReward eventReward = EventReward.createForEvent(
                         event, 
