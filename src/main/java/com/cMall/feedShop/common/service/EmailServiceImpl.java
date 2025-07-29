@@ -1,59 +1,92 @@
+// src/main/java/com/cMall/feedShop/common/service/EmailServiceImpl.java
 package com.cMall.feedShop.common.service;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.mailgun.api.v3.MailgunMessagesApi;
+import com.mailgun.model.message.Message;
+import com.mailgun.model.message.MessageResponse;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender emailSender;
+    private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
-    @Value("${spring.mail.username}")
-    private String fromEmailAddress;
+    private final String apiKey;
+    private final String domain;
+    private final String fromEmail;
+    private final MailgunMessagesApi mailgunMessagesApi;
+
+
+    public EmailServiceImpl(
+            @Value("${mailgun.api.key}") String apiKey,
+            @Value("${mailgun.domain}") String domain,
+            @Value("${mailgun.from.email}") String fromEmail,
+            // Spring은 이제 MailgunConfig에서 MailgunMessagesApi 빈을 찾을 것입니다.
+            MailgunMessagesApi mailgunMessagesApi) {
+        this.apiKey = apiKey;
+        this.domain = domain;
+        this.fromEmail = fromEmail;
+        this.mailgunMessagesApi = mailgunMessagesApi;
+        logger.info("EmailServiceImpl 초기화됨: apiKey: {}, domain: {}", apiKey, domain);
+    }
+
+    // 환경 변수 검증
+    @PostConstruct
+    public void validateConfig() {
+        Objects.requireNonNull(apiKey, "Mailgun API 키는 null이 아니어야 합니다");
+        Objects.requireNonNull(domain, "Mailgun 도메인은 null이 아니어야 합니다");
+        Objects.requireNonNull(fromEmail, "Mailgun 보내는 이메일은 null이 아니어야 합니다");
+        if (apiKey.isBlank() || domain.isBlank() || fromEmail.isBlank()) {
+            throw new IllegalStateException("Mailgun 설정 속성은 비어 있을 수 없습니다");
+        }
+        logger.info("Mailgun 설정이 EmailServiceImpl에서 성공적으로 검증되었습니다");
+    }
 
     @Override
     public void sendSimpleEmail(String toEmail, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmailAddress);
-        message.setTo(toEmail);
-        message.setSubject(subject);
-        message.setText(text);
+        Objects.requireNonNull(toEmail, "받는 이메일은 null이 아니어야 합니다");
+        Objects.requireNonNull(subject, "이메일 제목은 null이 아니어야 합니다");
+        Objects.requireNonNull(text, "이메일 본문은 null이 아니어야 합니다");
 
-        try {
-            emailSender.send(message);
-            log.info("이메일 전송 성공: To={}, Subject={}", toEmail, subject);
-        } catch (MailException e) {
-            log.error("이메일 전송 실패: To={}, Subject={}, Error={}", toEmail, subject, e.getMessage(), e);
-            throw new RuntimeException("이메일 전송에 실패했습니다.", e);
-        }
+        Message message = Message.builder()
+                .from(fromEmail)
+                .to(toEmail)
+                .subject(subject)
+                .text(text)
+                .build();
+
+        sendMailgunMessage(message, toEmail);
     }
 
     @Override
     public void sendHtmlEmail(String toEmail, String subject, String htmlContent) {
+        Objects.requireNonNull(toEmail, "받는 이메일은 null이 아니어야 합니다");
+        Objects.requireNonNull(subject, "이메일 제목은 null이 아니어야 합니다");
+        Objects.requireNonNull(htmlContent, "이메일 HTML 내용은 null이 아니어야 합니다");
+
+        Message message = Message.builder()
+                .from(fromEmail)
+                .to(toEmail)
+                .subject(subject)
+                .html(htmlContent)
+                .build();
+
+        sendMailgunMessage(message, toEmail);
+    }
+
+    private void sendMailgunMessage(Message message, String toEmail) {
         try {
-            MimeMessage message = emailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmailAddress);
-            helper.setTo(toEmail);
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
-
-            emailSender.send(message);
-            log.info("HTML 이메일 전송 성공: To={}, Subject={}", toEmail, subject);
-        } catch (MessagingException e) {
-            log.error("HTML 이메일 전송 실패: To={}, Subject={}, Error={}", toEmail, subject, e.getMessage(), e);
-            throw new RuntimeException("HTML 이메일 전송에 실패했습니다.", e);
+            MessageResponse response = mailgunMessagesApi.sendMessage(domain, message);
+            logger.info("Mailgun 이메일이 {}로 성공적으로 전송되었습니다: {}", toEmail, response.getMessage());
+        } catch (Exception e) {
+            logger.error("Mailgun 이메일 {} 전송 실패: {}", toEmail, e.getMessage(), e);
+            throw new RuntimeException("Mailgun 이메일 전송 실패: " + e.getMessage(), e);
         }
     }
 }
