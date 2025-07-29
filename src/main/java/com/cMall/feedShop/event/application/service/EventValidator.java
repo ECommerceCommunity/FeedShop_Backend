@@ -2,6 +2,7 @@ package com.cMall.feedShop.event.application.service;
 
 import com.cMall.feedShop.event.application.dto.request.EventCreateRequestDto;
 import com.cMall.feedShop.event.domain.enums.RewardConditionType;
+import com.cMall.feedShop.common.util.TimeUtil;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -72,7 +73,7 @@ public class EventValidator {
         if (purchaseEnd != null && eventEnd != null && eventEnd.isBefore(purchaseEnd)) {
             errors.add("이벤트 종료일은 구매 종료일 이후여야 합니다.");
         }
-        if (eventEnd != null && eventEnd.isAfter(LocalDate.now().plusDays(30))) {
+        if (eventEnd != null && eventEnd.isAfter(TimeUtil.nowDate().plusDays(30))) {
             errors.add("이벤트 종료일은 현재 날짜로부터 30일 이내여야 합니다.");
         }
         

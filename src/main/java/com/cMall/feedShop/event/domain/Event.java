@@ -3,6 +3,7 @@ package com.cMall.feedShop.event.domain;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.common.util.TimeUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -99,7 +100,7 @@ public class Event extends BaseTimeEntity {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return;
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
         if (today.isBefore(eventDetail.getEventStartDate())) {
             this.status = EventStatus.UPCOMING;
         } else if (today.isAfter(eventDetail.getEventEndDate())) {
@@ -113,7 +114,7 @@ public class Event extends BaseTimeEntity {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return this.status;
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
         if (today.isBefore(eventDetail.getEventStartDate())) return EventStatus.UPCOMING;
         if (today.isAfter(eventDetail.getEventEndDate())) return EventStatus.ENDED;
         return EventStatus.ONGOING;
