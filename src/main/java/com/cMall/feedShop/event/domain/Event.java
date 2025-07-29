@@ -69,6 +69,32 @@ public class Event extends BaseTimeEntity {
         }
     }
 
+    /**
+     * 팩토리 메서드: EventDetail과 함께 이벤트 생성 (빌더 패턴 활용)
+     */
+    public static Event createWithDetail(EventType type, Integer maxParticipants, EventDetail eventDetail) {
+        Event event = Event.builder()
+                .type(type)
+                .maxParticipants(maxParticipants)
+                .status(EventStatus.UPCOMING)
+                .build();
+        event.setEventDetail(eventDetail);
+        return event;
+    }
+
+    /**
+     * 팩토리 메서드: EventReward들과 함께 이벤트 생성 (빌더 패턴 활용)
+     */
+    public static Event createWithRewards(EventType type, Integer maxParticipants, List<EventReward> rewards) {
+        Event event = Event.builder()
+                .type(type)
+                .maxParticipants(maxParticipants)
+                .status(EventStatus.UPCOMING)
+                .build();
+        event.setRewards(rewards);
+        return event;
+    }
+
     public void updateStatusAutomatically() {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return;

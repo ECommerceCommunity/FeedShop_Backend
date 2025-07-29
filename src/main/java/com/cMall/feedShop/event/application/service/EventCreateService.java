@@ -45,15 +45,23 @@ public class EventCreateService {
         eventValidator.validateEventCreateRequest(requestDto);
         log.debug("이벤트 생성 요청 검증 완료");
 
-        // Event 엔티티 생성
+        // Event 엔티티 생성 (팩토리 메서드 활용)
         Event event = Event.builder()
                 .type(requestDto.getType())
                 .maxParticipants(requestDto.getMaxParticipants())
                 .status(EventStatus.UPCOMING)
                 .build();
 
-        // EventDetail 엔티티 생성
-        EventDetail eventDetail = EventDetail.builder()
+        // EventDetail 엔티티 생성 (팩토리 메서드 활용)
+        EventDetail eventDetail = EventDetail.createForEvent(event, 
+                requestDto.getTitle(),
+                requestDto.getDescription(),
+                requestDto.getParticipationMethod(),
+                requestDto.getSelectionCriteria(),
+                requestDto.getPrecautions());
+        
+        // 날짜 정보 설정
+        eventDetail = EventDetail.builder()
                 .title(requestDto.getTitle())
                 .description(requestDto.getDescription())
                 .participationMethod(requestDto.getParticipationMethod())
@@ -65,8 +73,9 @@ public class EventCreateService {
                 .eventEndDate(requestDto.getEventEndDate())
                 .announcement(requestDto.getAnnouncement())
                 .build();
+        eventDetail.setEvent(event);
 
-        // EventReward 엔티티들 생성
+        // EventReward 엔티티들 생성 (팩토리 메서드 활용)
         List<EventReward> eventRewards = createEventRewards(requestDto.getRewards());
         log.info("보상 정보 생성 완료 - 보상 개수: {}", eventRewards.size());
 
@@ -106,11 +115,8 @@ public class EventCreateService {
             
             Integer maxRecipients = calculateMaxRecipients(rewardDto.getConditionValue());
             
-            EventReward eventReward = EventReward.builder()
-                    .conditionValue(rewardDto.getConditionValue())
-                    .rewardValue(rewardDto.getRewardValue())
-                    .maxRecipients(maxRecipients)
-                    .build();
+            // 팩토리 메서드 활용 (빌더 패턴 기반)
+            EventReward eventReward = EventReward.createForEvent(null, rewardDto.getConditionValue(), rewardDto.getRewardValue(), maxRecipients);
             
             eventRewards.add(eventReward);
             

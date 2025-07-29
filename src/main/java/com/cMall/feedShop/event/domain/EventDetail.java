@@ -62,6 +62,22 @@ public class EventDetail extends BaseTimeEntity {
     }
 
     /**
+     * 팩토리 메서드: 이벤트와 함께 상세정보 생성 (빌더 패턴 활용)
+     */
+    public static EventDetail createForEvent(Event event, String title, String description, 
+                                          String participationMethod, String selectionCriteria, String precautions) {
+        EventDetail eventDetail = EventDetail.builder()
+                .title(title)
+                .description(description)
+                .participationMethod(participationMethod)
+                .selectionCriteria(selectionCriteria)
+                .precautions(precautions)
+                .build();
+        eventDetail.setEvent(event);
+        return eventDetail;
+    }
+
+    /**
      * 이벤트 상세 정보 수정 (빌더 패턴 활용)
      */
     public void updateFromDto(com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto dto) {

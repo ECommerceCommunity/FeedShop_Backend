@@ -122,4 +122,29 @@ public class EventReward extends BaseTimeEntity {
     public void setEvent(Event event) {
         this.event = event;
     }
+
+    /**
+     * 팩토리 메서드: 이벤트와 함께 보상 생성 (빌더 패턴 활용)
+     */
+    public static EventReward createForEvent(Event event, String conditionValue, String rewardValue) {
+        EventReward reward = EventReward.builder()
+                .conditionValue(conditionValue)
+                .rewardValue(rewardValue)
+                .build();
+        reward.setEvent(event);
+        return reward;
+    }
+
+    /**
+     * 팩토리 메서드: 최대수령자수와 함께 보상 생성 (빌더 패턴 활용)
+     */
+    public static EventReward createForEvent(Event event, String conditionValue, String rewardValue, Integer maxRecipients) {
+        EventReward reward = EventReward.builder()
+                .conditionValue(conditionValue)
+                .rewardValue(rewardValue)
+                .maxRecipients(maxRecipients)
+                .build();
+        reward.setEvent(event);
+        return reward;
+    }
 }
