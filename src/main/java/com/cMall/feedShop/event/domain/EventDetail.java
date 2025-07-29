@@ -115,6 +115,5 @@ public class EventDetail extends BaseTimeEntity {
         this.selectionCriteria = dto.getSelectionCriteria() != null ? dto.getSelectionCriteria() : this.selectionCriteria;
         this.imageUrl = dto.getImageUrl() != null ? dto.getImageUrl() : this.imageUrl;
         this.precautions = dto.getPrecautions() != null ? dto.getPrecautions() : this.precautions;
-
     }
 }
