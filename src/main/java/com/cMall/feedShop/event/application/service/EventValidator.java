@@ -85,12 +85,18 @@ public class EventValidator {
     //    구매 기간과 이벤트 기간의 관계 검증
     private void validatePurchaseAndEventDateOrder(java.time.LocalDate purchaseStart, java.time.LocalDate purchaseEnd, 
                                                  java.time.LocalDate eventStart, java.time.LocalDate eventEnd) {
-        // 구매 종료일이 이벤트 시작일보다 이전이거나 같아야 함
+        // 구매 종료일이 이벤트 시작일보다 이전이거나 같아야 함 (구매 기간 안에서 이벤트 시작 가능)
         if (purchaseEnd != null && eventStart != null && purchaseEnd.isAfter(eventStart)) {
             throw new IllegalArgumentException("구매 종료일은 이벤트 시작일보다 이전이어야 합니다.");
         }
         
-        // 이벤트 종료일이 발표일보다 이전이어야 함
+        // 이벤트 종료일은 구매 기간 안에 종료할 수 있지만, 구매 기간 안에 종료하면 안됨
+        // 즉, 이벤트 종료일은 구매 종료일 이후여야 함
+        if (purchaseEnd != null && eventEnd != null && eventEnd.isBefore(purchaseEnd)) {
+            throw new IllegalArgumentException("이벤트 종료일은 구매 종료일 이후여야 합니다.");
+        }
+        
+        // 이벤트 종료일은 현재 날짜로부터 30일 이내여야 함
         if (eventEnd != null && eventEnd.isAfter(java.time.LocalDate.now().plusDays(30))) {
             throw new IllegalArgumentException("이벤트 종료일은 현재 날짜로부터 30일 이내여야 합니다.");
         }
