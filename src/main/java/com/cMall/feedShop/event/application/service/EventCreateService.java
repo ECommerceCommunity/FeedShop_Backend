@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -37,9 +36,9 @@ public class EventCreateService {
      * 이벤트를 생성합니다.
      * 
      * @param requestDto 이벤트 생성 요청 DTO
-     * @return 생성된 이벤트 ID
+     * @return 생성된 이벤트 응답 DTO
      */
-    public Long createEvent(EventCreateRequestDto requestDto) {
+    public EventCreateResponseDto createEvent(EventCreateRequestDto requestDto) {
         log.info("이벤트 생성 시작 - 제목: {}", requestDto.getTitle());
         
         // 검증 수행
@@ -55,6 +54,8 @@ public class EventCreateService {
 
         // EventDetail 엔티티 생성
         EventDetail eventDetail = EventDetail.builder()
+                .title(requestDto.getTitle())
+                .description(requestDto.getDescription())
                 .participationMethod(requestDto.getParticipationMethod())
                 .selectionCriteria(requestDto.getSelectionCriteria())
                 .precautions(requestDto.getPrecautions())
@@ -77,7 +78,15 @@ public class EventCreateService {
         Event savedEvent = eventRepository.save(event);
         log.info("이벤트 생성 완료 - ID: {}, 제목: {}", savedEvent.getId(), requestDto.getTitle());
 
-        return savedEvent.getId();
+        // 응답 DTO 생성
+        return EventCreateResponseDto.builder()
+                .eventId(savedEvent.getId())
+                .title(requestDto.getTitle())
+                .type(savedEvent.getType().name().toLowerCase())
+                .status(savedEvent.getStatus().name().toLowerCase())
+                .maxParticipants(savedEvent.getMaxParticipants())
+                .createdAt(savedEvent.getCreatedAt())
+                .build();
     }
 
     /**
