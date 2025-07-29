@@ -70,8 +70,9 @@ public class EventMapper {
     private List<EventSummaryDto.Reward> mapRewards(Event event) {
         return event.getRewards() != null ? event.getRewards().stream()
                 .map(r -> EventSummaryDto.Reward.builder()
-                        .rank(r.getConditionValue())
+                        .rank(r.isRankCondition() ? r.getRank() : null)
                         .reward(r.getRewardValue())
+                        .conditionType(r.getConditionType())
                         .build())
                 .toList() : Collections.emptyList();
     }
@@ -83,11 +84,10 @@ public class EventMapper {
     }
 
     private EventDetailResponseDto.RewardDto toRewardDto(EventReward reward) {
-        RewardType rewardType = reward.getRewardType();
         return EventDetailResponseDto.RewardDto.builder()
-                .rank(reward.getConditionValue())
+                .rank(reward.isRankCondition() ? reward.getRank() : null)
                 .reward(reward.getRewardValue())
-                .rewardType(rewardType != null ? rewardType.getType().name() : null)
+                .conditionType(reward.getConditionType())
                 .maxRecipients(reward.getMaxRecipients())
                 .build();
     }
@@ -128,7 +128,7 @@ public class EventMapper {
     }
 
     /**
-     * 실시간으로 계산된 상태 반환 (새로운 방식)
+     * 실시간으로 계산된 상태 반환
      */
     private String getRealTimeEventStatus(Event event) {
         if (event.getStatus() == null) {

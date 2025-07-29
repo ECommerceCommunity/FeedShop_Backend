@@ -42,7 +42,7 @@ public class EventCreateRequestDto {
     @AllArgsConstructor
     @Builder
     public static class EventRewardRequestDto {
-        private Integer conditionValue; // 순위 (1, 2, 3...)
-        private String rewardValue;     // 보상 내용
+        private String conditionValue; // "1", "2", "3", "participation", "voters", "views", "likes", "random"
+        private String rewardValue;    // 보상 내용
     }
 } 

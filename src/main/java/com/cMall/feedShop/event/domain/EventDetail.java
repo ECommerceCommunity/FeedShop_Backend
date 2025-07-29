@@ -55,8 +55,7 @@ public class EventDetail extends BaseTimeEntity {
     @Column(name = "precautions", columnDefinition = "TEXT")
     private String precautions;
 
-    @Column(name = "rewards", columnDefinition = "TEXT")
-    private String rewards;
+
 
     public void setEvent(Event event) {
         this.event = event;
@@ -77,6 +76,6 @@ public class EventDetail extends BaseTimeEntity {
         this.selectionCriteria = dto.getSelectionCriteria() != null ? dto.getSelectionCriteria() : this.selectionCriteria;
         this.imageUrl = dto.getImageUrl() != null ? dto.getImageUrl() : this.imageUrl;
         this.precautions = dto.getPrecautions() != null ? dto.getPrecautions() : this.precautions;
-        this.rewards = dto.getRewards() != null ? dto.getRewards() : this.rewards;
+
     }
 }

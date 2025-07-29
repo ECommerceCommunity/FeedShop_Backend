@@ -1,6 +1,5 @@
 package com.cMall.feedShop.event.domain;
 
-import com.cMall.feedShop.event.domain.enums.ConditionType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,31 +23,49 @@ public class EventReward extends BaseTimeEntity {
     @JoinColumn(name = "event_id", nullable = false)
     private Event event;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reward_id", nullable = false)
-    private RewardType rewardType;
+    @Column(name = "condition_value", nullable = false, length = 50)
+    private String conditionValue; // "1", "2", "3", "participation", "voters", "views", "likes", "random"
 
-    @Column(name = "feed_id")
-    private Long feedId; // FK 연결 가능
-
-    @Column(name = "userprofile_id")
-    private Long userProfileId; // FK 연결 가능
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "condition_type", nullable = false)
-    private ConditionType conditionType;
-
-    @Column(name = "condition_value")
-    private Integer conditionValue;
-
-    @Column(name = "reward_value")
-    private String rewardValue;
+    @Column(name = "reward_value", nullable = false, columnDefinition = "TEXT")
+    private String rewardValue; // 보상 내용
 
     @Column(name = "max_recipients")
-    private Integer maxRecipients;
+    private Integer maxRecipients = 1; // 기본값 1
 
     // 연관관계 설정 메서드
     public void setEvent(Event event) {
         this.event = event;
+    }
+
+    /**
+     * 조건값이 등수인지 확인
+     */
+    public boolean isRankCondition() {
+        try {
+            Integer.parseInt(conditionValue);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 등수 반환 (등수 조건인 경우)
+     */
+    public Integer getRank() {
+        if (isRankCondition()) {
+            return Integer.parseInt(conditionValue);
+        }
+        return null;
+    }
+
+    /**
+     * 조건 타입 반환
+     */
+    public String getConditionType() {
+        if (isRankCondition()) {
+            return "RANK";
+        }
+        return conditionValue.toUpperCase();
     }
 }

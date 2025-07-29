@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,5 +87,65 @@ class EventUpdateServiceTest {
         assertThatThrownBy(() -> eventUpdateService.updateEvent(dto))
                 .isInstanceOf(EventNotFoundException.class)
                 .hasMessageContaining("2");
+    }
+
+    @Test
+    @DisplayName("이벤트 타입 수정 성공")
+    void updateEvent_TypeUpdate_Success() {
+        // Given
+        EventUpdateRequestDto dto = EventUpdateRequestDto.builder()
+                .eventId(1L)
+                .type(EventType.MISSION)
+                .build();
+        when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+        // When
+        eventUpdateService.updateEvent(dto);
+
+        // Then
+        assertThat(event.getType()).isEqualTo(EventType.MISSION);
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("최대 참여자 수 수정 성공")
+    void updateEvent_MaxParticipantsUpdate_Success() {
+        // Given
+        EventUpdateRequestDto dto = EventUpdateRequestDto.builder()
+                .eventId(1L)
+                .maxParticipants(200)
+                .build();
+        when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+        // When
+        eventUpdateService.updateEvent(dto);
+
+        // Then
+        assertThat(event.getMaxParticipants()).isEqualTo(200);
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("소프트 딜리트된 이벤트 수정 실패")
+    void updateEvent_SoftDeletedEvent_NotFound() {
+        // Given: 소프트 딜리트된 이벤트
+        Event softDeletedEvent = Event.builder()
+                .id(3L)
+                .type(EventType.BATTLE)
+                .status(EventStatus.ENDED)
+                .deletedAt(LocalDateTime.now()) // 소프트 딜리트됨
+                .build();
+        
+        EventUpdateRequestDto dto = EventUpdateRequestDto.builder()
+                .eventId(3L)
+                .title("수정된 제목")
+                .build();
+        when(eventRepository.findDetailById(3L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> eventUpdateService.updateEvent(dto))
+                .isInstanceOf(EventNotFoundException.class);
     }
 } 

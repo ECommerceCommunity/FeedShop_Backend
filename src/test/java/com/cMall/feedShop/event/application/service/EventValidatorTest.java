@@ -290,16 +290,16 @@ class EventValidatorTest {
     @Test
     @DisplayName("이벤트 종료일이 구매 종료일 이전인 경우 예외 발생")
     void validateEventCreateRequest_EventEndBeforePurchaseEnd() {
-        // Given
+        // Given: purchaseStart < eventStart < purchaseEnd > eventEnd (실패 유도)
         validRequestDto = EventCreateRequestDto.builder()
                 .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
                 .maxParticipants(10)
                 .purchaseStartDate(LocalDate.now())
-                .purchaseEndDate(LocalDate.now().plusDays(7))
-                .eventStartDate(LocalDate.now().plusDays(3))
-                .eventEndDate(LocalDate.now().plusDays(5)) // 구매 종료일(7일) 이전에 종료
+                .purchaseEndDate(LocalDate.now().plusDays(5))
+                .eventStartDate(LocalDate.now().plusDays(1)) // purchaseStart < eventStart
+                .eventEndDate(LocalDate.now().plusDays(4))   // eventEnd < purchaseEnd (실패 유도)
                 .rewards(List.of(
                     EventCreateRequestDto.EventRewardRequestDto.builder()
                         .conditionValue(1)
@@ -314,18 +314,18 @@ class EventValidatorTest {
     }
 
     @Test
-    @DisplayName("이벤트 시작일이 구매 종료일 이후인 경우 예외 발생")
+    @DisplayName("이벤트 시작일이 구매 시작일 이전인 경우 예외 발생")
     void validateEventCreateRequest_EventStartAfterPurchaseEnd() {
-        // Given
+        // Given: eventStart < purchaseStart (실패 유도)
         validRequestDto = EventCreateRequestDto.builder()
                 .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
                 .maxParticipants(10)
-                .purchaseStartDate(LocalDate.now())
-                .purchaseEndDate(LocalDate.now().plusDays(5))
-                .eventStartDate(LocalDate.now().plusDays(7)) // 구매 종료일(5일) 이후에 시작
-                .eventEndDate(LocalDate.now().plusDays(10))
+                .purchaseStartDate(LocalDate.now().plusDays(5))
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(3)) // eventStart < purchaseStart (실패 유도)
+                .eventEndDate(LocalDate.now().plusDays(12))
                 .rewards(List.of(
                     EventCreateRequestDto.EventRewardRequestDto.builder()
                         .conditionValue(1)
@@ -336,22 +336,22 @@ class EventValidatorTest {
         // When & Then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("구매 종료일은 이벤트 시작일보다 이전이어야 합니다.");
+                .hasMessage("이벤트 시작일은 구매 시작일 이후나 당일이어야 합니다.");
     }
 
     @Test
     @DisplayName("유효한 날짜 범위 검증 성공")
     void validateEventCreateRequest_ValidDateRange() {
-        // Given: 구매 기간 안에서 이벤트 시작, 구매 종료일 이후에 이벤트 종료
+        // Given: purchaseEnd < eventStart < eventEnd > purchaseEnd
         validRequestDto = EventCreateRequestDto.builder()
                 .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
                 .maxParticipants(10)
                 .purchaseStartDate(LocalDate.now())
-                .purchaseEndDate(LocalDate.now().plusDays(7))
-                .eventStartDate(LocalDate.now().plusDays(3)) // 구매 기간 안에서 시작
-                .eventEndDate(LocalDate.now().plusDays(10)) // 구매 종료일 이후에 종료
+                .purchaseEndDate(LocalDate.now().plusDays(5))
+                .eventStartDate(LocalDate.now().plusDays(6)) // purchaseEnd < eventStart
+                .eventEndDate(LocalDate.now().plusDays(10))  // eventEnd > purchaseEnd
                 .rewards(List.of(
                     EventCreateRequestDto.EventRewardRequestDto.builder()
                         .conditionValue(1)

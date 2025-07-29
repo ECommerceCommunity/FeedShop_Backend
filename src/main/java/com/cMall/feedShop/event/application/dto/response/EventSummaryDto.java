@@ -35,5 +35,6 @@ public class EventSummaryDto {
     public static class Reward {
         private Integer rank;
         private String reward;
+        private String conditionType; // "RANK", "PARTICIPATION", "VOTERS", "VIEWS", "LIKES", "RANDOM"
     }
 } 

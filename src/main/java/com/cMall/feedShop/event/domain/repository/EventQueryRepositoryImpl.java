@@ -42,7 +42,15 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         builder.and(event.deletedAt.isNull());
         
         if (StringUtils.hasText(requestDto.getStatus()) && !"all".equalsIgnoreCase(requestDto.getStatus())) {
-            builder.and(event.status.eq(EventStatus.valueOf(requestDto.getStatus().toUpperCase())));
+            // 상태별 필터링: upcoming, ongoing, completed
+            String status = requestDto.getStatus().toLowerCase();
+            if ("upcoming".equals(status)) {
+                builder.and(event.status.eq(EventStatus.UPCOMING));
+            } else if ("ongoing".equals(status)) {
+                builder.and(event.status.eq(EventStatus.ONGOING));
+            } else if ("completed".equals(status)) {
+                builder.and(event.status.eq(EventStatus.ENDED));
+            }
         }
         if (StringUtils.hasText(requestDto.getType()) && !"all".equalsIgnoreCase(requestDto.getType())) {
             builder.and(event.type.eq(EventType.valueOf(requestDto.getType().toUpperCase())));
@@ -54,25 +62,32 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         // 동적 정렬 처리
         OrderSpecifier<?> orderSpecifier = getOrderSpecifier(requestDto, event, detail);
 
-        // 메인 쿼리: Event + Details join, rewards는 서브쿼리로 추출
+        // 메인 쿼리: Event + Details + Rewards join
+        QEventReward reward = QEventReward.eventReward;
+        QRewardType rewardType = QRewardType.rewardType;
+        
         List<Event> events = queryFactory
                 .selectFrom(event)
                 .leftJoin(event.eventDetail, detail).fetchJoin()
+                .leftJoin(event.rewards, reward).fetchJoin()
+                .leftJoin(reward.rewardType, rewardType).fetchJoin()
                 .where(builder)
                 .orderBy(orderSpecifier)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // 전체 개수
-        long total = queryFactory.select(event.count())
+        // 전체 개수 (rewards join으로 인한 중복 제거)
+        long total = queryFactory.select(event.countDistinct())
                 .from(event)
                 .leftJoin(event.eventDetail, detail)
+                .leftJoin(event.rewards, reward)
                 .where(builder)
                 .fetchOne();
 
         // rewards 매핑: 각 이벤트별로 EventReward를 조회하여 등수별 보상 리스트로 변환
         List<Event> pagedEvents = events;
+        
         // 실제 서비스에서는 DTO로 변환하여 반환해야 함
         // (여기서는 Event만 반환, Service에서 toSummaryDto에서 rewards 매핑 구현 필요)
         return new PageImpl<>(pagedEvents, pageable, total);
@@ -102,12 +117,12 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         if (sort == null || sort.equalsIgnoreCase("latest")) {
             // 최신순: 생성일 내림차순
             return new OrderSpecifier<>(Order.DESC, event.createdAt);
-        } else if (sort.equalsIgnoreCase("ending")) {
-            // 종료임박순: 이벤트 종료일 오름차순
-            return new OrderSpecifier<>(Order.ASC, detail.eventEndDate);
-        } else if (sort.equalsIgnoreCase("participants")) {
-            // 참여자순: 최대 참여자수 내림차순
-            return new OrderSpecifier<>(Order.DESC, event.maxParticipants);
+        } else if (sort.equalsIgnoreCase("upcoming")) {
+            // 예정순: 이벤트 시작일 오름차순
+            return new OrderSpecifier<>(Order.ASC, detail.eventStartDate);
+        } else if (sort.equalsIgnoreCase("past")) {
+            // 지난순: 이벤트 종료일 내림차순
+            return new OrderSpecifier<>(Order.DESC, detail.eventEndDate);
         }
         // 기본값: 최신순
         return new OrderSpecifier<>(Order.DESC, event.createdAt);

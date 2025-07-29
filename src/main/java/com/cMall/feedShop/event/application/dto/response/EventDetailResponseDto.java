@@ -34,7 +34,7 @@ public class EventDetailResponseDto {
     public static class RewardDto {
         private Integer rank;
         private String reward;
-        private String rewardType;
+        private String conditionType; // "RANK", "PARTICIPATION", "VOTERS", "VIEWS", "LIKES", "RANDOM"
         private Integer maxRecipients;
     }
 } 

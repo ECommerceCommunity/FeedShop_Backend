@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.argThat;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EventCreateService 테스트")
@@ -130,17 +132,41 @@ class EventCreateServiceTest {
                 .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(100)
-                .rewards(null)
+                .maxParticipants(10)
+                .eventStartDate(LocalDate.now().plusDays(1))
+                .eventEndDate(LocalDate.now().plusDays(7))
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(5))
+                .rewards(List.of()) // 빈 리워드 리스트
                 .build();
-        
+
         when(eventRepository.save(any(Event.class))).thenReturn(savedEvent);
 
         // When
-        EventCreateResponseDto result = eventCreateService.createEvent(validRequestDto);
+        EventCreateResponseDto response = eventCreateService.createEvent(validRequestDto);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getEventId()).isEqualTo(1L);
+        assertThat(response).isNotNull();
+        assertThat(response.getEventId()).isEqualTo(1L);
+        verify(eventRepository).save(any(Event.class));
+    }
+
+    @Test
+    @DisplayName("생성된 이벤트는 소프트 딜리트되지 않음")
+    void createEvent_NotSoftDeleted() {
+        // Given
+        when(eventRepository.save(any(Event.class))).thenReturn(savedEvent);
+
+        // When
+        EventCreateResponseDto response = eventCreateService.createEvent(validRequestDto);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getEventId()).isEqualTo(1L);
+        
+        // 저장된 이벤트가 소프트 딜리트되지 않았는지 확인
+        verify(eventRepository).save(argThat(event -> {
+            return event.getDeletedAt() == null; // deletedAt이 null이어야 함
+        }));
     }
 } 
