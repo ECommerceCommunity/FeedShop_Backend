@@ -7,7 +7,7 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.QEvent;
 import com.cMall.feedShop.event.domain.QEventDetail;
 import com.cMall.feedShop.event.domain.QEventReward;
-import com.cMall.feedShop.event.domain.QRewardType;
+
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.querydsl.core.BooleanBuilder;
@@ -64,13 +64,11 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
 
         // 메인 쿼리: Event + Details + Rewards join
         QEventReward reward = QEventReward.eventReward;
-        QRewardType rewardType = QRewardType.rewardType;
         
         List<Event> events = queryFactory
                 .selectFrom(event)
                 .leftJoin(event.eventDetail, detail).fetchJoin()
                 .leftJoin(event.rewards, reward).fetchJoin()
-                .leftJoin(reward.rewardType, rewardType).fetchJoin()
                 .where(builder)
                 .orderBy(orderSpecifier)
                 .offset(pageable.getOffset())
@@ -98,13 +96,11 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         QEvent event = QEvent.event;
         QEventDetail detail = QEventDetail.eventDetail;
         QEventReward reward = QEventReward.eventReward;
-        QRewardType rewardType = QRewardType.rewardType;
 
         Event result = queryFactory
                 .selectFrom(event)
                 .leftJoin(event.eventDetail, detail).fetchJoin()
                 .leftJoin(event.rewards, reward).fetchJoin()
-                .leftJoin(reward.rewardType, rewardType).fetchJoin()
                 .where(event.id.eq(id)
                         .and(event.deletedAt.isNull())) // 삭제되지 않은 이벤트만 조회
                 .fetchOne();
