@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("이벤트 검증 서비스 테스트")
@@ -286,6 +287,79 @@ class EventValidatorTest {
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("2번째 보상의 조건값이 유효하지 않습니다: invalid");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 조건값 유효성 검증 성공")
+    void validateRewardRequestDto_ValidConditionValue_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("1")
+                .rewardValue("1등 상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isTrue();
+        reward.validateConditionValue(); // 예외 발생하지 않음
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 특별 조건값 유효성 검증 성공")
+    void validateRewardRequestDto_ValidSpecialCondition_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("participation")
+                .rewardValue("참여자 전원")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isTrue();
+        reward.validateConditionValue(); // 예외 발생하지 않음
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 유효하지 않은 조건값 검증 실패")
+    void validateRewardRequestDto_InvalidConditionValue_Failure() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("invalid")
+                .rewardValue("상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isFalse();
+        assertThatThrownBy(() -> reward.validateConditionValue())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 보상 조건값입니다: invalid");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 등수 범위 초과 검증 실패")
+    void validateRewardRequestDto_RankOutOfRange_Failure() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("11")
+                .rewardValue("상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isFalse();
+        assertThatThrownBy(() -> reward.validateConditionValue())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("보상 등수는 1~10 사이여야 합니다: 11");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 전체 검증 성공")
+    void validateRewardRequestDto_CompleteValidation_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("1")
+                .rewardValue("1등 상품")
+                .build();
+
+        // when & then
+        reward.validate(); // 예외 발생하지 않음
     }
 
     // Helper methods

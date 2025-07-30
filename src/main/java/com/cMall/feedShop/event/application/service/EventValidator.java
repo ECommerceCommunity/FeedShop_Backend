@@ -113,36 +113,12 @@ public class EventValidator {
      * 개별 보상 검증
      */
     private void validateReward(EventCreateRequestDto.EventRewardRequestDto reward, int index) {
-        // 조건값 검증
-        if (reward.getConditionValue() == null || reward.getConditionValue().trim().isEmpty()) {
-            throw new IllegalArgumentException(index + "번째 보상의 조건값을 입력해주세요.");
-        }
-
-        // 조건값 유효성 검증
-        RewardConditionType conditionType = RewardConditionType.fromString(reward.getConditionValue());
-        if (conditionType == null) {
-            throw new IllegalArgumentException(index + "번째 보상의 조건값이 유효하지 않습니다: " + reward.getConditionValue());
-        }
-
-        // 등수 조건인 경우 숫자 검증
-        if (conditionType.isRank()) {
-            try {
-                int rank = Integer.parseInt(reward.getConditionValue());
-                if (rank < 1 || rank > 10) {
-                    throw new IllegalArgumentException(index + "번째 보상의 등수는 1~10 사이여야 합니다.");
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException(index + "번째 보상의 등수가 유효하지 않습니다: " + reward.getConditionValue());
-            }
-        }
-
-        // 보상 내용 검증
-        if (reward.getRewardValue() == null || reward.getRewardValue().trim().isEmpty()) {
-            throw new IllegalArgumentException(index + "번째 보상의 내용을 입력해주세요.");
-        }
-
-        if (reward.getRewardValue().length() > 200) {
-            throw new IllegalArgumentException(index + "번째 보상의 내용은 200자 이하여야 합니다.");
+        try {
+            // 비즈니스 로직 검증만 수행 (기본 검증은 @NotBlank, @Size로 처리됨)
+            reward.validate();
+        } catch (IllegalArgumentException e) {
+            // 인덱스 정보를 포함하여 예외 메시지 개선
+            throw new IllegalArgumentException(index + "번째 " + e.getMessage());
         }
     }
 } 
