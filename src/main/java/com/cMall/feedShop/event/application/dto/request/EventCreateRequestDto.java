@@ -8,6 +8,7 @@ import lombok.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -40,6 +41,8 @@ public class EventCreateRequestDto {
     private LocalDate announcement;
     
     // 이벤트 보상 정보 (FormData 배열 파라미터로 전송)
+    @Valid
+    @Size(min = 1, max = 5, message = "보상은 최소 1개, 최대 5개까지 입력할 수 있습니다.")
     @Builder.Default
     private List<EventRewardRequestDto> rewards = new ArrayList<>();
     

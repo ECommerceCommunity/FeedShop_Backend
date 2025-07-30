@@ -95,14 +95,8 @@ public class EventValidator {
      * 보상 정보 검증
      */
     private void validateRewards(List<EventCreateRequestDto.EventRewardRequestDto> rewards) {
-        if (rewards == null || rewards.isEmpty()) {
-            throw new IllegalArgumentException("최소 1개의 보상을 입력해주세요.");
-        }
-
-        if (rewards.size() > 5) {
-            throw new IllegalArgumentException("보상은 최대 5개까지 입력할 수 있습니다.");
-        }
-
+        // 개수 검증은 @Size 어노테이션으로 처리됨 (min=1, max=5)
+        // 개별 보상의 비즈니스 로직 검증만 수행
         for (int i = 0; i < rewards.size(); i++) {
             EventCreateRequestDto.EventRewardRequestDto reward = rewards.get(i);
             validateReward(reward, i + 1);

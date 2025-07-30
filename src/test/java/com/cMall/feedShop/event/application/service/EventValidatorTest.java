@@ -126,7 +126,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("최소 1개의 보상을 입력해주세요.");
+                .hasMessageContaining("보상은 최소 1개");
     }
 
     @Test
@@ -145,7 +145,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("보상은 최대 5개까지 입력할 수 있습니다.");
+                .hasMessageContaining("보상은 최대 5개");
     }
 
     @Test
