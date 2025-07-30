@@ -50,7 +50,6 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     public UserLoginResponse login(UserLoginRequest request) {
         // Spring Security의 AuthenticationManager를 사용하여 인증 시도
-        // React에서 email을 보내고 있으므로, email을 사용자명으로 사용합니다.
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
 

@@ -33,7 +33,8 @@ public class EmailServiceImpl implements EmailService {
         this.domain = domain;
         this.fromEmail = fromEmail;
         this.mailgunMessagesApi = mailgunMessagesApi;
-        logger.info("EmailServiceImpl 초기화됨: apiKey: {}, domain: {}", apiKey, domain);
+        logger.info("EmailServiceImpl 초기화됨: domain: {}", domain);
+        logger.info("EmailServiceImpl 초기화됨: apiKey 존재 여부: {}", (apiKey != null && !apiKey.isEmpty()));
     }
 
     // 환경 변수 검증
