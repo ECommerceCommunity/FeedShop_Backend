@@ -62,7 +62,6 @@ class EventUpdateServiceTest {
                 .description("수정된 설명")
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
 
         // When
         eventUpdateService.updateEvent(dto);
@@ -70,7 +69,7 @@ class EventUpdateServiceTest {
         // Then
         assertThat(event.getEventDetail().getTitle()).isEqualTo("수정된 제목");
         assertThat(event.getEventDetail().getDescription()).isEqualTo("수정된 설명");
-        verify(eventRepository).save(event);
+        // JPA Dirty Checking으로 자동 처리되므로 save() 호출 검증 제거
     }
 
     @Test
@@ -98,14 +97,13 @@ class EventUpdateServiceTest {
                 .type(EventType.MISSION)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
 
         // When
         eventUpdateService.updateEvent(dto);
 
         // Then
         assertThat(event.getType()).isEqualTo(EventType.MISSION);
-        verify(eventRepository).save(event);
+        // JPA Dirty Checking으로 자동 처리되므로 save() 호출 검증 제거
     }
 
     @Test
@@ -117,14 +115,13 @@ class EventUpdateServiceTest {
                 .maxParticipants(200)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
 
         // When
         eventUpdateService.updateEvent(dto);
 
         // Then
         assertThat(event.getMaxParticipants()).isEqualTo(200);
-        verify(eventRepository).save(event);
+        // JPA Dirty Checking으로 자동 처리되므로 save() 호출 검증 제거
     }
 
     @Test

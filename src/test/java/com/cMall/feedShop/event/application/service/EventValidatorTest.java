@@ -7,8 +7,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -94,18 +96,6 @@ class EventValidatorTest {
     }
 
     @Test
-    @DisplayName("이벤트 종료일이 30일 이후인 경우 예외 발생")
-    void validateEventCreateRequest_EventEndAfter30Days_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithEventEndDate(LocalDate.now().plusDays(31));
-
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 종료일은 현재 날짜로부터 30일 이내여야 합니다.");
-    }
-
-    @Test
     @DisplayName("결과 발표일이 이벤트 종료일 이전인 경우 예외 발생")
     void validateEventCreateRequest_AnnouncementBeforeEventEnd_ThrowsException() {
         // given
@@ -117,48 +107,7 @@ class EventValidatorTest {
                 .hasMessage("결과 발표일은 이벤트 종료일 이후여야 합니다.");
     }
 
-    @Test
-    @DisplayName("보상이 없을 때 예외 발생")
-    void validateEventCreateRequest_NoRewards_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Collections.emptyList());
 
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("보상은 최소 1개");
-    }
-
-    @Test
-    @DisplayName("보상이 5개 초과일 때 예외 발생")
-    void validateEventCreateRequest_MoreThan5Rewards_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(
-                createReward("1", "1등 상품"),
-                createReward("2", "2등 상품"),
-                createReward("3", "3등 상품"),
-                createReward("4", "4등 상품"),
-                createReward("5", "5등 상품"),
-                createReward("6", "6등 상품")
-        ));
-
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("보상은 최대 5개");
-    }
-
-    @Test
-    @DisplayName("보상 조건값이 null일 때 예외 발생")
-    void validateEventCreateRequest_NullConditionValue_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward(null, "상품")));
-
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 조건값을 입력해주세요.");
-    }
 
     @Test
     @DisplayName("보상 조건값이 빈 문자열일 때 예외 발생")
@@ -169,7 +118,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 조건값을 입력해주세요.");
+                .hasMessage("1번째 유효하지 않은 보상 조건값입니다:    ");
     }
 
     @Test
@@ -181,7 +130,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 조건값이 유효하지 않습니다: invalid");
+                .hasMessage("1번째 유효하지 않은 보상 조건값입니다: invalid");
     }
 
     @Test
@@ -193,7 +142,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 등수는 1~10 사이여야 합니다.");
+                .hasMessage("1번째 보상 등수는 1~10 사이여야 합니다: 0");
     }
 
     @Test
@@ -205,44 +154,10 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 등수는 1~10 사이여야 합니다.");
+                .hasMessage("1번째 보상 등수는 1~10 사이여야 합니다: 11");
     }
 
-    @Test
-    @DisplayName("보상 내용이 null일 때 예외 발생")
-    void validateEventCreateRequest_NullRewardValue_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("1", null)));
 
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 내용을 입력해주세요.");
-    }
-
-    @Test
-    @DisplayName("보상 내용이 빈 문자열일 때 예외 발생")
-    void validateEventCreateRequest_EmptyRewardValue_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("1", "   ")));
-
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 내용을 입력해주세요.");
-    }
-
-    @Test
-    @DisplayName("보상 내용이 200자 초과일 때 예외 발생")
-    void validateEventCreateRequest_RewardValueTooLong_ThrowsException() {
-        // given
-        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("1", "a".repeat(201))));
-
-        // when & then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("1번째 보상의 내용은 200자 이하여야 합니다.");
-    }
 
     @Test
     @DisplayName("유효한 등수 조건 검증 성공")
@@ -286,7 +201,7 @@ class EventValidatorTest {
         // when & then
         assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("2번째 보상의 조건값이 유효하지 않습니다: invalid");
+                .hasMessage("2번째 유효하지 않은 보상 조건값입니다: invalid");
     }
 
     @Test

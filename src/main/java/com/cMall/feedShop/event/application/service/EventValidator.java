@@ -48,16 +48,21 @@ public class EventValidator {
      * 날짜 순서 검증
      */
     private void validateDateOrder(EventCreateRequestDto requestDto) {
+        // 1. 구매/이벤트 기간 순서 검증
         validatePurchaseAndEventDateOrder(
             requestDto.getPurchaseStartDate(),
             requestDto.getPurchaseEndDate(),
             requestDto.getEventStartDate(),
             requestDto.getEventEndDate()
         );
-        validateEventAndAnnouncementDateOrder(
-            requestDto.getEventEndDate(),
-            requestDto.getAnnouncement()
-        );
+        
+        // 2. 발표일 검증은 조건부로 실행
+        if (requestDto.getEventEndDate() != null) { // eventEnd가 유효한 경우에만 발표일 검증
+            validateEventAndAnnouncementDateOrder(
+                requestDto.getEventEndDate(),
+                requestDto.getAnnouncement()
+            );
+        }
     }
 
     /**
@@ -65,16 +70,13 @@ public class EventValidator {
      */
     private void validatePurchaseAndEventDateOrder(LocalDate purchaseStart, LocalDate purchaseEnd,
                                                    LocalDate eventStart, LocalDate eventEnd) {
+        // 날짜 순서 검증
         List<String> errors = new java.util.ArrayList<>();
-        
         if (purchaseStart != null && eventStart != null && eventStart.isBefore(purchaseStart)) {
             errors.add("이벤트 시작일은 구매 시작일 이후나 당일이어야 합니다.");
         }
         if (purchaseEnd != null && eventEnd != null && eventEnd.isBefore(purchaseEnd)) {
             errors.add("이벤트 종료일은 구매 종료일 이후여야 합니다.");
-        }
-        if (eventEnd != null && eventEnd.isAfter(TimeUtil.nowDate().plusDays(30))) {
-            errors.add("이벤트 종료일은 현재 날짜로부터 30일 이내여야 합니다.");
         }
         
         if (!errors.isEmpty()) {
