@@ -118,5 +118,3 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # JWT_SECRET과 APP_VERIFICATION_URL은 SonarCloud 분석 자체에는 직접적으로 필요하지 않으므로 제거했습니다.
-          # 만약 SonarCloud 분석 중에도 이 변수들이 필요하다면 다시 추가해야 합니다.
