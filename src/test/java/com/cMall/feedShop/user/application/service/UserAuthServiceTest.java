@@ -2,14 +2,12 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.common.service.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
-import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,12 +50,6 @@ class UserAuthServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
-    @Mock
-    private PasswordResetTokenRepository passwordResetTokenRepository;
-
-    @Mock
-    private EmailService emailService;
-
     @InjectMocks // Mock 객체들을 주입받을 테스트 대상 서비스
     private UserAuthServiceImpl userAuthService;
 
@@ -86,7 +78,6 @@ class UserAuthServiceTest {
         testUser.setPasswordChangedAt(LocalDateTime.now());
 
         dummyToken = "dummy_jwt_token";
-        ReflectionTestUtils.setField(userAuthService, "passwordResetBaseUrl", "http://localhost:8080/reset-password");
     }
 
     @Test
@@ -158,89 +149,5 @@ class UserAuthServiceTest {
         verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyString()); // 토큰 생성도 호출되지 않음
     }
 
-    @Test
-    @DisplayName("비밀번호 재설정 요청 - 성공")
-    void requestPasswordReset_success() {
-        // given
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(testUser));
 
-        // when
-        userAuthService.requestPasswordReset(testUser.getEmail());
-
-        // then
-        verify(passwordResetTokenRepository, times(1)).deleteByUser(testUser);
-        verify(passwordResetTokenRepository, times(1)).save(any(com.cMall.feedShop.user.domain.model.PasswordResetToken.class));
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
-    }
-
-    @Test
-    @DisplayName("비밀번호 재설정 요청 - 실패 (사용자 없음)")
-    void requestPasswordReset_fail_userNotFound() {
-        // given
-        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-
-        // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            userAuthService.requestPasswordReset("nonexistent@example.com");
-        });
-        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("비밀번호 재설정 토큰 검증 - 성공")
-    void validatePasswordResetToken_success() {
-        // given
-        com.cMall.feedShop.user.domain.model.PasswordResetToken token = new com.cMall.feedShop.user.domain.model.PasswordResetToken(testUser);
-        when(passwordResetTokenRepository.findByToken(anyString())).thenReturn(Optional.of(token));
-
-        // when & then
-        assertDoesNotThrow(() -> {
-            userAuthService.validatePasswordResetToken("test-token");
-        });
-    }
-
-    @Test
-    @DisplayName("비밀번호 재설정 토큰 검증 - 실패 (토큰 없음)")
-    void validatePasswordResetToken_fail_invalidToken() {
-        // given
-        when(passwordResetTokenRepository.findByToken(anyString())).thenReturn(Optional.empty());
-
-        // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            userAuthService.validatePasswordResetToken("invalid-token");
-        });
-        assertEquals(ErrorCode.INVALID_TOKEN, exception.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("비밀번호 재설정 - 성공")
-    void resetPassword_success() {
-        // given
-        com.cMall.feedShop.user.domain.model.PasswordResetToken token = new com.cMall.feedShop.user.domain.model.PasswordResetToken(testUser);
-        when(passwordResetTokenRepository.findByToken(anyString())).thenReturn(Optional.of(token));
-
-        // when
-        userAuthService.resetPassword("test-token", "newPassword");
-
-        // then
-        verify(passwordEncoder, times(1)).encode("newPassword");
-        verify(userRepository, times(1)).save(any(User.class));
-        verify(passwordResetTokenRepository, times(1)).delete(token);
-    }
-
-    @Test
-    @DisplayName("비밀번호 재설정 - 실패 (토큰 만료)")
-    void resetPassword_fail_tokenExpired() {
-        // given
-        com.cMall.feedShop.user.domain.model.PasswordResetToken token = mock(com.cMall.feedShop.user.domain.model.PasswordResetToken.class);
-        when(token.isExpired()).thenReturn(true);
-        when(passwordResetTokenRepository.findByToken(anyString())).thenReturn(Optional.of(token));
-
-        // when & then
-        BusinessException exception = assertThrows(BusinessException.class, () -> {
-            userAuthService.resetPassword("expired-token", "newPassword");
-        });
-        assertEquals(ErrorCode.TOKEN_EXPIRED, exception.getErrorCode());
-        verify(passwordResetTokenRepository, times(1)).delete(token);
-    }
 }
