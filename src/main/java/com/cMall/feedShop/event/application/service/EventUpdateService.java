@@ -70,7 +70,8 @@ public class EventUpdateService {
         // 상태 자동 업데이트
         event.updateStatusAutomatically();
         
-        // 저장 (변경사항이 자동으로 감지됨)
-        eventRepository.save(event);
+        // JPA Dirty Checking으로 자동 변경사항 감지 및 DB 반영
+        // @Transactional에 의해 트랜잭션 종료 시 자동 커밋됨
+        // eventRepository.save(event); // 불필요 - 영속 상태에서 자동 처리됨
     }
 } 
