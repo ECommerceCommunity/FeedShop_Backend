@@ -7,6 +7,7 @@ import lombok.*;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -19,6 +20,8 @@ public class EventCreateRequestDto {
     
     // 이벤트 기본 정보
     private EventType type;
+    
+    @Min(value = 1, message = "최대 참여자 수는 1명 이상이어야 합니다.")
     private Integer maxParticipants;
     
     // 이벤트 상세 정보
