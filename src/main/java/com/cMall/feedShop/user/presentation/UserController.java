@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users") // 사용자 리소스에 대한 기본 경로
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserProfileService userProfileService;

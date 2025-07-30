@@ -5,6 +5,7 @@ import com.cMall.feedShop.user.infrastructure.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -30,6 +31,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Profile("prod")
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -39,7 +41,7 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
+                .requiresChannel(channel -> channel.anyRequest().requiresSecure())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // 예외 처리 (인증되지 않은 사용자가 보호된 리소스에 접근 시 처리)
@@ -53,22 +55,22 @@ public class SecurityConfig {
                     // 이벤트 생성(POST)은 ADMIN만, 나머지 조회는 모두 permitAll
                     .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
-                      "/api/auth/login",
-                      "/api/auth/signup",
-                      "/api/auth/verify-email",
+                      "/api/auth/**",
                       "/public/**",
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
-                      "/api/products",
                       "/api/products/**",
-                      "/api/events",
+                      "/api/events/**",
+                      "/api/reviews/**",
+                      "/api/products/**",
                       "/api/events/**",
                       "/api/reviews/products/**",
                       "/api/reviews/{reviewId}"
                     ).permitAll()
                     .requestMatchers("/api/users/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/seller/**").hasRole("SELLER")
+                    .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 // 폼 로그인 및 HTTP Basic 인증은 사용하지 않음
@@ -83,7 +85,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app/", // 프론트엔드 실제 배포 주소
+                "https://feedshop-frontend.vercel.app", // 프론트엔드 실제 배포 주소
+                "https://www.feedshop.store",
                 "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

@@ -12,10 +12,4 @@ public class UserException extends BusinessException {
     public UserException(ErrorCode errorCode, String message) {
         super(errorCode, message);
     }
-
-    public static class UserNotFoundException extends UserException {
-        public UserNotFoundException() {
-            super(ErrorCode.USER_NOT_FOUND);
-        }
-    }
 }
