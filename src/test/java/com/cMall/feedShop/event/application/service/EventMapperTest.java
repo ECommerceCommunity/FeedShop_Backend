@@ -33,7 +33,7 @@ class EventMapperTest {
                 .precautions("주의사항")
                 .build();
         EventReward reward = EventReward.builder()
-                .conditionValue(1)
+                .conditionValue("1")
                 .rewardValue("상품권")
                 .build();
         Event event = Event.builder()
