@@ -4,23 +4,50 @@ import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.ReviewStatus;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
 import com.cMall.feedShop.review.domain.enums.Stability;
+import com.cMall.feedShop.product.domain.model.Product;
+import com.cMall.feedShop.product.domain.model.Category;
+import com.cMall.feedShop.store.domain.model.Store;
+import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 @DisplayName("Review 엔티티 테스트")
 class ReviewTest {
 
     private User testUser;
+    private Product testProduct;
+    private Store testStore;
+    private Category testCategory;
 
     @BeforeEach
     void setUp() {
         testUser = new User("testLogin", "password", "test@test.com", UserRole.USER);
+
+        // Store와 Category 모킹
+        testStore = mock(Store.class);
+        testCategory = mock(Category.class);
+
+        // Product 객체 생성
+        testProduct = Product.builder()
+                .name("테스트 신발")
+                .price(new BigDecimal("100000"))
+                .store(testStore)
+                .category(testCategory)
+                .discountType(DiscountType.NONE)
+                .discountValue(null)
+                .description("테스트용 신발입니다")
+                .build();
+        ReflectionTestUtils.setField(testProduct, "productId", 1L);
     }
 
     @Test
@@ -35,7 +62,7 @@ class ReviewTest {
                 .stability(Stability.STABLE)
                 .content("정말 편하고 좋습니다. 추천해요!")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분: productId(1L) → product(testProduct)
                 .build();
 
         // then
@@ -46,7 +73,7 @@ class ReviewTest {
         assertThat(review.getStability()).isEqualTo(Stability.STABLE);
         assertThat(review.getContent()).isEqualTo("정말 편하고 좋습니다. 추천해요!");
         assertThat(review.getUser()).isEqualTo(testUser);
-        assertThat(review.getProductId()).isEqualTo(1L);
+        assertThat(review.getProduct()).isEqualTo(testProduct);  // 수정된 부분: getProductId() → getProduct()
         assertThat(review.getPoints()).isEqualTo(0);
         assertThat(review.getStatus()).isEqualTo(ReviewStatus.ACTIVE);
         assertThat(review.getIsBlinded()).isFalse();
@@ -64,7 +91,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build();
 
         // when
@@ -87,7 +114,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build();
         review.addPoint();
         review.addPoint();
@@ -112,7 +139,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build();
 
         // when
@@ -134,7 +161,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build();
 
         // when & then
@@ -153,7 +180,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("리뷰 제목은 필수입니다.");
@@ -171,7 +198,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("테스트 내용입니다")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("평점은 1점에서 5점 사이여야 합니다.");
@@ -189,7 +216,7 @@ class ReviewTest {
                 .stability(Stability.NORMAL)
                 .content("")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("리뷰 내용은 필수입니다.");

@@ -61,10 +61,9 @@ public class SecurityConfig {
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
                       "/api/products/**",
-                      "/api/events/**",
-                      "/api/reviews/**",
-                      "/api/products/**",
-                      "/api/events/**",
+                      "/api/events/all",
+                      "/api/events/search",
+                      "/api/events/{eventId}",
                       "/api/reviews/products/**",
                       "/api/reviews/{reviewId}"
                     ).permitAll()
@@ -85,8 +84,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app", // 프론트엔드 실제 배포 주소
-                "https://www.feedshop.store",
+                "https://feedshop-frontend.vercel.app/", // 프론트엔드 실제 배포 주소
+                "https://www.feedshop.store/",
                 "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

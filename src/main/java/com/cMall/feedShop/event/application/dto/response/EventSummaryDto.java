@@ -36,7 +36,9 @@ public class EventSummaryDto {
     public static class Reward {
         private Integer rank;
         private String reward;
-        private RewardConditionType conditionType;
-        private String conditionDescription;
+        @Builder.Default
+        private RewardConditionType conditionType = null;
+        @Builder.Default
+        private String conditionDescription = "";
     }
 } 

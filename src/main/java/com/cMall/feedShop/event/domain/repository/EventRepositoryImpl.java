@@ -53,20 +53,4 @@ public class EventRepositoryImpl implements EventRepository {
     public Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable) {
         return eventQueryRepository.searchEvents(requestDto, pageable);
     }
-
-    // 소프트 딜리트 관련 메서드들 구현
-    @Override
-    public Optional<Event> findByIdAndDeletedAtIsNull(Long id) {
-        return eventJpaRepository.findByIdAndDeletedAtIsNull(id);
-    }
-
-    @Override
-    public List<Event> findAllByDeletedAtIsNull() {
-        return eventJpaRepository.findAllByDeletedAtIsNull();
-    }
-
-    @Override
-    public Page<Event> findAllByDeletedAtIsNull(Pageable pageable) {
-        return eventJpaRepository.findAllByDeletedAtIsNull(pageable);
-    }
 } 

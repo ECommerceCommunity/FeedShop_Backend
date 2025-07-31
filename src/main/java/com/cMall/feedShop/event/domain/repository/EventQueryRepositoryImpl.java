@@ -8,7 +8,6 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.QEvent;
 import com.cMall.feedShop.event.domain.QEventDetail;
 import com.cMall.feedShop.event.domain.QEventReward;
-
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.querydsl.core.BooleanBuilder;
