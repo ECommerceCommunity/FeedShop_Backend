@@ -22,10 +22,18 @@ public class UserResponse {
 
     // User 엔티티를 UserResponse DTO로 변환하는 정적 팩토리 메서드
     public static UserResponse from(User user) {
+        String profileName = null;
+        String profilePhone = null;
+        if (user.getUserProfile() != null) {
+            profileName = user.getUserProfile().getName();
+            profilePhone = user.getUserProfile().getPhone();
+        }
+
         return UserResponse.builder()
                 .userId(user.getId())
-                .username(user.getUsername())
+                .username(profileName)
                 .email(user.getEmail())
+                .phone(profilePhone)
                 .role(user.getRole())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
@@ -33,12 +41,20 @@ public class UserResponse {
     }
 
     public static UserResponse from(User user, String message) {
+        String profileName = null;
+        String profilePhone = null;
+        if (user.getUserProfile() != null) {
+            profileName = user.getUserProfile().getName();
+            profilePhone = user.getUserProfile().getPhone();
+        }
+
         return UserResponse.builder()
                 .userId(user.getId())
-                .username(user.getUsername())
+                .username(profileName)
                 .email(user.getEmail())
+                .phone(profilePhone)
                 .role(user.getRole())
-                .status(user.getStatus()) // Enum을 String으로 변환하여 반환
+                .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .message(message)
                 .build();

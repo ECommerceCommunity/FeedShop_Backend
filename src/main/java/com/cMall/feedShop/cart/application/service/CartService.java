@@ -181,7 +181,7 @@ public class CartService {
      * @param userDetails
      */
     public void updateCartItem(Long cartItemId, CartItemUpdateRequest request, UserDetails userDetails) {
-        // 1. 현재 사용자 ID 가져오기
+        // 1. 현재 사용자 조회
         User currentUser = getCurrentUser(userDetails);
 
         // 2. 장바구니 아이템 조회
@@ -207,6 +207,23 @@ public class CartService {
         cartItemRepository.save(cartItem);
     }
 
+    /**
+     * 장바구니 아이템을 삭제하는 서비스 메서드
+     *
+     * @param cartItemId 장바구니 아이템 ID
+     * @param userDetails 현재 로그인한 사용자 정보
+     */
+    public void deleteCartItem(Long cartItemId, UserDetails userDetails) {
+        // 1. 현재 사용자 조회
+        User currentUser = getCurrentUser(userDetails);
+
+        // 2. 장바구니 아이템 조회
+        CartItem cartItem = cartItemRepository.findByCartItemIdAndUserId(cartItemId, currentUser.getId())
+                .orElseThrow(() -> new CartException.CartItemNotFoundException());
+
+        // 3. 장바구니 아이템 삭제
+        cartItemRepository.delete(cartItem);
+    }
     private CartItemListResponse calculateCartSummary(List<CartItemInfo> items) {
 
         // 선택된 아이템들만 계산한다. (실제 결제 대상)

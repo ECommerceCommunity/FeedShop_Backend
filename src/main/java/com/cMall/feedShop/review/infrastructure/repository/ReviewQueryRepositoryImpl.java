@@ -168,6 +168,7 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
                 ));
     }
 
+
     @Override
     public boolean existsByUserIdAndProductId(Long userId, Long productId) {
         Long count = queryFactory
@@ -197,4 +198,5 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
 
         return count != null && count > 0;
     }
+
 }

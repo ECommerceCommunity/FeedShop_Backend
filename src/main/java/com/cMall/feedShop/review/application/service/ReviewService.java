@@ -39,6 +39,7 @@ public class ReviewService {
     private final ProductRepository productRepository;
     private final ReviewDuplicationValidator duplicationValidator;
 
+
     @Transactional
     public ReviewCreateResponse createReview(ReviewCreateRequest request) {
         // SecurityContext에서 현재 로그인한 사용자 정보 가져오기
@@ -50,6 +51,7 @@ public class ReviewService {
         }
 
         String userEmail = authentication.getName();
+
 
         // 사용자 조회
         User user = userRepository.findByEmail(userEmail)
