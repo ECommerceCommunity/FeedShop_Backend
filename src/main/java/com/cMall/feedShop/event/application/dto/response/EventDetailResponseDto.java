@@ -1,5 +1,6 @@
 package com.cMall.feedShop.event.application.dto.response;
 
+import com.cMall.feedShop.event.domain.enums.RewardConditionType;
 import lombok.*;
 import java.util.List;
 
@@ -34,7 +35,8 @@ public class EventDetailResponseDto {
     public static class RewardDto {
         private Integer rank;
         private String reward;
-        private String rewardType;
+        private RewardConditionType conditionType;
+        private String conditionDescription;
         private Integer maxRecipients;
     }
 } 

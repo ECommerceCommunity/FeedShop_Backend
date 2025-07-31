@@ -17,4 +17,9 @@ public interface EventRepository {
     Page<Event> findAll(Pageable pageable);
     // 검색/동적 쿼리
     Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable);
+    
+    // 소프트 딜리트 관련 메서드들
+    Optional<Event> findByIdAndDeletedAtIsNull(Long id);
+    List<Event> findAllByDeletedAtIsNull();
+    Page<Event> findAllByDeletedAtIsNull(Pageable pageable);
 }

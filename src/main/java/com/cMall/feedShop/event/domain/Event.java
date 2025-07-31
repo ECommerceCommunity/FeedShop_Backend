@@ -3,6 +3,7 @@ package com.cMall.feedShop.event.domain;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.common.util.TimeUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,10 +45,6 @@ public class Event extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-    }
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User createdUser;
@@ -74,24 +71,42 @@ public class Event extends BaseTimeEntity {
     }
 
     /**
+     * 팩토리 메서드: EventDetail과 함께 이벤트 생성 (빌더 패턴 활용)
+     */
+    public static Event createWithDetail(EventType type, Integer maxParticipants, EventDetail eventDetail) {
+        Event event = Event.builder()
+                .type(type)
+                .maxParticipants(maxParticipants)
+                .status(EventStatus.UPCOMING)
+                .build();
+        event.setEventDetail(eventDetail);
+        return event;
+    }
+
+    /**
+     * 팩토리 메서드: EventReward들과 함께 이벤트 생성 (빌더 패턴 활용)
+     */
+    public static Event createWithRewards(EventType type, Integer maxParticipants, List<EventReward> rewards) {
+        Event event = Event.builder()
+                .type(type)
+                .maxParticipants(maxParticipants)
+                .status(EventStatus.UPCOMING)
+                .build();
+        event.setRewards(rewards);
+        return event;
+    }
+
+    /**
      * 이벤트 상태를 자동으로 계산하여 업데이트
      */
     public void updateStatusAutomatically() {
-        if (eventDetail == null) {
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return;
         }
-
-        LocalDate today = LocalDate.now();
-        LocalDate eventStartDate = eventDetail.getEventStartDate();
-        LocalDate eventEndDate = eventDetail.getEventEndDate();
-
-        if (eventStartDate == null || eventEndDate == null) {
-            return;
-        }
-
-        if (today.isBefore(eventStartDate)) {
+        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
+        if (today.isBefore(eventDetail.getEventStartDate())) {
             this.status = EventStatus.UPCOMING;
-        } else if (today.isAfter(eventEndDate)) {
+        } else if (today.isAfter(eventDetail.getEventEndDate())) {
             this.status = EventStatus.ENDED;
         } else {
             this.status = EventStatus.ONGOING;
@@ -110,25 +125,13 @@ public class Event extends BaseTimeEntity {
      * 현재 날짜 기준으로 이벤트 상태 계산
      */
     public EventStatus calculateStatus() {
-        if (eventDetail == null) {
-            return this.status; // 기존 상태 유지
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
+            return this.status;
         }
-
-        LocalDate today = LocalDate.now();
-        LocalDate eventStartDate = eventDetail.getEventStartDate();
-        LocalDate eventEndDate = eventDetail.getEventEndDate();
-
-        if (eventStartDate == null || eventEndDate == null) {
-            return this.status; // 기존 상태 유지
-        }
-
-        if (today.isBefore(eventStartDate)) {
-            return EventStatus.UPCOMING;
-        } else if (today.isAfter(eventEndDate)) {
-            return EventStatus.ENDED;
-        } else {
-            return EventStatus.ONGOING;
-        }
+        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
+        if (today.isBefore(eventDetail.getEventStartDate())) return EventStatus.UPCOMING;
+        if (today.isAfter(eventDetail.getEventEndDate())) return EventStatus.ENDED;
+        return EventStatus.ONGOING;
     }
 
     /**
@@ -143,5 +146,38 @@ public class Event extends BaseTimeEntity {
         }
     }
 
-    // 기타 연관관계 필요시 여기에 추가
+    /**
+     * 이벤트 정보 업데이트 (영속성 유지)
+     */
+    public void update(EventType type, Integer maxParticipants) {
+        if (type != null) {
+            this.type = type;
+        }
+        if (maxParticipants != null) {
+            this.maxParticipants = maxParticipants;
+        }
+        this.updatedBy = LocalDateTime.now();
+    }
+
+    /**
+     * 이벤트 상태 업데이트
+     */
+    public void updateStatus(EventStatus status) {
+        this.status = status;
+        this.updatedBy = LocalDateTime.now();
+    }
+
+    /**
+     * 소프트 딜리트
+     */
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 삭제 여부 확인
+     */
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
 }
