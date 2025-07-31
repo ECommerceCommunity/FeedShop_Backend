@@ -5,7 +5,9 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +72,7 @@ class UserAuthServiceTest {
         );
         // 테스트 객체 생성 시에는 생략하거나 mock 데이터를 직접 설정
         testUser.setId(1L);
+        testUser.setStatus(UserStatus.ACTIVE);
         ReflectionTestUtils.setField(testUser, "createdAt", LocalDateTime.now());
         ReflectionTestUtils.setField(testUser, "updatedAt", LocalDateTime.now());
         testUser.setPasswordChangedAt(LocalDateTime.now());
@@ -80,7 +83,7 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("성공적인 로그인 - JWT 토큰 발급 확인")
     void login_success_returnsToken() {
-        // given (준비): Mock 객체의 행동 정의
+
         Authentication mockAuthentication = mock(Authentication.class);
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(mockAuthentication);
@@ -109,7 +112,7 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("로그인 실패 - 존재하지 않는 회원 (이메일 없음)")
     void login_fail_userNotFound() {
-        // given: AuthenticationManager가 UsernameNotFoundException을 던지도록 설정
+        // when: AuthenticationManager가 UsernameNotFoundException을 던지도록 설정
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new UsernameNotFoundException("User not found with email: " + loginRequest.getEmail()));
 
@@ -130,12 +133,10 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
     void login_fail_passwordMismatch() {
-        // given: AuthenticationManager가 BadCredentialsException을 던지도록 설정
         // (비밀번호 불일치 시 발생)
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
-        // when & then: BusinessException이 예상대로 발생하는지 검증
         BusinessException thrown = assertThrows(BusinessException.class, () -> {
             userAuthService.login(loginRequest);
         });
@@ -143,9 +144,10 @@ class UserAuthServiceTest {
         assertEquals(ErrorCode.UNAUTHORIZED, thrown.getErrorCode());
         assertEquals("이메일 또는 비밀번호가 올바르지 않습니다.", thrown.getMessage());
 
-        // Mock 객체 호출 검증
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(userRepository, never()).findByEmail(anyString()); // 인증 실패로 User 조회가 진행되지 않음
         verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyString()); // 토큰 생성도 호출되지 않음
     }
+
+
 }

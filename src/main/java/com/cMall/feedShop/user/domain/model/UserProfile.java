@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "users_profile")
+@Table(name = "user_profiles")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,5 +35,8 @@ public class UserProfile {
         this.name = name;
         this.nickname = nickname;
         this.phone = phone;
+        if (user != null) {
+            user.setUserProfile(this); // 양방향 관계 설정
+        }
     }
 }

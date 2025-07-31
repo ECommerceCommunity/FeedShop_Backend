@@ -24,6 +24,8 @@ public enum ErrorCode {
     INVALID_VERIFICATION_TOKEN(400, "U005", "유효하지 않거나 찾을 수 없는 인증 토큰입니다."),
     ACCOUNT_ALREADY_VERIFIED(409, "U006", "이미 인증이 완료된 계정입니다."),
     VERIFICATION_TOKEN_EXPIRED(400, "U007", "인증 토큰이 만료되었습니다. 다시 회원가입을 시도하거나 인증 메일을 재발송해주세요."),
+    ACCOUNT_NOT_VERIFIED(403, "U008", "이메일 인증이 완료되지 않은 계정입니다."),
+    DUPLICATE_LOGIN_ID(409, "U009", "이미 존재하는 로그인 ID입니다."),
 
     // 스토어
     STORE_FORBIDDEN(403, "S001", "해당 스토어의 관리자가 아닙니다."),

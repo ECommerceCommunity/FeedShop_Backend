@@ -10,7 +10,8 @@ import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.application.service.UserAuthService;
 import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor; // Lombok 임포트
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,5 +45,22 @@ public class UserAuthController {
         // 현재 Aspect 로직은 `ApiResponse.success(message, result)` 형태이므로 result가 "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다." 문자열이 됩니다.
         // 만약 result가 String일 때 데이터를 null로 처리하고 싶다면 Aspect 로직을 수정해야 합니다.
         return ApiResponse.success("이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.");
+    }
+
+    @GetMapping("/find-account")
+    @ApiResponseFormat(message = "계정 조회 처리 완료.")
+    public ResponseEntity<ApiResponse<UserResponse>> findAccountByNameAndPhone(
+                                                                                @RequestParam("username") String username,
+                                                                                @RequestParam("phoneNumber") String phoneNumber
+    ) {
+        UserResponse account = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+
+        if (account != null) {
+            // 성공 시 200 OK를 반환합니다.
+            return new ResponseEntity<>(ApiResponse.success("계정을 성공적으로 찾았습니다.", account), HttpStatus.OK);
+        } else {
+            // 실패 시 404 NOT_FOUND를 반환합니다.
+            return new ResponseEntity<>(ApiResponse.error("해당하는 계정을 찾을 수 없습니다."), HttpStatus.NOT_FOUND);
+        }
     }
 }

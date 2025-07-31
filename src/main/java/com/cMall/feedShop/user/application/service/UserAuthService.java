@@ -3,6 +3,7 @@ package com.cMall.feedShop.user.application.service;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
+import com.cMall.feedShop.user.domain.exception.AccountNotVerifiedException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.common.exception.BusinessException;
@@ -48,6 +49,10 @@ public class UserAuthService {
             // JWT 토큰 생성에 필요한 정보를 얻기 위해 User 객체를 다시 조회합니다.
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
+
+            if (!user.isEnabled()) {
+                throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
+            }
 
             String nickname = null;
             if (user.getUserProfile() != null) {
