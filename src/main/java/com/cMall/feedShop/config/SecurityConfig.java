@@ -50,7 +50,6 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                    // 이벤트 생성(POST)은 ADMIN만, 나머지 조회는 모두 permitAll
                     .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
                       "/api/auth/login",
@@ -62,8 +61,9 @@ public class SecurityConfig {
                       "/swagger-resources/**",
                       "/api/products",
                       "/api/products/**",
-                      "/api/events",
-                      "/api/events/**",
+                      "/api/events/all",
+                      "/api/events/search",
+                      "/api/events/{eventId}",
                       "/api/reviews/products/**",
                       "/api/reviews/{reviewId}"
                     ).permitAll()
