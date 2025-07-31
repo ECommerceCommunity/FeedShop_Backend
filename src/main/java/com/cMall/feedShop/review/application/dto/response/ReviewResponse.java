@@ -39,7 +39,7 @@ public class ReviewResponse {
                 .userId(review.getUser().getId())
                 .userName(review.getUser().getUserProfile() != null ?
                         review.getUser().getUserProfile().getName() : "익명")
-                .productId(review.getProductId())
+                .productId(review.getProduct().getProductId())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
                 .build();

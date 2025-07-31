@@ -5,7 +5,6 @@ import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.EventReward;
-import com.cMall.feedShop.event.domain.RewardType;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -70,8 +69,10 @@ public class EventMapper {
     private List<EventSummaryDto.Reward> mapRewards(Event event) {
         return event.getRewards() != null ? event.getRewards().stream()
                 .map(r -> EventSummaryDto.Reward.builder()
-                        .rank(r.getConditionValue())
+                        .rank(r.isRankCondition() ? r.getRank() : null)
                         .reward(r.getRewardValue())
+                        .conditionType(r.getConditionType())
+                        .conditionDescription(r.getConditionDescription())
                         .build())
                 .toList() : Collections.emptyList();
     }
@@ -83,11 +84,11 @@ public class EventMapper {
     }
 
     private EventDetailResponseDto.RewardDto toRewardDto(EventReward reward) {
-        RewardType rewardType = reward.getRewardType();
         return EventDetailResponseDto.RewardDto.builder()
-                .rank(reward.getConditionValue())
+                .rank(reward.isRankCondition() ? reward.getRank() : null)
                 .reward(reward.getRewardValue())
-                .rewardType(rewardType != null ? rewardType.getType().name() : null)
+                .conditionType(reward.getConditionType())
+                .conditionDescription(reward.getConditionDescription())
                 .maxRecipients(reward.getMaxRecipients())
                 .build();
     }
@@ -128,7 +129,7 @@ public class EventMapper {
     }
 
     /**
-     * 실시간으로 계산된 상태 반환 (새로운 방식)
+     * 실시간으로 계산된 상태 반환
      */
     private String getRealTimeEventStatus(Event event) {
         if (event.getStatus() == null) {

@@ -11,10 +11,16 @@ import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
 import com.cMall.feedShop.review.domain.enums.Stability;
 import com.cMall.feedShop.review.domain.repository.ReviewRepository;
+import com.cMall.feedShop.product.domain.model.Product;
+import com.cMall.feedShop.product.domain.model.Category;
+import com.cMall.feedShop.store.domain.model.Store;
+import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.product.domain.repository.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +39,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +62,9 @@ class ReviewServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private ProductRepository productRepository;  // 추가된 Mock
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
@@ -65,6 +75,9 @@ class ReviewServiceTest {
 
     private User testUser;
     private UserProfile testUserProfile;
+    private Product testProduct;
+    private Store testStore;
+    private Category testCategory;
     private Review testReview;
     private ReviewCreateRequest createRequest;
 
@@ -76,6 +89,22 @@ class ReviewServiceTest {
         testUserProfile = new UserProfile(testUser, "테스트사용자", "테스트닉네임", "010-1234-5678");
         testUser.setUserProfile(testUserProfile);
 
+        // Store와 Category 모킹
+        testStore = mock(Store.class);
+        testCategory = mock(Category.class);
+
+        // Product 객체 생성
+        testProduct = Product.builder()
+                .name("테스트 신발")
+                .price(new BigDecimal("100000"))
+                .store(testStore)
+                .category(testCategory)
+                .discountType(DiscountType.NONE)
+                .discountValue(null)
+                .description("테스트용 신발입니다")
+                .build();
+        ReflectionTestUtils.setField(testProduct, "productId", 1L);
+
         testReview = Review.builder()
                 .title("좋은 신발입니다")
                 .rating(5)
@@ -84,7 +113,7 @@ class ReviewServiceTest {
                 .stability(Stability.STABLE)
                 .content("정말 편하고 좋습니다. 추천해요!")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분: productId(1L) → product(testProduct)
                 .build();
         ReflectionTestUtils.setField(testReview, "reviewId", 1L);
         ReflectionTestUtils.setField(testReview, "createdAt", LocalDateTime.now());
@@ -113,6 +142,7 @@ class ReviewServiceTest {
             mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
             mockSecurityContext();
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));  // 추가된 모킹
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
 
             // when
@@ -136,7 +166,7 @@ class ReviewServiceTest {
             // when & then
             assertThatThrownBy(() -> reviewService.createReview(createRequest))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("로그인이 필요합니다");
+                    .hasMessageContaining("인증이 필요합니다");
         }
     }
 
@@ -202,6 +232,23 @@ class ReviewServiceTest {
             // when & then
             assertThatThrownBy(() -> reviewService.createReview(createRequest))
                     .isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Test
+    @DisplayName("상품이 존재하지 않으면 예외가 발생한다")
+    void createReviewWithNonExistentProduct() {
+        // given
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            mockSecurityContext();
+            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.empty());  // Product 없음
+
+            // when & then
+            assertThatThrownBy(() -> reviewService.createReview(createRequest))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("상품을 찾을 수 없습니다");
         }
     }
 

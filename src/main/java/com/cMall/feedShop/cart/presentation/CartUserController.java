@@ -60,4 +60,18 @@ public class CartUserController {
         cartService.updateCartItem(cartItemId, request, userDetails);
         return ApiResponse.success(null);
     }
+  
+    /**
+     * 장바구니 아이템 삭제
+     * DELETE /api/users/cart/items/{cartItemId}
+     */
+    @DeleteMapping("/cart/items/{cartItemId}")
+    @ApiResponseFormat(message = "장바구니 아이템이 성공적으로 삭제되었습니다.")
+    public ApiResponse<Void> deleteCartItem(
+            @PathVariable Long cartItemId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        cartService.deleteCartItem(cartItemId, userDetails);
+        return ApiResponse.success(null);
+    }
 }
