@@ -138,8 +138,8 @@ public class Event extends BaseTimeEntity {
      * 이벤트 정보 수정 (빌더 패턴 활용)
      */
     public void updateFromDto(com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto dto) {
-        this.type = dto.getType() != null ? com.cMall.feedShop.event.domain.enums.EventType.valueOf(dto.getType()) : this.type;
-        this.status = dto.getStatus() != null ? com.cMall.feedShop.event.domain.enums.EventStatus.valueOf(dto.getStatus()) : this.status;
+        this.type = dto.getType() != null ? dto.getType() : this.type;
+        this.status = dto.getStatus() != null ? EventStatus.valueOf(dto.getStatus()) : this.status;
         this.maxParticipants = dto.getMaxParticipants() != null ? dto.getMaxParticipants() : this.maxParticipants;
         if (this.eventDetail != null) {
             this.eventDetail.updateFromDto(dto);
