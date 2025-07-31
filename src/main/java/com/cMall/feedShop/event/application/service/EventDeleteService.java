@@ -19,7 +19,6 @@ public class EventDeleteService {
     public void deleteEvent(Long eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
-        event.softDelete();
-        eventRepository.save(event);
+        eventRepository.delete(event);
     }
 } 
