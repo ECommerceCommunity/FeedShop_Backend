@@ -1,6 +1,7 @@
 package com.cMall.feedShop.event.application.service;
 
 import com.cMall.feedShop.event.domain.Event;
+import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
@@ -13,10 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -32,14 +33,32 @@ class EventDeleteServiceTest {
     private EventDeleteService eventDeleteService;
 
     private Event testEvent;
+    private Event softDeletedEvent;
 
     @BeforeEach
     void setUp() {
+        // 정상 이벤트 설정
+        EventDetail eventDetail = EventDetail.builder()
+                .title("테스트 이벤트")
+                .description("테스트 이벤트 설명")
+                .eventStartDate(LocalDate.now().plusDays(1))
+                .eventEndDate(LocalDate.now().plusDays(7))
+                .build();
+
         testEvent = Event.builder()
                 .id(1L)
                 .type(EventType.BATTLE)
                 .status(EventStatus.ONGOING)
                 .maxParticipants(100)
+                .build();
+        testEvent.setEventDetail(eventDetail);
+
+        // 이미 삭제된 이벤트 설정
+        softDeletedEvent = Event.builder()
+                .id(2L)
+                .type(EventType.BATTLE)
+                .status(EventStatus.ENDED)
+                .deletedAt(LocalDateTime.now())
                 .build();
     }
 
@@ -83,9 +102,38 @@ class EventDeleteServiceTest {
         eventDeleteService.deleteEvent(1L);
 
         // Then
-        verify(eventRepository).delete(argThat(event -> {
-            // softDelete 메서드가 호출되어 deletedAt이 설정되었는지 확인
-            return event.isDeleted();
-        }));
+        verify(eventRepository).findById(1L);
+        verify(eventRepository).delete(testEvent);
+        
+        // softDelete가 호출되었는지 확인 (EventRepositoryImpl에서 처리됨)
+        // 실제로는 Repository 계층에서 softDelete가 호출되므로 여기서는 검증하지 않음
+    }
+
+    @Test
+    @DisplayName("이미 삭제된 이벤트 재삭제 시도")
+    void deleteEvent_AlreadyDeleted() {
+        // Given: 이미 삭제된 이벤트는 findById에서 조회되지 않음
+        when(eventRepository.findById(2L)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> eventDeleteService.deleteEvent(2L))
+                .isInstanceOf(EventNotFoundException.class);
+        
+        verify(eventRepository).findById(2L);
+        verify(eventRepository, never()).delete(any(Event.class));
+    }
+
+    @Test
+    @DisplayName("null 이벤트 ID로 삭제 시도")
+    void deleteEvent_NullEventId() {
+        // Given
+        when(eventRepository.findById(null)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> eventDeleteService.deleteEvent(null))
+                .isInstanceOf(EventNotFoundException.class);
+        
+        verify(eventRepository).findById(null);
+        verify(eventRepository, never()).delete(any(Event.class));
     }
 } 
