@@ -35,8 +35,11 @@ public class EventDetailResponseDto {
     public static class RewardDto {
         private Integer rank;
         private String reward;
-        private RewardConditionType conditionType;
-        private String conditionDescription;
-        private Integer maxRecipients;
+        @Builder.Default
+        private RewardConditionType conditionType = null;
+        @Builder.Default
+        private String conditionDescription = "";
+        @Builder.Default
+        private Integer maxRecipients = 1;
     }
 } 

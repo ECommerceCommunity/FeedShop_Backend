@@ -96,6 +96,9 @@ public class Event extends BaseTimeEntity {
         return event;
     }
 
+    /**
+     * 이벤트 상태를 자동으로 계산하여 업데이트
+     */
     public void updateStatusAutomatically() {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return;
@@ -110,6 +113,17 @@ public class Event extends BaseTimeEntity {
         }
     }
 
+    /**
+     * 현재 상태가 자동 계산된 상태와 일치하는지 확인
+     */
+    public boolean isStatusUpToDate() {
+        EventStatus calculatedStatus = calculateStatus();
+        return this.status == calculatedStatus;
+    }
+
+    /**
+     * 현재 날짜 기준으로 이벤트 상태 계산
+     */
     public EventStatus calculateStatus() {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
             return this.status;
@@ -120,7 +134,17 @@ public class Event extends BaseTimeEntity {
         return EventStatus.ONGOING;
     }
 
-    // 기타 연관관계 필요시 여기에 추가
+    /**
+     * 이벤트 정보 수정 (빌더 패턴 활용)
+     */
+    public void updateFromDto(com.cMall.feedShop.event.application.dto.request.EventUpdateRequestDto dto) {
+        this.type = dto.getType() != null ? dto.getType() : this.type;
+        this.status = dto.getStatus() != null ? EventStatus.valueOf(dto.getStatus()) : this.status;
+        this.maxParticipants = dto.getMaxParticipants() != null ? dto.getMaxParticipants() : this.maxParticipants;
+        if (this.eventDetail != null) {
+            this.eventDetail.updateFromDto(dto);
+        }
+    }
 
     /**
      * 이벤트 정보 업데이트 (영속성 유지)

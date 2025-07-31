@@ -17,4 +17,10 @@ public interface EventJpaRepository extends JpaRepository<Event, Long> {
     Optional<Event> findByIdAndDeletedAtIsNull(Long id);
     List<Event> findAllByDeletedAtIsNull();
     Page<Event> findAllByDeletedAtIsNull(Pageable pageable);
+    
+    @Query("SELECT e FROM Event e WHERE e.deletedAt IS NULL")
+    java.util.List<Event> findAllActive();
+
+    @Query("SELECT e FROM Event e WHERE e.deletedAt IS NULL")
+    Page<Event> findAllActive(Pageable pageable);
 } 

@@ -31,6 +31,7 @@ public class EventReward extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "reward_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

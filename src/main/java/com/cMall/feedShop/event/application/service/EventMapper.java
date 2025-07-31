@@ -5,7 +5,6 @@ import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.EventReward;
-
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
