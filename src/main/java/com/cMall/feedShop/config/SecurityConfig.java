@@ -55,18 +55,12 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
                       "/api/auth/**",
-                      "/api/auth/login",
-                      "/api/auth/signup",
-                      "/api/auth/verify-email",
-                      "/api/auth/find-account",
                       "/public/**",
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
                       "/api/products/**",
-                      "/api/events/**",
                       "/api/reviews/**",
-                      "/api/products/**",
                       "/api/events/all",
                       "/api/events/search",
                       "/api/events/{eventId}",
@@ -78,7 +72,6 @@ public class SecurityConfig {
                     .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
-                // 폼 로그인 및 HTTP Basic 인증은 사용하지 않음
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
