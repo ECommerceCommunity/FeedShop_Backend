@@ -1,6 +1,7 @@
 package com.cMall.feedShop.review.domain;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.ReviewStatus;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
@@ -63,12 +64,13 @@ public class Review extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @Builder
     public Review(String title, Integer rating, SizeFit sizeFit, Cushion cushion,
-                  Stability stability, String content, User user, Long productId) {
+                  Stability stability, String content, User user, Product product) {
         validateTitle(title);
         validateRating(rating);
         validateContent(content);
@@ -80,7 +82,7 @@ public class Review extends BaseTimeEntity {
         this.stability = stability;
         this.content = content;
         this.user = user;
-        this.productId = productId;
+        this.product = product;
         this.points = 0;
         this.reportCount = 0;
         this.isBlinded = false;

@@ -56,7 +56,7 @@ public enum ErrorCode {
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
     INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다.");
-    
+
     private final int status;
     private final String code;
     private final String message;
