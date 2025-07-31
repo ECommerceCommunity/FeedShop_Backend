@@ -133,4 +133,13 @@ public class Review extends BaseTimeEntity {
             throw new IllegalArgumentException("리뷰 내용은 1000자를 초과할 수 없습니다.");
         }
     }
+
+    /**
+     * 3요소 평가가 모두 완료되었는지 확인
+     */
+    public boolean hasCompleteReviewElements() {
+        return this.sizeFit != null && this.cushion != null && this.stability != null;
+    }
+
+
 }
