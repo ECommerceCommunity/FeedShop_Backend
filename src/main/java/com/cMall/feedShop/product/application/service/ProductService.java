@@ -21,6 +21,7 @@ import com.cMall.feedShop.store.domain.model.Store;
 import com.cMall.feedShop.store.domain.repository.StoreRepository;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.exception.UserException;
+import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -147,7 +148,7 @@ public class ProductService {
     private Long getCurrentUserId(UserDetails userDetails) {
         String login_id = userDetails.getUsername();
         User user = userRepository.findByLoginId(login_id)
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException());
 
         return user.getId();
     }
@@ -157,7 +158,7 @@ public class ProductService {
         // 사용자가 SELLER 권한을 가지고 있는지 확인
         // UserRepository 에서 사용자 조회 후 role 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException());
 
         if (user.getRole() != UserRole.SELLER) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
@@ -168,25 +169,25 @@ public class ProductService {
     private Store getUserStore(Long userId) {
         // 내 가게를 찾는다.
         return storeRepository.findBySellerId(userId)
-                .orElseThrow(() -> new StoreException(ErrorCode.STORE_NOT_FOUND));
+                .orElseThrow(() -> new StoreException.StoreNotFoundException());
     }
 
     // 카테고리 조회
     private Category getCategory(Long categoryId) {
         return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ProductException(ErrorCode.CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> new ProductException.CategoryNotFoundException());
     }
 
     // 상품 조회 및 소유권 검증
     private Product getProductOwnership(Long productId, Long currentUserId) {
         // 상품을 찾는다.
         Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
+                .orElseThrow(() -> new ProductException.ProductNotFoundException());
 
         // 상품 소유권 검증
         Store store = product.getStore();
         if (!store.isManagedBy(currentUserId)) {
-            throw new StoreException(ErrorCode.STORE_FORBIDDEN);
+            throw new StoreException.StoreForbiddenException();
         }
 
         return product;
@@ -200,14 +201,14 @@ public class ProductService {
     // 상품명 중복 확인 (상품 등록 시)
     private void validateProductNameDuplication(Store store, String productName) {
         if (productRepository.existsByStoreAndName(store, productName)) {
-            throw new ProductException(ErrorCode.DUPLICATE_PRODUCT_NAME);
+            throw new ProductException.DuplicateProductNameException();
         }
     }
 
     // 상품명 중복 확인 (상품 수정 시)
     private void validateProductNameDuplicationForUpdate(Store store, String productName, Long productId) {
         if (productRepository.existsByStoreAndNameAndProductIdNot(store, productName, productId)) {
-            throw new ProductException(ErrorCode.DUPLICATE_PRODUCT_NAME);
+            throw new ProductException.DuplicateProductNameException();
         }
     }
 

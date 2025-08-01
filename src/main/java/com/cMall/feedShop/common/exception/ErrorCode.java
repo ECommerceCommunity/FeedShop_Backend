@@ -24,7 +24,8 @@ public enum ErrorCode {
     INVALID_VERIFICATION_TOKEN(400, "U005", "유효하지 않거나 찾을 수 없는 인증 토큰입니다."),
     ACCOUNT_ALREADY_VERIFIED(409, "U006", "이미 인증이 완료된 계정입니다."),
     VERIFICATION_TOKEN_EXPIRED(400, "U007", "인증 토큰이 만료되었습니다. 다시 회원가입을 시도하거나 인증 메일을 재발송해주세요."),
-    OUT_OF_POINT(409, "U008", "사용 가능한 포인트가 부족합니다."),
+    ACCOUNT_NOT_VERIFIED(403, "U008", "이메일 인증이 완료되지 않은 계정입니다."),
+    DUPLICATE_LOGIN_ID(409, "U009", "이미 존재하는 로그인 ID입니다."),
 
     // 스토어
     STORE_FORBIDDEN(403, "S001", "해당 스토어의 관리자가 아닙니다."),
@@ -46,10 +47,6 @@ public enum ErrorCode {
     // 주문
     ORDER_NOT_FOUND(404, "O001", "주문을 찾을 수 없습니다."),
     INVALID_ORDER_STATUS(400, "O002", "잘못된 주문 상태입니다."),
-    ORDER_FORBIDDEN(403, "O003", "주문은 일반 사용자만 가능합니다."),
-    ORDER_CART_EMPTY(400, "O004", "장바구니가 비어 있습니다. 주문할 상품이 없습니다."),
-    INVALID_POINT(400, "O005", "유효하지 않은 포인트입니다."),
-    ORDER_CANCEL_FORBIDDEN(403, "O006", "취소할 수 없는 주문 상태입니다."),
 
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),
@@ -60,16 +57,8 @@ public enum ErrorCode {
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
-    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
+    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다.");
 
-    // 피드
-    FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
-    DUPLICATE_FEED(409, "F002", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
-    FEED_ACCESS_DENIED(403, "F003", "해당 피드에 대한 권한이 없습니다."),
-    INVALID_FEED_DATA(400, "F004", "잘못된 피드 데이터입니다."),
-    ORDER_ITEM_NOT_FOUND(404, "F005", "주문 상품을 찾을 수 없습니다."),
-    EVENT_NOT_AVAILABLE(400, "F006", "참여할 수 없는 이벤트입니다.");
-    
     private final int status;
     private final String code;
     private final String message;

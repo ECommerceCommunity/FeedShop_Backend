@@ -1,11 +1,13 @@
 package com.cMall.feedShop.user.application.service;
 
+import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.service.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.exception.UserException;
+import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
@@ -22,6 +24,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils; // @Value 필드 주입을 위한 유틸리티
 
 import java.time.LocalDateTime;
@@ -29,6 +32,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -48,7 +52,7 @@ class UserServiceTest {
     private EmailService emailService;
 
     @InjectMocks
-    private UserService userService; // 테스트 대상 서비스
+    private UserServiceImpl userService; // 테스트 대상 서비스
 
     private UserSignUpRequest signUpRequest;
 
@@ -578,5 +582,116 @@ class UserServiceTest {
         );
         assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효한 사용자 이름과 전화번호로 계정을 성공적으로 찾아야 한다")
+    void shouldFindAccountSuccessfullyWithValidUsernameAndPhoneNumber() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-1234-5678";
+        User user = new User(1L, "login1", "password123", "testuser@example.com", UserRole.USER);
+        UserProfile userProfile = new UserProfile(user, username, "testnick", phoneNumber);
+        user.setUserProfile(userProfile);
+        UserResponse expectedResponse = UserResponse.from(user);
+
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(Optional.of(user));
+
+        // When
+        UserResponse result = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(expectedResponse.getUserId());
+        assertThat(result.getUsername()).isEqualTo(expectedResponse.getUsername());
+        assertThat(result.getPhone()).isEqualTo(expectedResponse.getPhone());
+
+        // Verify
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효하지 않은 사용자 이름으로 계정을 찾을 수 없을 때 UserNotFoundException이 발생해야 한다")
+    void shouldThrowUserNotFoundExceptionWithInvalidUsername() {
+        // Given
+        String username = "invaliduser";
+        String phoneNumber = "010-1234-5678";
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        // UserNotFoundException이 발생하는지 검증합니다.
+        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(username, phoneNumber))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
+
+        // Verify
+        // userRepository가 한 번 호출되었는지 확인합니다.
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+    }
+
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효하지 않은 전화번호로 계정을 찾지 못해야 한다")
+    void shouldNotFindAccountWithInvalidPhoneNumber() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-9999-9999";
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(UserNotFoundException.class, () -> {
+            userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+        });
+
+        // Verify
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+    }
+
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("사용자 이름이 null일 때 '이름을 입력해주세요.' 예외를 던져야 한다") // 테스트 이름도 구체적으로 변경
+    void shouldThrowExceptionWhenUsernameIsNull() { // 메서드 이름도 구체적으로 변경
+        // Given
+        String username = null;
+        String phoneNumber = "010-1234-5678";
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userService.findByUsernameAndPhoneNumber(username, phoneNumber)
+        );
+        // 기대하는 메시지를 실제 메서드가 던지는 메시지로 변경
+        assertThat(thrown.getMessage()).isEqualTo("이름을 입력해주세요.");
+
+        // Verify
+        verify(userRepository, never()).findByUserProfile_NameAndUserProfile_Phone(anyString(), anyString());
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("전화번호가 null일 때 '전화번호를 입력해주세요.' 예외를 던져야 한다")
+    void shouldThrowExceptionWhenPhoneNumberIsNull() {
+        // Given
+        String username = "validUser";
+        String phoneNumber = null; // 전화번호만 null로 설정
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userService.findByUsernameAndPhoneNumber(username, phoneNumber)
+        );
+        // 전화번호가 null일 때 예상되는 메시지로 변경
+        assertThat(thrown.getMessage()).isEqualTo("전화번호를 입력해주세요.");
+
+        // Verify
+        verify(userRepository, never()).findByUserProfile_NameAndUserProfile_Phone(anyString(), anyString());
     }
 }

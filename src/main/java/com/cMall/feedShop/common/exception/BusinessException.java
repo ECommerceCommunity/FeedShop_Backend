@@ -16,6 +16,7 @@ public class BusinessException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
+
     // errorCode 문자열 반환 (리뷰 서비스 호환용)
     public String getErrorCodeString() {
         return errorCode != null ? errorCode.getCode() : "UNKNOWN_ERROR";

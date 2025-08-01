@@ -50,26 +50,27 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                    // 이벤트 생성(POST)은 ADMIN만, 나머지 조회는 모두 permitAll
                     .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
                       "/api/auth/login",
                       "/api/auth/signup",
                       "/api/auth/verify-email",
+                      "/api/auth/find-account",
                       "/public/**",
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
-                      "/actuator/**",
                       "/api/products",
                       "/api/products/**",
-                      "/api/events",
-                      "/api/events/**",
+                      "/api/events/all",
+                      "/api/events/search",
+                      "/api/events/{eventId}",
                       "/api/reviews/products/**",
                       "/api/reviews/{reviewId}"
                     ).permitAll()
                     .requestMatchers("/api/users/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/seller/**").hasRole("SELLER")
+                    .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
                 // 폼 로그인 및 HTTP Basic 인증은 사용하지 않음
@@ -85,6 +86,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
                 "https://feedshop-frontend.vercel.app/", // 프론트엔드 실제 배포 주소
+                "https://www.feedshop.store/",
                 "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

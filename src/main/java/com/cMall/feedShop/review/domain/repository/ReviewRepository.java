@@ -1,9 +1,14 @@
+// 1. ReviewRepository 인터페이스 (전체)
 package com.cMall.feedShop.review.domain.repository;
 
 import com.cMall.feedShop.review.domain.Review;
+import com.cMall.feedShop.review.domain.enums.Cushion;
+import com.cMall.feedShop.review.domain.enums.SizeFit;
+import com.cMall.feedShop.review.domain.enums.Stability;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface ReviewRepository {
@@ -24,4 +29,9 @@ public interface ReviewRepository {
 
     // 상품별 리뷰 개수
     Long countActiveReviewsByProductId(Long productId);
+
+    // ========== 새로 추가: 3요소 통계를 위한 메서드들 ==========
+    Map<Cushion, Long> getCushionDistributionByProductId(Long productId);
+    Map<SizeFit, Long> getSizeFitDistributionByProductId(Long productId);
+    Map<Stability, Long> getStabilityDistributionByProductId(Long productId);
 }

@@ -3,10 +3,10 @@ package com.cMall.feedShop.event.application.service;
 import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
 import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
 import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
+import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
+import com.cMall.feedShop.event.application.exception.EventNotFoundException;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
-import com.cMall.feedShop.event.application.dto.response.FeedEventDto;
-import com.cMall.feedShop.event.domain.enums.EventStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -63,32 +63,9 @@ public class EventReadService {
                 .build();
     }
 
-    /**
-     * 피드 생성용 이벤트 목록 조회 (진행중인 이벤트만)
-     */
-    public List<FeedEventDto> getFeedAvailableEvents() {
-        EventListRequestDto requestDto = EventListRequestDto.builder()
-                .status("ONGOING")  // 진행중인 이벤트만
-                .build();
-        
-        Pageable pageable = PageRequest.of(0, 100); // 충분한 수량 조회
-        Page<Event> eventPage = eventRepository.searchEvents(requestDto, pageable);
-        
-        return eventPage.getContent().stream()
-                .map(this::toFeedEventDto)
-                .toList();
-    }
-    
-    /**
-     * Event를 FeedEventDto로 변환
-     */
-    private FeedEventDto toFeedEventDto(Event event) {
-        return FeedEventDto.builder()
-                .eventId(event.getId())
-                .title(event.getEventDetail().getTitle())
-                .eventStartDate(event.getEventDetail().getEventStartDate().toString())
-                .eventEndDate(event.getEventDetail().getEventEndDate().toString())
-                .type(event.getType().name())
-                .build();
+    public EventDetailResponseDto getEventDetail(Long eventId) {
+        Event event = eventRepository.findDetailById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        return eventMapper.toDetailDto(event);
     }
 } 

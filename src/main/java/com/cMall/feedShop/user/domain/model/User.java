@@ -84,6 +84,23 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.passwordChangedAt = LocalDateTime.now(); // 초기 비밀번호 변경 시간 설정
     }
 
+    public User(Long id, String loginId, String password, String email, UserRole role) {
+        this.id = id;
+        this.loginId = loginId;
+        this.password = password;
+        this.email = email;
+        this.role = role;
+        this.status = UserStatus.ACTIVE; // 테스트용으로 ACTIVE 상태가 적합할 수 있습니다.
+        this.passwordChangedAt = LocalDateTime.now();
+    }
+
+    public void setUserProfile(UserProfile userProfile) {
+        this.userProfile = userProfile;
+        if (userProfile != null && userProfile.getUser() != this) {
+            userProfile.setUser(this); // 양방향 관계 동기화
+        }
+    }
+
     // 비즈니스 메서드
     public void changePassword(String newPassword) {
         // 도메인 규칙 검증
@@ -127,9 +144,4 @@ public class User extends BaseTimeEntity implements UserDetails {
         return this.status == UserStatus.ACTIVE;
     }
 
-    // canLogin() 메서드는 UserDetails의 isEnabled()와 역할이 중복되거나 유사할 수 있으므로
-    // UserDetails의 isEnabled()를 사용하는 것을 권장합니다.
-    // public boolean canLogin() {
-    //     return status == UserStatus.ACTIVE;
-    // }
 }

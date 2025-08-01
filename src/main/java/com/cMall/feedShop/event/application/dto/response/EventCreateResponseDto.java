@@ -12,16 +12,16 @@ public class EventCreateResponseDto {
     private String type;
     private String status;
     private Integer maxParticipants;
-    private Object createdBy; // LocalDateTime 등 실제 타입에 맞게 조정 가능
+    private java.time.LocalDateTime createdAt;
 
-    public static EventCreateResponseDto of(Long eventId, String title, String type, String status, Integer maxParticipants, Object createdBy) {
+    public static EventCreateResponseDto of(Long eventId, String title, String type, String status, Integer maxParticipants, java.time.LocalDateTime createdAt) {
         return EventCreateResponseDto.builder()
                 .eventId(eventId)
                 .title(title)
                 .type(type)
                 .status(status)
                 .maxParticipants(maxParticipants)
-                .createdBy(createdBy)
+                .createdAt(createdAt)
                 .build();
     }
 } 
