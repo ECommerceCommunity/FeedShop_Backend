@@ -32,6 +32,10 @@ public enum ErrorCode {
     INVALID_TOKEN(400, "U100", "유효하지 않거나 찾을 수 없는 토큰입니다."), // 일반적인 토큰 유효성 검사 실패 (찾을 수 없거나 잘못된 형식)
     TOKEN_EXPIRED(400, "U101", "토큰이 만료되었습니다. 비밀번호 재설정을 다시 시도해주세요."), // 토큰 만료
 
+    // reCAPTCHA
+    RECAPTCHA_VERIFICATION_FAILED(400, "A003", "reCAPTCHA 인증에 실패했습니다."),
+    RECAPTCHA_SCORE_TOO_LOW(400, "A004", "비정상적인 접근으로 의심되어 요청을 차단합니다."),
+
     // 스토어
     STORE_FORBIDDEN(403, "S001", "해당 스토어의 관리자가 아닙니다."),
     STORE_NOT_FOUND(404, "S002", "스토어를 찾을 수 없습니다."),
