@@ -11,6 +11,7 @@ import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
 import com.cMall.feedShop.review.domain.repository.ReviewRepository;
+import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,6 +37,8 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final ReviewDuplicationValidator duplicationValidator;
+
 
     @Transactional
     public ReviewCreateResponse createReview(ReviewCreateRequest request) {
@@ -49,6 +52,7 @@ public class ReviewService {
 
         String userEmail = authentication.getName();
 
+
         // 사용자 조회
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -57,6 +61,8 @@ public class ReviewService {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + request.getProductId()));
 
+        // 🆕 중복 리뷰 검증 (유틸리티 사용)
+        duplicationValidator.validateNoDuplicateActiveReview(user.getId(), product.getProductId());
 
         Review review = Review.builder()
                 .title(request.getTitle())

@@ -58,7 +58,6 @@ public class SecurityConfig {
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
-                      "/api/products",
                       "/api/products/**",
                       "/api/events/all",
                       "/api/events/search",
@@ -83,7 +82,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app", // 프론트엔드 실제 배포 주소
+                "https://feedshop-frontend.vercel.app",
                 "https://www.feedshop.store",
                 "http://localhost:3000"
         ));
