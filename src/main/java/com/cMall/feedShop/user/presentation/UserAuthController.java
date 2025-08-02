@@ -2,6 +2,8 @@ package com.cMall.feedShop.user.presentation;
 
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.user.application.dto.request.EmailRequest;
+import com.cMall.feedShop.user.application.dto.request.PasswordResetConfirmRequest;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
@@ -31,8 +33,8 @@ public class UserAuthController {
 
     @PostMapping("/login")
     @ApiResponseFormat(message = "로그인이 성공적으로 완료되었습니다.")
-    public ApiResponse<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
-        return ApiResponse.success(userAuthService.login(request));
+    public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
     }
 
     @GetMapping("/verify-email")
@@ -62,5 +64,39 @@ public class UserAuthController {
             // 실패 시 404 NOT_FOUND를 반환합니다.
             return new ResponseEntity<>(ApiResponse.error("해당하는 계정을 찾을 수 없습니다."), HttpStatus.NOT_FOUND);
         }
+    }
+
+    @PostMapping("/forgot-password")
+    @ApiResponseFormat(message="비밀번호 재설정 링크가 이메일로 전송되었습니다.")
+    public ResponseEntity<ApiResponse<String>> findPassword(@RequestBody EmailRequest emailRequest) {
+        userAuthService.requestPasswordReset(emailRequest.getEmail());
+        return new ResponseEntity<>(ApiResponse.success("비밀번호 재설정 링크가 이메일로 전송되었습니다.", null), HttpStatus.OK);
+    }
+
+    // 1. 비밀번호 재설정 링크 클릭 시 토큰을 처리하는 엔드포인트
+    // 이메일 링크를 통해 들어오는 GET 요청을 처리합니다.
+    // 주로 토큰의 유효성을 검사하고, 유효하면 프론트엔드의 비밀번호 재설정 폼으로 리다이렉트합니다.
+    @GetMapping("/reset-password")
+    @ApiResponseFormat(message = "비밀번호 재설정 페이지로 이동합니다.") // AOP 메시지
+    public ResponseEntity<ApiResponse<String>> showResetPasswordForm(@RequestParam("token") String token) {
+        // 토큰 유효성만 검사하고, 실제 비밀번호 변경은 POST 엔드포인트에서 진행합니다.
+        // userAuthService에 토큰 유효성 검사 메서드를 추가해야 합니다.
+        userAuthService.validatePasswordResetToken(token); // 토큰 유효성 검사 (만료, 존재 여부 등)
+
+        // 클라이언트를 프론트엔드의 비밀번호 재설정 폼 페이지로 리다이렉트하거나,
+        // 성공 메시지를 반환하여 클라이언트가 해당 폼으로 이동하도록 유도합니다.
+        // 여기서는 API 응답으로 처리하고, 프론트엔드가 이 응답을 받아 다음 단계를 진행한다고 가정합니다.
+        // 만약 직접 리다이렉트가 필요하다면 ResponseEntity.status(HttpStatus.FOUND).location(URI.create("...")).build(); 사용
+        return ResponseEntity.ok(ApiResponse.success("비밀번호 재설정 토큰이 유효합니다. 새 비밀번호를 입력해주세요.", token));
+    }
+
+    // 2. 새로운 비밀번호를 제출하여 실제로 비밀번호를 변경하는 엔드포인트
+    // 프론트엔드에서 새 비밀번호와 토큰을 받아 비밀번호를 업데이트합니다.
+    @PostMapping("/reset-password")
+    @ApiResponseFormat(message = "비밀번호가 성공적으로 재설정되었습니다.")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody @Valid PasswordResetConfirmRequest request) {
+        // userAuthService에 실제 비밀번호 재설정 로직을 호출합니다.
+        userAuthService.resetPassword(request.getToken(), request.getNewPassword());
+        return new ResponseEntity<>(ApiResponse.success("비밀번호가 성공적으로 재설정되었습니다.", null), HttpStatus.OK);
     }
 }
