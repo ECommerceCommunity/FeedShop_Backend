@@ -5,16 +5,25 @@ import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
+import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
 import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
 import com.cMall.feedShop.review.domain.enums.Stability;
 import com.cMall.feedShop.review.domain.repository.ReviewRepository;
+import com.cMall.feedShop.product.domain.model.Product;
+import com.cMall.feedShop.product.domain.model.Category;
+import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
+
+import com.cMall.feedShop.store.domain.model.Store;
+import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.product.domain.repository.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +42,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -55,16 +65,25 @@ class ReviewServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private ProductRepository productRepository;  // 추가된 Mock
+
+    @Mock
     private SecurityContext securityContext;
 
     @Mock
     private Authentication authentication;
+
+    @Mock
+    private ReviewDuplicationValidator duplicationValidator;
 
     @InjectMocks
     private ReviewService reviewService;
 
     private User testUser;
     private UserProfile testUserProfile;
+    private Product testProduct;
+    private Store testStore;
+    private Category testCategory;
     private Review testReview;
     private ReviewCreateRequest createRequest;
 
@@ -76,6 +95,22 @@ class ReviewServiceTest {
         testUserProfile = new UserProfile(testUser, "테스트사용자", "테스트닉네임", "010-1234-5678");
         testUser.setUserProfile(testUserProfile);
 
+        // Store와 Category 모킹
+        testStore = mock(Store.class);
+        testCategory = mock(Category.class);
+
+        // Product 객체 생성
+        testProduct = Product.builder()
+                .name("테스트 신발")
+                .price(new BigDecimal("100000"))
+                .store(testStore)
+                .category(testCategory)
+                .discountType(DiscountType.NONE)
+                .discountValue(null)
+                .description("테스트용 신발입니다")
+                .build();
+        ReflectionTestUtils.setField(testProduct, "productId", 1L);
+
         testReview = Review.builder()
                 .title("좋은 신발입니다")
                 .rating(5)
@@ -84,7 +119,7 @@ class ReviewServiceTest {
                 .stability(Stability.STABLE)
                 .content("정말 편하고 좋습니다. 추천해요!")
                 .user(testUser)
-                .productId(1L)
+                .product(testProduct)  // 수정된 부분: productId(1L) → product(testProduct)
                 .build();
         ReflectionTestUtils.setField(testReview, "reviewId", 1L);
         ReflectionTestUtils.setField(testReview, "createdAt", LocalDateTime.now());
@@ -113,6 +148,7 @@ class ReviewServiceTest {
             mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
             mockSecurityContext();
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));  // 추가된 모킹
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
 
             // when
@@ -136,7 +172,7 @@ class ReviewServiceTest {
             // when & then
             assertThatThrownBy(() -> reviewService.createReview(createRequest))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("로그인이 필요합니다");
+                    .hasMessageContaining("인증이 필요합니다");
         }
     }
 
@@ -206,6 +242,23 @@ class ReviewServiceTest {
     }
 
     @Test
+    @DisplayName("상품이 존재하지 않으면 예외가 발생한다")
+    void createReviewWithNonExistentProduct() {
+        // given
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            mockSecurityContext();
+            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.empty());  // Product 없음
+
+            // when & then
+            assertThatThrownBy(() -> reviewService.createReview(createRequest))
+                    .isInstanceOf(EntityNotFoundException.class)
+                    .hasMessageContaining("상품을 찾을 수 없습니다");
+        }
+    }
+
+    @Test
     @DisplayName("평균 평점이 null인 경우 0.0을 반환한다")
     void getProductReviewsWithNullAverageRating() {
         // given
@@ -228,5 +281,52 @@ class ReviewServiceTest {
         given(securityContext.getAuthentication()).willReturn(authentication);
         given(authentication.isAuthenticated()).willReturn(true);
         given(authentication.getName()).willReturn("test@test.com");
+    }
+    @Test
+    @DisplayName("이미 리뷰를 작성한 상품에 중복 리뷰를 작성하면 예외가 발생한다")
+    void createDuplicateReview() {
+        // given
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            mockSecurityContext();
+            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
+
+            // 중복 검증에서 예외 발생하도록 설정
+            doThrow(new DuplicateReviewException(1L))
+                    .when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
+
+            // when & then
+            assertThatThrownBy(() -> reviewService.createReview(createRequest))
+                    .isInstanceOf(DuplicateReviewException.class)
+                    .hasMessageContaining("상품 ID 1에 대한 리뷰를 이미 작성하셨습니다");
+
+            verify(duplicationValidator, times(1)).validateNoDuplicateActiveReview(1L, 1L);
+        }
+    }
+
+    @Test
+    @DisplayName("중복 리뷰가 없으면 정상적으로 리뷰를 생성할 수 있다")
+    void createReviewWithNoDuplicate() {
+        // given
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            mockSecurityContext();
+            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
+            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+
+            // 중복 검증 통과하도록 설정 (예외 발생 안함)
+            doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
+
+            // when
+            ReviewCreateResponse response = reviewService.createReview(createRequest);
+
+            // then
+            assertThat(response.getReviewId()).isEqualTo(1L);
+            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 작성되었습니다.");
+            verify(duplicationValidator, times(1)).validateNoDuplicateActiveReview(1L, 1L);
+            verify(reviewRepository, times(1)).save(any(Review.class));
+        }
     }
 }

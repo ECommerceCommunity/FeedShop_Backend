@@ -1,289 +1,413 @@
 package com.cMall.feedShop.event.application.service;
 
 import com.cMall.feedShop.event.application.dto.request.EventCreateRequestDto;
-import com.cMall.feedShop.event.application.exception.InvalidEventTypeException;
+import com.cMall.feedShop.event.domain.enums.EventType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("EventValidator 테스트")
+@DisplayName("이벤트 검증 서비스 테스트")
 class EventValidatorTest {
 
     private EventValidator eventValidator;
-    private EventCreateRequestDto validRequestDto;
 
     @BeforeEach
     void setUp() {
         eventValidator = new EventValidator();
-        
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
+    }
+
+    @Test
+    @DisplayName("유효한 이벤트 생성 요청 검증 성공")
+    void validateEventCreateRequest_ValidRequest_Success() {
+        // given
+        EventCreateRequestDto requestDto = createValidEventCreateRequest();
+
+        // when & then
+        eventValidator.validateEventCreateRequest(requestDto);
+    }
+
+    @Test
+    @DisplayName("필수 필드 누락 시 예외 발생")
+    void validateEventCreateRequest_MissingRequiredFields_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithTitle(null);
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이벤트 제목은 필수입니다.");
+    }
+
+    @Test
+    @DisplayName("빈 제목 시 예외 발생")
+    void validateEventCreateRequest_EmptyTitle_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithTitle("   ");
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이벤트 제목은 필수입니다.");
+    }
+
+    @Test
+    @DisplayName("최대 참여자 수가 1 미만일 때 예외 발생")
+    void validateEventCreateRequest_MaxParticipantsLessThanOne_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithMaxParticipants(0);
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("최대 참여자 수는 1명 이상이어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("이벤트 시작일이 구매 시작일 이전인 경우 예외 발생")
+    void validateEventCreateRequest_EventStartBeforePurchaseStart_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithEventStartDate(LocalDate.now().minusDays(5));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이벤트 시작일은 구매 시작일 이후나 당일이어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("이벤트 종료일이 구매 종료일 이전인 경우 예외 발생")
+    void validateEventCreateRequest_EventEndBeforePurchaseEnd_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithEventEndDate(LocalDate.now().plusDays(5));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("이벤트 종료일은 구매 종료일 이후여야 합니다.");
+    }
+
+    @Test
+    @DisplayName("결과 발표일이 이벤트 종료일 이전인 경우 예외 발생")
+    void validateEventCreateRequest_AnnouncementBeforeEventEnd_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithAnnouncement(LocalDate.now().plusDays(15));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("결과 발표일은 이벤트 종료일 이후여야 합니다.");
+    }
+
+
+
+    @Test
+    @DisplayName("보상 조건값이 빈 문자열일 때 예외 발생")
+    void validateEventCreateRequest_EmptyConditionValue_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("   ", "상품")));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("1번째 유효하지 않은 보상 조건값입니다:    ");
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 보상 조건값일 때 예외 발생")
+    void validateEventCreateRequest_InvalidConditionValue_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("invalid", "상품")));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("1번째 유효하지 않은 보상 조건값입니다: invalid");
+    }
+
+    @Test
+    @DisplayName("등수가 1 미만일 때 예외 발생")
+    void validateEventCreateRequest_RankLessThanOne_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("0", "상품")));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("1번째 보상 등수는 1~10 사이여야 합니다: 0");
+    }
+
+    @Test
+    @DisplayName("등수가 10 초과일 때 예외 발생")
+    void validateEventCreateRequest_RankMoreThanTen_ThrowsException() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(createReward("11", "상품")));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("1번째 보상 등수는 1~10 사이여야 합니다: 11");
+    }
+
+
+
+    @Test
+    @DisplayName("유효한 등수 조건 검증 성공")
+    void validateEventCreateRequest_ValidRankCondition_Success() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(
+                createReward("1", "1등 상품"),
+                createReward("2", "2등 상품"),
+                createReward("3", "3등 상품")
+        ));
+
+        // when & then
+        eventValidator.validateEventCreateRequest(requestDto);
+    }
+
+    @Test
+    @DisplayName("유효한 특별 조건 검증 성공")
+    void validateEventCreateRequest_ValidSpecialConditions_Success() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(
+                createReward("participation", "참여자 전원"),
+                createReward("voters", "투표자 TOP"),
+                createReward("views", "조회수 TOP"),
+                createReward("likes", "좋아요 TOP"),
+                createReward("random", "랜덤 추첨")
+        ));
+
+        // when & then
+        eventValidator.validateEventCreateRequest(requestDto);
+    }
+
+    @Test
+    @DisplayName("두 번째 보상에서 오류 발생 시 인덱스 표시")
+    void validateEventCreateRequest_SecondRewardError_ShowsCorrectIndex() {
+        // given
+        EventCreateRequestDto requestDto = createEventCreateRequestWithRewards(Arrays.asList(
+                createReward("1", "1등 상품"),
+                createReward("invalid", "2등 상품")
+        ));
+
+        // when & then
+        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(requestDto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("2번째 유효하지 않은 보상 조건값입니다: invalid");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 조건값 유효성 검증 성공")
+    void validateRewardRequestDto_ValidConditionValue_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("1")
+                .rewardValue("1등 상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isTrue();
+        reward.validateConditionValue(); // 예외 발생하지 않음
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 특별 조건값 유효성 검증 성공")
+    void validateRewardRequestDto_ValidSpecialCondition_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("participation")
+                .rewardValue("참여자 전원")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isTrue();
+        reward.validateConditionValue(); // 예외 발생하지 않음
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 유효하지 않은 조건값 검증 실패")
+    void validateRewardRequestDto_InvalidConditionValue_Failure() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("invalid")
+                .rewardValue("상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isFalse();
+        assertThatThrownBy(() -> reward.validateConditionValue())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("유효하지 않은 보상 조건값입니다: invalid");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 등수 범위 초과 검증 실패")
+    void validateRewardRequestDto_RankOutOfRange_Failure() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("11")
+                .rewardValue("상품")
+                .build();
+
+        // when & then
+        assertThat(reward.isValidConditionValue()).isFalse();
+        assertThatThrownBy(() -> reward.validateConditionValue())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("보상 등수는 1~10 사이여야 합니다: 11");
+    }
+
+    @Test
+    @DisplayName("EventRewardRequestDto 전체 검증 성공")
+    void validateRewardRequestDto_CompleteValidation_Success() {
+        // given
+        EventCreateRequestDto.EventRewardRequestDto reward = EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue("1")
+                .rewardValue("1등 상품")
+                .build();
+
+        // when & then
+        reward.validate(); // 예외 발생하지 않음
+    }
+
+    // Helper methods
+    private EventCreateRequestDto createValidEventCreateRequest() {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(7))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
                 .purchaseStartDate(LocalDate.now())
-                .purchaseEndDate(LocalDate.now().plusDays(5))
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
                 .build();
     }
 
-    @Test
-    @DisplayName("유효한 요청 검증 성공")
-    void validateEventCreateRequest_Success() {
-        // When & Then
-        eventValidator.validateEventCreateRequest(validRequestDto);
-        // 예외가 발생하지 않으면 성공
+    private EventCreateRequestDto createEventCreateRequestWithTitle(String title) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
+                .title(title)
+                .description("테스트 이벤트 설명")
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
+                .build();
     }
 
-    @Test
-    @DisplayName("이벤트 타입이 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullType() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
+    private EventCreateRequestDto createEventCreateRequestWithMaxParticipants(int maxParticipants) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(maxParticipants)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
                 .build();
-
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(InvalidEventTypeException.class);
     }
 
-    @Test
-    @DisplayName("제목이 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullTitle() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .build();
-
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 제목은 필수입니다.");
-    }
-
-    @Test
-    @DisplayName("제목이 빈 문자열인 경우 예외 발생")
-    void validateEventCreateRequest_EmptyTitle() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("")
-                .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .build();
-
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 제목은 필수입니다.");
-    }
-
-    @Test
-    @DisplayName("설명이 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullDescription() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("테스트 이벤트")
-                .maxParticipants(10)
-                .build();
-
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 설명은 필수입니다.");
-    }
-
-    @Test
-    @DisplayName("설명이 빈 문자열인 경우 예외 발생")
-    void validateEventCreateRequest_EmptyDescription() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("테스트 이벤트")
-                .description("")
-                .maxParticipants(10)
-                .build();
-
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 설명은 필수입니다.");
-    }
-
-    @Test
-    @DisplayName("이벤트 시작일이 종료일보다 늦은 경우 예외 발생")
-    void validateEventCreateRequest_InvalidEventDateRange() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
+    private EventCreateRequestDto createEventCreateRequestWithEventStartDate(LocalDate eventStartDate) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now().plusDays(7))
-                .eventEndDate(LocalDate.now())
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(eventStartDate)
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
                 .build();
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 시작일은 종료일보다 이전이어야 합니다.");
     }
 
-    @Test
-    @DisplayName("구매 시작일이 종료일보다 늦은 경우 예외 발생")
-    void validateEventCreateRequest_InvalidPurchaseDateRange() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
+    private EventCreateRequestDto createEventCreateRequestWithEventEndDate(LocalDate eventEndDate) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(1))
-                .purchaseStartDate(LocalDate.now().plusDays(5))
-                .purchaseEndDate(LocalDate.now())
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(eventEndDate)
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
                 .build();
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("구매 시작일은 종료일보다 이전이어야 합니다.");
     }
 
-    @Test
-    @DisplayName("maxParticipants가 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullMaxParticipants() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
+    private EventCreateRequestDto createEventCreateRequestWithAnnouncement(LocalDate announcement) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(null)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(announcement)
+                .rewards(Arrays.asList(createReward("1", "1등 상품")))
                 .build();
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("최대 참여자 수는 필수입니다.");
     }
 
-    @Test
-    @DisplayName("eventStartDate가 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullEventStartDate() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
+    private EventCreateRequestDto createEventCreateRequestWithRewards(java.util.List<EventCreateRequestDto.EventRewardRequestDto> rewards) {
+        return EventCreateRequestDto.builder()
+                .type(EventType.BATTLE)
                 .title("테스트 이벤트")
                 .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(null)
-                .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+                .participationMethod("구매 후 참여")
+                .selectionCriteria("구매 금액 순")
+                .precautions("주의사항")
+                .maxParticipants(100)
+                .purchaseStartDate(LocalDate.now())
+                .purchaseEndDate(LocalDate.now().plusDays(10))
+                .eventStartDate(LocalDate.now().plusDays(2))
+                .eventEndDate(LocalDate.now().plusDays(20))
+                .announcement(LocalDate.now().plusDays(25))
+                .rewards(rewards)
                 .build();
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 시작일은 필수입니다.");
     }
 
-    @Test
-    @DisplayName("eventEndDate가 null인 경우 예외 발생")
-    void validateEventCreateRequest_NullEventEndDate() {
-        // Given
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("테스트 이벤트")
-                .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(null)
-                .rewards(List.of(
-                    EventCreateRequestDto.EventRewardRequestDto.builder()
-                        .conditionValue(1)
-                        .rewardValue("상품")
-                        .build()
-                ))
+    private EventCreateRequestDto.EventRewardRequestDto createReward(String conditionValue, String rewardValue) {
+        return EventCreateRequestDto.EventRewardRequestDto.builder()
+                .conditionValue(conditionValue)
+                .rewardValue(rewardValue)
                 .build();
-        // When & Then
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 종료일은 필수입니다.");
-    }
-
-    @Test
-    @DisplayName("rewards가 null이거나 빈 값인 경우 예외 발생")
-    void validateEventCreateRequest_NullOrEmptyRewards() {
-        // rewards가 null
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("테스트 이벤트")
-                .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards(null)
-                .build();
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 보상 정보는 필수입니다.");
-        // rewards가 빈 값
-        validRequestDto = EventCreateRequestDto.builder()
-                .type(com.cMall.feedShop.event.domain.enums.EventType.BATTLE)
-                .title("테스트 이벤트")
-                .description("테스트 이벤트 설명")
-                .maxParticipants(10)
-                .eventStartDate(LocalDate.now())
-                .eventEndDate(LocalDate.now().plusDays(1))
-                .rewards(List.of())
-                .build();
-        assertThatThrownBy(() -> eventValidator.validateEventCreateRequest(validRequestDto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이벤트 보상 정보는 필수입니다.");
     }
 } 
