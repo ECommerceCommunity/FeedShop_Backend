@@ -167,4 +167,36 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
                         tuple -> tuple.get(review.count())
                 ));
     }
+
+
+    @Override
+    public boolean existsByUserIdAndProductId(Long userId, Long productId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(
+                        review.user.id.eq(userId),
+                        review.product.productId.eq(productId)
+                )
+                .fetchOne();
+
+        return count != null && count > 0;
+    }
+
+    @Override
+    public boolean existsActiveReviewByUserIdAndProductId(Long userId, Long productId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(
+                        review.user.id.eq(userId),
+                        review.product.productId.eq(productId),
+                        review.status.eq(ReviewStatus.ACTIVE),
+                        review.isBlinded.isFalse()
+                )
+                .fetchOne();
+
+        return count != null && count > 0;
+    }
+
 }
