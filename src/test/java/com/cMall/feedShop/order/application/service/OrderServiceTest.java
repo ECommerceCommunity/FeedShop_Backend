@@ -495,7 +495,6 @@ class OrderServiceTest {
                 .recipientName("홍길동")
                 .recipientPhone("010-1234-5678")
                 .paymentMethod("카드")
-                .currency("KRW")
                 .build();
         setField(order1, "orderId", 1L);
 
@@ -518,7 +517,6 @@ class OrderServiceTest {
                 .recipientName("김철수")
                 .recipientPhone("010-9876-5432")
                 .paymentMethod("카드")
-                .currency("KRW")
                 .build();
         setField(order2, "orderId", 2L);
 
