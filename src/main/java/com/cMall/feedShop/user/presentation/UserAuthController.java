@@ -9,6 +9,7 @@ import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
+import com.cMall.feedShop.user.application.service.RecaptchaService;
 import com.cMall.feedShop.user.application.service.UserAuthService;
 import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
@@ -24,6 +25,8 @@ public class UserAuthController {
 
     private final UserService userService;
     private final UserAuthService userAuthService;
+    private final RecaptchaService recaptchaService;
+
 
     @PostMapping("/signup")
     @ApiResponseFormat(message = "회원가입이 성공적으로 완료되었습니다.")
@@ -32,8 +35,13 @@ public class UserAuthController {
     }
 
     @PostMapping("/login")
-    @ApiResponseFormat(message = "로그인이 성공적으로 완료되었습니다.")
     public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
+        boolean isRecaptchaValid = recaptchaService.verifyRecaptcha(request.getRecaptchaToken());
+
+        if (!isRecaptchaValid) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("reCAPTCHA 인증에 실패했습니다."));
+        }
         return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
     }
 
@@ -52,8 +60,8 @@ public class UserAuthController {
     @GetMapping("/find-account")
     @ApiResponseFormat(message = "계정 조회 처리 완료.")
     public ResponseEntity<ApiResponse<UserResponse>> findAccountByNameAndPhone(
-                                                                                @RequestParam("username") String username,
-                                                                                @RequestParam("phoneNumber") String phoneNumber
+            @RequestParam("username") String username,
+            @RequestParam("phoneNumber") String phoneNumber
     ) {
         UserResponse account = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
 
