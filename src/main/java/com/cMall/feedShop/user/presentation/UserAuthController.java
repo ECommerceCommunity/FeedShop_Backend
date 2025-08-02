@@ -36,12 +36,7 @@ public class UserAuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
-        boolean isRecaptchaValid = recaptchaService.verifyRecaptcha(request.getRecaptchaToken());
-
-        if (!isRecaptchaValid) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("reCAPTCHA 인증에 실패했습니다."));
-        }
+        recaptchaService.verifyRecaptcha(request.getRecaptchaToken(), "login_submit");
         return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
     }
 
