@@ -11,8 +11,6 @@ public interface UserService {
 
     void sendVerificationEmail(User user, String subject, String contentBody);
 
-    boolean isLoginIdDuplicated(String loginId);
-
     boolean isEmailDuplicated(String email);
 
     void verifyEmail(String token);

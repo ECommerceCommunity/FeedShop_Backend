@@ -55,10 +55,10 @@ public class UserServiceImpl implements UserService{
 
             if (existingUser.getStatus() == UserStatus.ACTIVE) {
                 // 이미 활성(ACTIVE) 상태의 사용자가 해당 이메일로 가입되어 있다면
-                throw new UserException(DUPLICATE_EMAIL); // ErrorCode 사용
+                throw new UserException(DUPLICATE_EMAIL);
             } else if (existingUser.getStatus() == UserStatus.PENDING) {
                 // PENDING 상태의 사용자가 존재한다면 (이메일 인증 미완료)
-                updateVerificationToken(existingUser); // private 메서드로 분리된 로직 사용
+                updateVerificationToken(existingUser);
 
                 userRepository.save(existingUser);
 
@@ -90,7 +90,6 @@ public class UserServiceImpl implements UserService{
         user.setStatus(UserStatus.PENDING);
         user.setPasswordChangedAt(LocalDateTime.now());
 
-        // 개발 브랜치에서 분리된 updateVerificationToken 메서드 사용
         updateVerificationToken(user);
 
         UserProfile userProfile = new UserProfile(
@@ -102,8 +101,7 @@ public class UserServiceImpl implements UserService{
 
         user.setUserProfile(userProfile);
 
-        // develop 브랜치의 createUser에서 반환하는 방식과 동일하게 변경
-        userRepository.save(user); // 저장 후 반환
+        userRepository.save(user);
         sendVerificationEmail(user, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
 
         return UserResponse.from(user);
@@ -115,11 +113,7 @@ public class UserServiceImpl implements UserService{
         LocalDateTime newExpiryTime = LocalDateTime.now().plusHours(1);
         user.setVerificationToken(newVerificationToken);
         user.setVerificationTokenExpiry(newExpiryTime);
-        // 이 메서드 내에서 save를 호출하지 않고, 호출하는 쪽에서 save하도록 하는 것이 트랜잭션 관리에 더 유연할 수 있습니다.
-        // 현재 signUp 메서드에서 save를 하고 있으므로 여기서는 save를 제거합니다.
-        // userRepository.save(user); // 이 부분은 호출하는 곳에서 처리
     }
-
 
     public void sendVerificationEmail(User user, String subject, String contentBody) {
         String verificationLink = verificationUrl + user.getVerificationToken();
@@ -133,17 +127,17 @@ public class UserServiceImpl implements UserService{
         emailService.sendSimpleEmail(user.getEmail(), emailSubject, emailContent);
     }
 
-    // 아이디 중복 확인 메서드 (API 제공 시 활용)
+    // 아이디 중복 확인 메서드
     @Transactional(readOnly = true)
     public boolean isLoginIdDuplicated(String loginId) {
         return userRepository.existsByLoginId(loginId);
     }
 
 
-    // 이메일 중복 확인 메서드 (API 제공 시 활용)
+    // 이메일 중복 확인 메서드
     @Transactional(readOnly = true)
     public boolean isEmailDuplicated(String email) {
-        return userRepository.existsByEmail(email); // User Repository 사용
+        return userRepository.existsByEmail(email);
     }
 
     public void verifyEmail(String token) {
@@ -153,11 +147,6 @@ public class UserServiceImpl implements UserService{
         if (user.getStatus() == UserStatus.ACTIVE) {
             throw new UserException(ACCOUNT_ALREADY_VERIFIED);
         }
-
-        // 토큰 만료 확인 전에 토큰이 일치하는지 확인하는 로직은 findByVerificationToken에서 이미 처리되므로 제거
-        // if (user.getVerificationToken() == null || !user.getVerificationToken().equals(token)) {
-        //     throw new UserException(INVALID_VERIFICATION_TOKEN); // 이 예외는 findByVerificationToken에서 던져짐
-        // }
 
         if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
             user.setVerificationToken(null);
