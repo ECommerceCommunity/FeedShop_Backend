@@ -4,6 +4,7 @@ import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.product.application.util.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.product.domain.enums.ImageType;
+import com.cMall.feedShop.review.domain.Review;
 import com.cMall.feedShop.store.domain.model.Store;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -57,6 +58,9 @@ public class Product extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductOption> productOptions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade =  CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Review> reviews = new ArrayList<>();
 
     @Builder
     public Product(String name, BigDecimal price, Store store, Category category,

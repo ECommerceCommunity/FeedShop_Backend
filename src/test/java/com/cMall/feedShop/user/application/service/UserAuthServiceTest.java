@@ -116,6 +116,7 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("로그인 실패 - 존재하지 않는 회원 (이메일 없음)")
     void login_fail_userNotFound() {
+        // when: AuthenticationManager가 UsernameNotFoundException을 던지도록 설정
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new UsernameNotFoundException("User not found with email: " + loginRequest.getEmail()));
 
@@ -134,6 +135,7 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
     void login_fail_passwordMismatch() {
+        // (비밀번호 불일치 시 발생)
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
