@@ -26,12 +26,11 @@ public enum ErrorCode {
     VERIFICATION_TOKEN_EXPIRED(400, "U007", "인증 토큰이 만료되었습니다. 다시 회원가입을 시도하거나 인증 메일을 재발송해주세요."),
     ACCOUNT_NOT_VERIFIED(403, "U008", "이메일 인증이 완료되지 않은 계정입니다."),
     DUPLICATE_LOGIN_ID(409, "U009", "이미 존재하는 로그인 ID입니다."),
-    USER_ACCOUNT_NOT_ACTIVE(403, "U010", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."), // 새로운 코드
+    USER_ACCOUNT_NOT_ACTIVE(403, "U010", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."),
 
     // 비밀번호 재설정 관련 추가
     INVALID_TOKEN(400, "U100", "유효하지 않거나 찾을 수 없는 토큰입니다."), // 일반적인 토큰 유효성 검사 실패 (찾을 수 없거나 잘못된 형식)
     TOKEN_EXPIRED(400, "U101", "토큰이 만료되었습니다. 비밀번호 재설정을 다시 시도해주세요."), // 토큰 만료
-
 
     // 스토어
     STORE_FORBIDDEN(403, "S001", "해당 스토어의 관리자가 아닙니다."),
@@ -64,7 +63,7 @@ public enum ErrorCode {
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
     INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다.");
-    
+
     private final int status;
     private final String code;
     private final String message;
