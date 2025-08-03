@@ -1,6 +1,9 @@
-// src/main/java/com/cMall/feedShop/common/service/EmailServiceImpl.java
+
 package com.cMall.feedShop.common.service;
 
+import com.mailgun.api.v3.MailgunMessagesApi;
+import com.mailgun.model.message.Message;
+import com.mailgun.model.message.MessageResponse;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.mailgun.api.v3.MailgunMessagesApi;
