@@ -41,7 +41,6 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // 예외 처리 (인증되지 않은 사용자가 보호된 리소스에 접근 시 처리)
@@ -60,7 +59,6 @@ public class SecurityConfig {
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
                       "/api/products/**",
-                      "/api/reviews/**",
                       "/api/events/all",
                       "/api/events/search",
                       "/api/events/{eventId}",

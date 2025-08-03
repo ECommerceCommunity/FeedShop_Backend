@@ -2,8 +2,9 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
-import com.cMall.feedShop.user.domain.exception.UserException; // UserException은 필수
 import com.cMall.feedShop.user.domain.model.User;
+
+import java.util.List;
 
 public interface UserService {
     UserResponse signUp(UserSignUpRequest request);
@@ -26,6 +27,6 @@ public interface UserService {
 
     void withdrawCurrentUserWithPassword(String email, String rawPassword);
 
-    UserResponse findByUsernameAndPhoneNumber(String username, String phoneNumber);
+    List<UserResponse> findByUsernameAndPhoneNumber(String username, String phoneNumber);
 }
 
