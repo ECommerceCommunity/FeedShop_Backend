@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class UserAuthServiceImpl implements UserAuthService {
 
@@ -50,6 +51,7 @@ public class UserAuthServiceImpl implements UserAuthService {
         this.jwtProvider = jwtProvider;
         this.authenticationManager = authenticationManager;
     }
+  
     /**
      * 사용자 로그인 처리 메서드.
      * 로그인 ID와 비밀번호를 받아 사용자 인증을 수행하고, 성공 시 JWT 토큰을 발급합니다.
@@ -73,7 +75,6 @@ public class UserAuthServiceImpl implements UserAuthService {
             // JWT 토큰 생성에 필요한 정보를 얻기 위해 User 객체를 다시 조회합니다.
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
-
             if (user.getStatus() == UserStatus.PENDING) {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }
