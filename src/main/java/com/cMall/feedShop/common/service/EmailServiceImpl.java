@@ -1,18 +1,26 @@
-// src/main/java/com/cMall/feedShop/common/service/EmailServiceImpl.java
+
 package com.cMall.feedShop.common.service;
 
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
+import com.cMall.feedShop.common.exception.BusinessException;
+import com.cMall.feedShop.common.exception.ErrorCode;
+import com.mailgun.api.v3.MailgunMessagesApi;
+import com.mailgun.model.message.Message;
+import com.mailgun.model.message.MessageResponse;
+import feign.FeignException;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
 @Service
+@Primary
 public class EmailServiceImpl implements EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
@@ -33,7 +41,8 @@ public class EmailServiceImpl implements EmailService {
         this.domain = domain;
         this.fromEmail = fromEmail;
         this.mailgunMessagesApi = mailgunMessagesApi;
-        logger.info("EmailServiceImpl 초기화됨: apiKey: {}, domain: {}", apiKey, domain);
+        logger.info("EmailServiceImpl 초기화됨");
+//        logger.info("EmailServiceImpl 초기화됨: apiKey: {}, domain: {}", apiKey, domain);
     }
 
     // 환경 변수 검증
@@ -84,9 +93,13 @@ public class EmailServiceImpl implements EmailService {
         try {
             MessageResponse response = mailgunMessagesApi.sendMessage(domain, message);
             logger.info("Mailgun 이메일이 {}로 성공적으로 전송되었습니다: {}", toEmail, response.getMessage());
-        } catch (Exception e) {
+        } catch (FeignException e) {
             logger.error("Mailgun 이메일 {} 전송 실패: {}", toEmail, e.getMessage(), e);
-            throw new RuntimeException("Mailgun 이메일 전송 실패: " + e.getMessage(), e);
+            throw new BusinessException(ErrorCode.MAILGUN_API_FAILED, "Mailgun 이메일 전송 실패: " + e.getMessage(), e);
+        } catch (Exception e) {
+            // 모든 예외를 포괄적으로 처리하고, 구체적인 에러 코드 사용
+            logger.error("Mailgun 이메일 {} 전송 실패: {}", toEmail, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.MAILGUN_API_FAILED, "Mailgun 이메일 전송 실패: " + e.getMessage(), e);
         }
     }
 }
