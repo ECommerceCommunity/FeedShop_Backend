@@ -5,6 +5,7 @@ import com.cMall.feedShop.user.infrastructure.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -30,6 +31,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Profile("prod")
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -50,29 +52,26 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                //    .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
-                      "/api/auth/login",
-                      "/api/auth/signup",
-                      "/api/auth/verify-email",
-                      "/api/auth/find-account",
+                      "/api/auth/**",
                       "/public/**",
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
                       "/swagger-resources/**",
-
-                      "/api/products", // 현재 브랜치에 있던 내용
-                      "/api/products/**", // 현재 브랜치에 있던 내용
-                      "/api/events", "/api/events/**",
-                      "/api/reviews/products/**","/api/reviews/{reviewId}"
-
+                      "/api/products/**",
+                      "/api/reviews/**",
+                      "/api/events/all",
+                      "/api/events/search",
+                      "/api/events/{eventId}",
+                      "/api/reviews/products/**",
+                      "/api/reviews/{reviewId}"
                     ).permitAll()
                     .requestMatchers("/api/users/admin/**").hasRole("ADMIN")
                     .requestMatchers("/api/seller/**").hasRole("SELLER")
                     .requestMatchers("/actuator/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 )
-                // 폼 로그인 및 HTTP Basic 인증은 사용하지 않음
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -84,8 +83,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app/", // 프론트엔드 실제 배포 주소
-                "https://www.feedshop.store/",
+                "https://feedshop-frontend.vercel.app",
+                "https://www.feedshop.store",
                 "http://localhost:3000"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

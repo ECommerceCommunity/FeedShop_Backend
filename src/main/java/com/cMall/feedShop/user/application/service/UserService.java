@@ -2,6 +2,7 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
+import com.cMall.feedShop.user.domain.exception.UserException; // UserException은 필수
 import com.cMall.feedShop.user.domain.model.User;
 
 public interface UserService {
@@ -10,8 +11,6 @@ public interface UserService {
     void updateVerificationToken(User user);
 
     void sendVerificationEmail(User user, String subject, String contentBody);
-
-    boolean isLoginIdDuplicated(String loginId);
 
     boolean isEmailDuplicated(String email);
 

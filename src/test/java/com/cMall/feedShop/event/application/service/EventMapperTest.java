@@ -33,7 +33,7 @@ class EventMapperTest {
                 .precautions("주의사항")
                 .build();
         EventReward reward = EventReward.builder()
-                .conditionValue(1)
+                .conditionValue("1")
                 .rewardValue("상품권")
                 .build();
         Event event = Event.builder()
@@ -50,7 +50,7 @@ class EventMapperTest {
         assertThat(dto.getEventId()).isEqualTo(1L);
         assertThat(dto.getTitle()).isEqualTo("이벤트 제목");
         assertThat(dto.getType()).isEqualTo("battle");
-        assertThat(dto.getStatus()).isEqualTo("ongoing");
+        assertThat(dto.getStatus()).isEqualTo("ended");
         assertThat(dto.getEventStartDate()).isEqualTo("2024-07-01");
         assertThat(dto.getEventEndDate()).isEqualTo("2024-07-10");
         assertThat(dto.getImageUrl()).isEqualTo("http://img.com");
