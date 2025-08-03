@@ -32,6 +32,9 @@ public enum ErrorCode {
     INVALID_TOKEN(400, "U100", "유효하지 않거나 찾을 수 없는 토큰입니다."), // 일반적인 토큰 유효성 검사 실패 (찾을 수 없거나 잘못된 형식)
     TOKEN_EXPIRED(400, "U101", "토큰이 만료되었습니다. 비밀번호 재설정을 다시 시도해주세요."), // 토큰 만료
 
+    // 외부 API
+    MAILGUN_API_FAILED(502, "E001", "이메일 전송 중 외부 API 오류가 발생했습니다."),
+
     // reCAPTCHA
     RECAPTCHA_VERIFICATION_FAILED(400, "A003", "reCAPTCHA 인증에 실패했습니다."),
     RECAPTCHA_SCORE_TOO_LOW(400, "A004", "비정상적인 접근으로 의심되어 요청을 차단합니다."),

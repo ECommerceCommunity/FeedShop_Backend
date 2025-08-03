@@ -10,6 +10,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
+
 @Slf4j
 @Service
 public class RecaptchaService {
@@ -22,12 +24,16 @@ public class RecaptchaService {
 
     private static final String GOOGLE_RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 
+    private final RestTemplate restTemplate;
+
+    public RecaptchaService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public void verifyRecaptcha(String recaptchaToken, String expectedAction) {
         if (recaptchaToken == null || recaptchaToken.isEmpty()) {
             throw new BusinessException(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, "reCAPTCHA 토큰이 없습니다.");
         }
-
-        RestTemplate restTemplate = new RestTemplate();
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("secret", secretKey);
@@ -36,7 +42,7 @@ public class RecaptchaService {
         RecaptchaResponse response = restTemplate.postForObject(GOOGLE_RECAPTCHA_VERIFY_URL, params, RecaptchaResponse.class);
 
         if (response == null || !response.isSuccess()) {
-            log.warn("reCAPTCHA API 검증 실패: {}", response != null ? response.getErrorCodes() : "응답 없음");
+            log.warn("reCAPTCHA API 검증 실패: {}", response != null ? (response.getErrorCodes() != null ? response.getErrorCodes() : Collections.emptyList()) : "응답 없음");
             throw new BusinessException(ErrorCode.RECAPTCHA_VERIFICATION_FAILED);
         }
 
