@@ -73,7 +73,6 @@ public class UserAuthServiceImpl implements UserAuthService {
             // JWT 토큰 생성에 필요한 정보를 얻기 위해 User 객체를 다시 조회합니다.
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
-
             if (user.getStatus() == UserStatus.PENDING) {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }
