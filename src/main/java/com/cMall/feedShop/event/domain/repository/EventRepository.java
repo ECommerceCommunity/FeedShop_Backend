@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface EventRepository {
     Optional<Event> findById(Long id);
+    Optional<Event> findDetailById(Long id);
     Event save(Event event);
     void delete(Event event);
     List<Event> findAll();

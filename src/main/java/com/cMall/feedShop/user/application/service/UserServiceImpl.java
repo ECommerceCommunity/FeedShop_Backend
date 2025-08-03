@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,10 +57,10 @@ public class UserServiceImpl implements UserService{
 
             if (existingUser.getStatus() == UserStatus.ACTIVE) {
                 // 이미 활성(ACTIVE) 상태의 사용자가 해당 이메일로 가입되어 있다면
-                throw new UserException(DUPLICATE_EMAIL); // ErrorCode 사용
+                throw new UserException(DUPLICATE_EMAIL);
             } else if (existingUser.getStatus() == UserStatus.PENDING) {
                 // PENDING 상태의 사용자가 존재한다면 (이메일 인증 미완료)
-                updateVerificationToken(existingUser); // private 메서드로 분리된 로직 사용
+                updateVerificationToken(existingUser);
 
                 userRepository.save(existingUser);
 
@@ -90,7 +92,6 @@ public class UserServiceImpl implements UserService{
         user.setStatus(UserStatus.PENDING);
         user.setPasswordChangedAt(LocalDateTime.now());
 
-        // 개발 브랜치에서 분리된 updateVerificationToken 메서드 사용
         updateVerificationToken(user);
 
         UserProfile userProfile = new UserProfile(
@@ -102,8 +103,7 @@ public class UserServiceImpl implements UserService{
 
         user.setUserProfile(userProfile);
 
-        // develop 브랜치의 createUser에서 반환하는 방식과 동일하게 변경
-        userRepository.save(user); // 저장 후 반환
+        userRepository.save(user);
         sendVerificationEmail(user, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
 
         return UserResponse.from(user);
@@ -115,11 +115,7 @@ public class UserServiceImpl implements UserService{
         LocalDateTime newExpiryTime = LocalDateTime.now().plusHours(1);
         user.setVerificationToken(newVerificationToken);
         user.setVerificationTokenExpiry(newExpiryTime);
-        // 이 메서드 내에서 save를 호출하지 않고, 호출하는 쪽에서 save하도록 하는 것이 트랜잭션 관리에 더 유연할 수 있습니다.
-        // 현재 signUp 메서드에서 save를 하고 있으므로 여기서는 save를 제거합니다.
-        // userRepository.save(user); // 이 부분은 호출하는 곳에서 처리
     }
-
 
     public void sendVerificationEmail(User user, String subject, String contentBody) {
         String verificationLink = verificationUrl + user.getVerificationToken();
@@ -133,17 +129,17 @@ public class UserServiceImpl implements UserService{
         emailService.sendSimpleEmail(user.getEmail(), emailSubject, emailContent);
     }
 
-    // 아이디 중복 확인 메서드 (API 제공 시 활용)
+    // 아이디 중복 확인 메서드
     @Transactional(readOnly = true)
     public boolean isLoginIdDuplicated(String loginId) {
         return userRepository.existsByLoginId(loginId);
     }
 
 
-    // 이메일 중복 확인 메서드 (API 제공 시 활용)
+    // 이메일 중복 확인 메서드
     @Transactional(readOnly = true)
     public boolean isEmailDuplicated(String email) {
-        return userRepository.existsByEmail(email); // User Repository 사용
+        return userRepository.existsByEmail(email);
     }
 
     public void verifyEmail(String token) {
@@ -153,11 +149,6 @@ public class UserServiceImpl implements UserService{
         if (user.getStatus() == UserStatus.ACTIVE) {
             throw new UserException(ACCOUNT_ALREADY_VERIFIED);
         }
-
-        // 토큰 만료 확인 전에 토큰이 일치하는지 확인하는 로직은 findByVerificationToken에서 이미 처리되므로 제거
-        // if (user.getVerificationToken() == null || !user.getVerificationToken().equals(token)) {
-        //     throw new UserException(INVALID_VERIFICATION_TOKEN); // 이 예외는 findByVerificationToken에서 던져짐
-        // }
 
         if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
             user.setVerificationToken(null);
@@ -237,7 +228,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Transactional(readOnly = true)
-    public UserResponse findByUsernameAndPhoneNumber(String username, String phoneNumber) {
+    public List<UserResponse> findByUsernameAndPhoneNumber(String username, String phoneNumber) {
         if (username == null || username.trim().isEmpty()) {
             throw new BusinessException(INVALID_INPUT_VALUE, "이름을 입력해주세요.");
         }
@@ -246,29 +237,44 @@ public class UserServiceImpl implements UserService{
             throw new BusinessException(INVALID_INPUT_VALUE, "전화번호를 입력해주세요.");
         }
 
-        // 사용자 조회
-        User user = userRepository.findByUserProfile_NameAndUserProfile_Phone(username.trim(), phoneNumber.trim())
-                .orElseThrow(() -> new UserNotFoundException("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."));
+        List<User> users = userRepository.findByUserProfile_NameAndUserProfile_Phone(username.trim(), phoneNumber.trim());
 
-        // 계정 상태 확인
-        if (user.getStatus() == UserStatus.DELETED) {
-            throw new BusinessException(USER_ALREADY_DELETED, "탈퇴된 계정입니다.");
+        if (users.isEmpty()) {
+            throw new UserNotFoundException("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다.");
         }
 
-        if (user.getStatus() == UserStatus.PENDING) {
-            throw new AccountNotVerifiedException();
+        List<UserResponse> userResponses = new ArrayList<>();
+        for (User user : users) {
+            // 계정 상태 확인
+            if (user.getStatus() == UserStatus.DELETED) {
+                // 탈퇴된 계정은 리스트에 포함하지 않거나,
+                // 별도의 상태 메시지를 담아 반환할 수 있습니다.
+                // 여기서는 예외를 던지는 대신 건너뛰는 예시를 보여줍니다.
+                continue;
+            }
+
+            if (user.getStatus() == UserStatus.PENDING) {
+                throw new AccountNotVerifiedException();
+            }
+
+            // UserResponse 객체 생성 및 리스트에 추가
+            UserResponse response = UserResponse.builder()
+                    .userId(user.getId())
+                    .username(user.getUserProfile().getName())
+                    .email(maskEmail(user.getEmail()))
+                    .phone(user.getUserProfile().getPhone())
+                    .role(user.getRole())
+                    .status(user.getStatus())
+                    .createdAt(user.getCreatedAt())
+                    .message("계정 정보를 성공적으로 찾았습니다.")
+                    .build();
+            userResponses.add(response);
         }
 
-        return UserResponse.builder()
-                .userId(user.getId())
-                .username(user.getUserProfile().getName())
-                .email(maskEmail(user.getEmail()))
-                .phone(user.getUserProfile().getPhone())
-                .role(user.getRole())
-                .status(user.getStatus())
-                .createdAt(user.getCreatedAt())
-                .message("계정 정보를 성공적으로 찾았습니다.")
-                .build();
+        if (userResponses.isEmpty()) {
+            throw new UserNotFoundException("입력하신 정보와 일치하는 활성화된 계정을 찾을 수 없습니다.");
+        }
+        return userResponses;
     }
 
     private String maskEmail(String email) {

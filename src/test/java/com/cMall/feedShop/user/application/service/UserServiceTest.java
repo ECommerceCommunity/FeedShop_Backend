@@ -29,6 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils; // @Value 필드 주�
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -596,18 +597,20 @@ class UserServiceTest {
         user.setUserProfile(userProfile);
         UserResponse expectedResponse = UserResponse.from(user);
 
-
         when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
-                .thenReturn(Optional.of(user));
+                .thenReturn(List.of(user));
 
         // When
-        UserResponse result = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getUserId()).isEqualTo(expectedResponse.getUserId());
-        assertThat(result.getUsername()).isEqualTo(expectedResponse.getUsername());
-        assertThat(result.getPhone()).isEqualTo(expectedResponse.getPhone());
+        assertThat(resultList).isNotNull();
+        assertThat(resultList).hasSize(1);
+
+        UserResponse result = resultList.get(0);
+        assertThat(result.getUserId()).isEqualTo(user.getId());
+        assertThat(result.getUsername()).isEqualTo(user.getUserProfile().getName());
+        assertThat(result.getPhone()).isEqualTo(user.getUserProfile().getPhone());
 
         // Verify
         verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
@@ -622,7 +625,7 @@ class UserServiceTest {
         String phoneNumber = "010-1234-5678";
 
         when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
 
         // When & Then
         // UserNotFoundException이 발생하는지 검증합니다.
@@ -645,7 +648,7 @@ class UserServiceTest {
         String phoneNumber = "010-9999-9999";
 
         when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
-                .thenReturn(Optional.empty());
+                .thenReturn(List.of());
 
         // When & Then
         assertThrows(UserNotFoundException.class, () -> {
@@ -656,6 +659,32 @@ class UserServiceTest {
         verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
     }
 
+    @Test
+    @DisplayName("중복된 이름과 전화번호로 여러 계정이 반환되어야 한다")
+    void shouldReturnMultipleAccountsWithDuplicateInfo() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-1234-5678";
+
+        // 첫 번째 사용자
+        User user1 = new User(1L, "login1", "password1", "user1@example.com", UserRole.USER);
+        user1.setUserProfile(new UserProfile(user1, username, "nick1", phoneNumber));
+
+        // 두 번째 사용자 (동일한 이름과 전화번호)
+        User user2 = new User(2L, "login2", "password2", "user2@example.com", UserRole.USER);
+        user2.setUserProfile(new UserProfile(user2, username, "nick2", phoneNumber));
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(List.of(user1, user2));
+
+        // When
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+
+        // Then
+        assertThat(resultList).isNotNull();
+        assertThat(resultList).hasSize(2);
+        // 기타 필요한 검증 로직 추가
+    }
 
     @Test
     @WithMockUser(roles = {"USER"})

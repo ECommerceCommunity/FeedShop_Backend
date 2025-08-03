@@ -4,14 +4,14 @@ import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.model.User;
 
+import java.util.List;
+
 public interface UserService {
     UserResponse signUp(UserSignUpRequest request);
 
     void updateVerificationToken(User user);
 
     void sendVerificationEmail(User user, String subject, String contentBody);
-
-    boolean isLoginIdDuplicated(String loginId);
 
     boolean isEmailDuplicated(String email);
 
@@ -27,6 +27,6 @@ public interface UserService {
 
     void withdrawCurrentUserWithPassword(String email, String rawPassword);
 
-    UserResponse findByUsernameAndPhoneNumber(String username, String phoneNumber);
+    List<UserResponse> findByUsernameAndPhoneNumber(String username, String phoneNumber);
 }
 

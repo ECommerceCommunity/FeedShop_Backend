@@ -19,7 +19,12 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public Optional<Event> findById(Long id) {
-        return eventJpaRepository.findById(id);
+        return eventJpaRepository.findByIdAndDeletedAtIsNull(id);
+    }
+
+    @Override
+    public Optional<Event> findDetailById(Long id) {
+        return eventQueryRepository.findDetailById(id);
     }
 
     @Override
@@ -29,17 +34,19 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public void delete(Event event) {
-        eventJpaRepository.delete(event);
+        // 하드 딜리트 대신 소프트 딜리트 사용
+        event.softDelete();
+        eventJpaRepository.save(event);
     }
 
     @Override
     public List<Event> findAll() {
-        return eventJpaRepository.findAll();
+        return eventJpaRepository.findAllByDeletedAtIsNull();
     }
 
     @Override
     public Page<Event> findAll(Pageable pageable) {
-        return eventJpaRepository.findAll(pageable);
+        return eventJpaRepository.findAllByDeletedAtIsNull(pageable);
     }
 
     @Override

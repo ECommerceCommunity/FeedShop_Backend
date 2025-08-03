@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - name: Checkout Repository
@@ -111,6 +114,7 @@ jobs:
             -Dsonar.java.binaries=build/classes/java/main \
             -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml \
             -Dsonar.junit.reportPaths=build/test-results/test \
+            -Dsonar.qualitygate.wait=false \
             $SONAR_PARAMS
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

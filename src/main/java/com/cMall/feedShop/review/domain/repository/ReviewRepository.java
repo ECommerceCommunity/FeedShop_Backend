@@ -1,9 +1,13 @@
 package com.cMall.feedShop.review.domain.repository;
 
 import com.cMall.feedShop.review.domain.Review;
+import com.cMall.feedShop.review.domain.enums.Cushion;
+import com.cMall.feedShop.review.domain.enums.SizeFit;
+import com.cMall.feedShop.review.domain.enums.Stability;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface ReviewRepository {
@@ -24,4 +28,21 @@ public interface ReviewRepository {
 
     // 상품별 리뷰 개수
     Long countActiveReviewsByProductId(Long productId);
+
+    // ========== 새로 추가: 3요소 통계를 위한 메서드들 ==========
+    Map<Cushion, Long> getCushionDistributionByProductId(Long productId);
+    Map<SizeFit, Long> getSizeFitDistributionByProductId(Long productId);
+    Map<Stability, Long> getStabilityDistributionByProductId(Long productId);
+
+
+    /**
+     * 사용자가 특정 상품에 대해 이미 리뷰를 작성했는지 확인
+     */
+    boolean existsByUserIdAndProductId(Long userId, Long productId);
+
+    /**
+     * 사용자가 특정 상품에 대해 작성한 활성 리뷰가 있는지 확인
+     */
+    boolean existsActiveReviewByUserIdAndProductId(Long userId, Long productId);
+
 }
