@@ -11,6 +11,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/user/reviews")
@@ -25,8 +29,13 @@ public class ReviewUserController {
     @ApiResponseFormat(message = "리뷰가 성공적으로 작성되었습니다.")
     @Operation(summary = "리뷰 작성", description = "새로운 리뷰를 작성합니다. 로그인이 필요합니다.")
     public ApiResponse<ReviewCreateResponse> createReview(
-            @Valid @RequestBody ReviewCreateRequest request) {
-        ReviewCreateResponse response = reviewService.createReview(request);
+            @Valid @RequestPart("review") ReviewCreateRequest request,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+
+        // 이미지 설정
+        request.setImages(images);
+
+        ReviewCreateResponse response = reviewService.createReview(request, images);
         return ApiResponse.success(response);
     }
 

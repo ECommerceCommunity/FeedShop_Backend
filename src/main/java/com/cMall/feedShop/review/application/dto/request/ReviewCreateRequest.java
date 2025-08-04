@@ -8,6 +8,9 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -39,4 +42,7 @@ public class ReviewCreateRequest {
 
     @NotNull(message = "상품 ID는 필수입니다.")
     private Long productId;
+
+    // 이미지 업로드 필드 추가
+    private List<MultipartFile> images;
 }

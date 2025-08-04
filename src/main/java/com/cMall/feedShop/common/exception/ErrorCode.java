@@ -63,6 +63,10 @@ public enum ErrorCode {
     DUPLICATE_REVIEW(409, "R002", "이미 해당 상품에 대한 리뷰를 작성하셨습니다."),
     REVIEW_ACCESS_DENIED(403, "R003", "해당 리뷰에 대한 권한이 없습니다."),
     INVALID_REVIEW_DATA(400, "R004", "잘못된 리뷰 데이터입니다."),
+    FILE_UPLOAD_ERROR(400, "FILE_001", "파일 업로드에 실패했습니다."),
+    INVALID_FILE_FORMAT(400, "FILE_002", "지원하지 않는 파일 형식입니다."),
+    FILE_SIZE_EXCEEDED(400, "FILE_003", "파일 크기가 너무 큽니다."),
+    IMAGE_COUNT_EXCEEDED(400, "FILE_004", "이미지 개수가 제한을 초과했습니다."),
 
 
 
