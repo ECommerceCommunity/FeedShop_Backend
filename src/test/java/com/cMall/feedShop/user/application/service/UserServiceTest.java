@@ -1,31 +1,17 @@
-package com.cMall.feedShop.review.application.service;
+package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;  // ✅ 추가: GcpStorageService import
-import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
-import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
-import com.cMall.feedShop.review.domain.ReviewImage;
-import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
-import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
-import com.cMall.feedShop.review.domain.Review;
-import com.cMall.feedShop.review.domain.enums.Cushion;
-import com.cMall.feedShop.review.domain.enums.SizeFit;
-import com.cMall.feedShop.review.domain.enums.Stability;
-import com.cMall.feedShop.review.domain.repository.ReviewRepository;
-import com.cMall.feedShop.product.domain.model.Product;
-import com.cMall.feedShop.product.domain.model.Category;
-import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
-import com.cMall.feedShop.store.domain.model.Store;
-import com.cMall.feedShop.product.domain.enums.DiscountType;
+import com.cMall.feedShop.common.service.EmailService;
+import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
+import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.enums.UserStatus;
+import com.cMall.feedShop.user.domain.exception.UserException;
+import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
-import com.cMall.feedShop.product.domain.repository.ProductRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,470 +19,708 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.util.ReflectionTestUtils; // @Value 필드 주입을 위한 유틸리티
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import static com.cMall.feedShop.common.exception.ErrorCode.*; // ErrorCode static import
 
-@ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ReviewService 테스트")
-class ReviewServiceTest {
-
-    @Mock
-    private ReviewRepository reviewRepository;
+class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
     @Mock
-    private ProductRepository productRepository;
-
+    private UserProfileRepository userProfileRepository;
     @Mock
-    private SecurityContext securityContext;
-
-    @Mock
-    private Authentication authentication;
-
-    @Mock
-    private ReviewDuplicationValidator duplicationValidator;
-
-    @Mock
-    private ReviewImageService reviewImageService;
-
-    @Mock
-    private GcpStorageService gcpStorageService;  // ✅ 추가: GcpStorageService Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock // EmailService mock
+    private EmailService emailService;
 
     @InjectMocks
-    private ReviewService reviewService;
+    private UserServiceImpl userService; // 테스트 대상 서비스
 
-    private User testUser;
-    private UserProfile testUserProfile;
-    private Product testProduct;
-    private Store testStore;
-    private Category testCategory;
-    private Review testReview;
-    private ReviewCreateRequest createRequest;
+    private UserSignUpRequest signUpRequest;
 
-    @BeforeEach
-    void setUp() {
-        testUser = new User("testLogin", "password", "test@test.com", UserRole.USER);
-        ReflectionTestUtils.setField(testUser, "id", 1L);
-
-        testUserProfile = new UserProfile(testUser, "테스트사용자", "테스트닉네임", "010-1234-5678");
-        testUser.setUserProfile(testUserProfile);
-
-        // Store와 Category 모킹
-        testStore = mock(Store.class);
-        testCategory = mock(Category.class);
-
-        // Product 객체 생성
-        testProduct = Product.builder()
-                .name("테스트 신발")
-                .price(new BigDecimal("100000"))
-                .store(testStore)
-                .category(testCategory)
-                .discountType(DiscountType.NONE)
-                .discountValue(null)
-                .description("테스트용 신발입니다")
-                .build();
-        ReflectionTestUtils.setField(testProduct, "productId", 1L);
-
-        testReview = Review.builder()
-                .title("좋은 신발입니다")
-                .rating(5)
-                .sizeFit(SizeFit.NORMAL)
-                .cushion(Cushion.SOFT)
-                .stability(Stability.STABLE)
-                .content("정말 편하고 좋습니다. 추천해요!")
-                .user(testUser)
-                .product(testProduct)
-                .build();
-        ReflectionTestUtils.setField(testReview, "reviewId", 1L);
-        ReflectionTestUtils.setField(testReview, "createdAt", LocalDateTime.now());
-        ReflectionTestUtils.setField(testReview, "updatedAt", LocalDateTime.now());
-
-        createRequest = new ReviewCreateRequest();
-        createRequest.setTitle("좋은 신발입니다");
-        createRequest.setRating(5);
-        createRequest.setSizeFit(SizeFit.NORMAL);
-        createRequest.setCushion(Cushion.SOFT);
-        createRequest.setStability(Stability.STABLE);
-        createRequest.setContent("정말 편하고 좋습니다. 추천해요!");
-        createRequest.setProductId(1L);
-
-        ReflectionTestUtils.setField(reviewService, "gcpStorageService", gcpStorageService);
-    }
-
+    // SecurityContextHolder를 정리하는 AfterEach
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    // 관리자 권한 설정을 위한 헬퍼 메서드
+    private void setupAdminAuthentication() {
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        "admin@example.com",
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    // 일반 사용자 권한 설정을 위한 헬퍼 메서드
+    private void setupUserAuthentication(String email) {
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    @BeforeEach
+    void setUp() {
+        signUpRequest = new UserSignUpRequest();
+        signUpRequest.setName("테스트유저");
+        signUpRequest.setEmail("test@example.com");
+        signUpRequest.setPassword("password123!");
+        signUpRequest.setConfirmPassword("password123!");
+        signUpRequest.setRole(UserRole.USER); // signUpRequest에 role 필드가 있다면
+        signUpRequest.setPhone("01012345678");
+
+        // UserService의 @Value 필드에 값 주입 (테스트 환경에서 필요)
+        ReflectionTestUtils.setField(userService, "verificationUrl", "http://localhost:8080/api/auth/verify-email?token=");
+    }
+
+    // 회원가입 성공 - 신규 가입 (PENDING 상태, 인증 메일 발송)
     @Test
-    @DisplayName("리뷰를 성공적으로 생성할 수 있다")
-    void createReviewSuccessfully() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+    @DisplayName("회원가입 성공 - 신규 가입, 인증 메일 발송")
+    void signUp_Success_NewUser_Pending() {
+        // Given
+        given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.empty());
+        given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User savedUser = invocation.getArgument(0);
+            savedUser.setId(1L); // ID 설정
+            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone())); // UserProfile 설정
+            return savedUser;
+        });
 
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
+        // When
+        UserResponse response = userService.signUp(signUpRequest);
 
-            // then
-            assertThat(response.getReviewId()).isEqualTo(1L);
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");  // ✅ 수정: "등록"으로 변경
-            verify(reviewRepository, times(1)).save(any(Review.class));
-        }
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getEmail()).isEqualTo(signUpRequest.getEmail());
+        assertThat(response.getStatus()).isEqualTo(UserStatus.PENDING); // PENDING 상태 확인
+        verify(emailService, times(1)).sendSimpleEmail(
+                eq(signUpRequest.getEmail()),
+                contains("회원가입을 완료해주세요"),
+                contains("인증을 완료해주세요")
+        );
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+    // 회원가입 실패 - 이미 ACTIVE 상태
+    @Test
+    @DisplayName("회원가입 실패 - 이미 ACTIVE 상태")
+    void signUp_Fail_ActiveUser() {
+        // Given
+        User existingUser = new User();
+        existingUser.setStatus(UserStatus.ACTIVE);
+        existingUser.setEmail(signUpRequest.getEmail()); // 이메일 설정
+        given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingUser));
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.signUp(signUpRequest)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(DUPLICATE_EMAIL); // ErrorCode 사용
+        verify(emailService, never()).sendSimpleEmail(anyString(), anyString(), anyString());
     }
 
     @Test
-    @DisplayName("인증되지 않은 사용자가 리뷰를 생성하려 하면 예외가 발생한다")
-    void createReviewWithUnauthenticatedUser() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            given(securityContext.getAuthentication()).willReturn(null);
+    @DisplayName("회원가입 성공 - PENDING 상태에서 재인증 메일 발송")
+    void signUp_Success_PendingUser_ResendEmail() {
+        // Given
+        User existingPendingUser = new User(
+                "someLoginId", "oldEncodedPw", signUpRequest.getEmail(), UserRole.USER);
+        existingPendingUser.setId(1L);
+        existingPendingUser.setStatus(UserStatus.PENDING);
+        existingPendingUser.setVerificationToken("oldToken");
+        existingPendingUser.setVerificationTokenExpiry(LocalDateTime.now().minusHours(1)); // 만료된 토큰
+        existingPendingUser.setUserProfile(new UserProfile(existingPendingUser, "기존이름", "기존이름", "01011112222"));
 
-            // when & then
-            assertThatThrownBy(() -> reviewService.createReview(createRequest, null))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("인증이 필요합니다");
-        }
+        given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingPendingUser));
+        // save 호출 시 업데이트된 existingPendingUser를 반환하도록 Mocking
+        // 이 Mock은 save가 호출될 것이라는 전제하에 작동.
+        // 만약 서비스 로직에서 save 후 바로 예외를 던진다면, 이 mocking 자체는 문제 없음.
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> invocation.getArgument(0));
+
+        // When & Then (여기서 assertThrows를 사용하여 예외를 잡아야 합니다)
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.signUp(signUpRequest)
+        );
+
+        // Then
+        // 예외가 발생했는지 확인
+        assertThat(thrown.getErrorCode()).isEqualTo(DUPLICATE_EMAIL); // 또는 적절한 에러 코드
+        assertThat(thrown.getMessage()).contains("재인증 메일이 발송되었습니다"); // 메시지 확인
+
+        // save가 호출되었는지 확인 (서비스 로직이 토큰 업데이트 후 저장한다면)
+        verify(userRepository, times(1)).save(existingPendingUser); // save 호출 확인
+
+        // 이메일 서비스 호출 확인
+        verify(emailService, times(1)).sendSimpleEmail(
+                eq(signUpRequest.getEmail()),
+                contains("회원가입 재인증을 완료해주세요"),
+                contains("재인증을 요청하셨습니다")
+        );
+
+        // PENDING 유저의 상태가 변경되지 않았는지 확인 (예외 발생했으므로)
+        // assertThat(existingPendingUser.getStatus()).isEqualTo(UserStatus.PENDING); // 이 부분은 이제 필요 없을 수 있음.
+        // 실제 객체의 토큰과 만료 시간은 서비스 로직에 의해 업데이트되었을 것이므로, 확인.
+        assertThat(existingPendingUser.getVerificationToken()).isNotNull();
+        assertThat(existingPendingUser.getVerificationTokenExpiry()).isAfter(LocalDateTime.now());
+    }
+
+
+
+    @Test
+    @DisplayName("회원가입 성공 - 비밀번호가 이미 암호화된 경우")
+    void signUp_Success_PreEncryptedPassword() {
+        // Given
+        String preEncryptedPassword = "$2a$10$abcdefghijklmnopqrstuvwxyza.abcdefghijklmnopqrs.";
+        signUpRequest.setPassword(preEncryptedPassword);
+        signUpRequest.setConfirmPassword(preEncryptedPassword); // confirmPassword도 맞춰줘야 함
+
+        given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.empty());
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User savedUser = invocation.getArgument(0);
+            savedUser.setId(2L);
+            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone()));
+            assertThat(savedUser.getPassword()).isEqualTo(preEncryptedPassword); // 암호화되지 않고 그대로 저장됨을 검증
+            return savedUser;
+        });
+
+        // When
+        UserResponse response = userService.signUp(signUpRequest);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getEmail()).isEqualTo(signUpRequest.getEmail());
+        verify(passwordEncoder, never()).encode(anyString()); // encode 메서드가 호출되지 않아야 함
+        verify(userRepository, times(1)).save(any(User.class));
+    }
+
+
+    // 이메일 인증 성공
+    @Test
+    @DisplayName("이메일 인증 성공")
+    void verifyEmail_Success() {
+        // Given
+        String token = "valid-token";
+        User user = new User();
+        user.setStatus(UserStatus.PENDING);
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusMinutes(30)); // 유효한 토큰
+        given(userRepository.findByVerificationToken(token)).willReturn(Optional.of(user));
+
+        // When
+        userService.verifyEmail(token);
+
+        // Then
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(user.getVerificationToken()).isNull();
+        assertThat(user.getVerificationTokenExpiry()).isNull();
+        verify(userRepository, times(1)).save(user); // save 호출 확인
+    }
+
+    // 이메일 인증 실패 - 이미 인증 완료된 계정
+    @Test
+    @DisplayName("이메일 인증 실패 - 이미 인증 완료된 계정")
+    void verifyEmail_Fail_AlreadyVerified() {
+        // Given
+        String token = "already-verified-token";
+        User user = new User();
+        user.setStatus(UserStatus.ACTIVE); // 이미 ACTIVE
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusMinutes(30));
+        given(userRepository.findByVerificationToken(token)).willReturn(Optional.of(user));
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.verifyEmail(token)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(ACCOUNT_ALREADY_VERIFIED);
+        verify(userRepository, never()).save(any(User.class)); // save가 호출되지 않아야 함
+    }
+
+
+    // 이메일 인증 실패 - 만료된 토큰
+    @Test
+    @DisplayName("이메일 인증 실패 - 만료된 토큰")
+    void verifyEmail_Fail_ExpiredToken() {
+        // Given
+        String token = "expired-token";
+        User user = new User();
+        user.setStatus(UserStatus.PENDING);
+        user.setVerificationToken(token);
+        user.setVerificationTokenExpiry(LocalDateTime.now().minusMinutes(1)); // 만료된 토큰
+        given(userRepository.findByVerificationToken(token)).willReturn(Optional.of(user));
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.verifyEmail(token)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(VERIFICATION_TOKEN_EXPIRED);
+        verify(userRepository, times(1)).save(user); // 토큰 정보를 null로 저장했으므로 save 호출 확인
+    }
+
+    // 이메일 인증 실패 - 잘못된 토큰 (찾을 수 없음)
+    @Test
+    @DisplayName("이메일 인증 실패 - 잘못된 토큰 (찾을 수 없음)")
+    void verifyEmail_Fail_InvalidToken() {
+        // Given
+        String token = "invalid-token";
+        given(userRepository.findByVerificationToken(token)).willReturn(Optional.empty());
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.verifyEmail(token)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(INVALID_VERIFICATION_TOKEN);
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("상품별 리뷰 목록을 성공적으로 조회할 수 있다")
-    void getProductReviewsSuccessfully() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
+    @DisplayName("이메일 중복 확인 - 이메일이 이미 존재하는 경우")
+    void isEmailDuplicated_True() {
+        // Given
+        String existingEmail = "duplicate@example.com";
+        given(userRepository.existsByEmail(existingEmail)).willReturn(true);
 
-        given(reviewRepository.findActiveReviewsByProductId(1L, PageRequest.of(0, 20)))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
+        // When
+        boolean isDuplicated = userService.isEmailDuplicated(existingEmail);
 
-        // when
-        ReviewListResponse response = reviewService.getProductReviews(1L, 0, 20, "latest");
-
-        // then
-        assertThat(response.getReviews()).hasSize(1);
-        assertThat(response.getTotalElements()).isEqualTo(1L);
-        assertThat(response.getAverageRating()).isEqualTo(4.5);
-        assertThat(response.getTotalReviews()).isEqualTo(10L);
+        // Then
+        assertThat(isDuplicated).isTrue();
+        verify(userRepository, times(1)).existsByEmail(existingEmail);
     }
 
     @Test
-    @DisplayName("리뷰 상세 정보를 성공적으로 조회할 수 있다")
-    void getReviewSuccessfully() {
-        // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+    @DisplayName("이메일 중복 확인 - 이메일이 존재하지 않는 경우")
+    void isEmailDuplicated_False() {
+        // Given
+        String newEmail = "new@example.com";
+        given(userRepository.existsByEmail(newEmail)).willReturn(false);
 
-        // when
-        ReviewResponse response = reviewService.getReview(1L);
+        // When
+        boolean isDuplicated = userService.isEmailDuplicated(newEmail);
 
-        // then
-        assertThat(response.getReviewId()).isEqualTo(1L);
-        assertThat(response.getTitle()).isEqualTo("좋은 신발입니다");
-        assertThat(response.getRating()).isEqualTo(5);
-        assertThat(response.getUserName()).isEqualTo("테스트사용자");
+        // Then
+        assertThat(isDuplicated).isFalse();
+        verify(userRepository, times(1)).existsByEmail(newEmail);
+    }
+
+    // --- 회원 탈퇴 테스트 ---
+
+    @Test
+    @DisplayName("회원 탈퇴 성공 - 관리자가 사용자 ID로 탈퇴")
+    void withdrawUser_Success_ById() {
+        // Given
+        setupAdminAuthentication(); // 관리자 권한 설정
+        Long userId = 1L;
+        User user = new User("login1", "pw", "user1@example.com", UserRole.USER);
+        user.setId(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        // When
+        userService.withdrawUser(userId);
+
+        // Then
+        assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
+        verify(userRepository, times(1)).save(user);
     }
 
     @Test
-    @DisplayName("존재하지 않는 리뷰를 조회하면 예외가 발생한다")
-    void getReviewNotFound() {
-        // given
-        given(reviewRepository.findById(999L)).willReturn(Optional.empty());
+    @DisplayName("회원 탈퇴 실패 - 관리자 권한 없이 사용자 ID로 탈퇴 시도")
+    void withdrawUser_Fail_NoAdminAuthority() {
+        // Given (No admin authority set)
+        Long userId = 1L;
+        User user = new User("login1", "pw", "user1@example.com", UserRole.USER);
+        user.setId(userId);
+        user.setStatus(UserStatus.ACTIVE);
 
-        // when & then
-        assertThatThrownBy(() -> reviewService.getReview(999L))
-                .isInstanceOf(ReviewNotFoundException.class)
-                .hasMessageContaining("리뷰를 찾을 수 없습니다");
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.withdrawUser(userId)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(FORBIDDEN);
+        verify(userRepository, never()).findById(anyLong()); // 권한 없으므로 findById도 호출 안됨
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 - 사용자 ID로 탈퇴 시 이미 DELETED 상태")
+    void withdrawUser_Fail_AlreadyDeleted_ById() {
+        // Given
+        setupAdminAuthentication(); // 관리자 권한 설정
+        Long userId = 1L;
+        User user = new User("login1", "pw", "user1@example.com", UserRole.USER);
+        user.setId(userId);
+        user.setStatus(UserStatus.DELETED); // 이미 DELETED 상태
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.withdrawUser(userId)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class)); // save가 호출되지 않아야 함
     }
 
     @Test
-    @DisplayName("사용자가 존재하지 않으면 예외가 발생한다")
-    void createReviewWithNonExistentUser() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.empty());
+    @DisplayName("회원 탈퇴 성공 - 관리자가 이메일로 탈퇴")
+    void adminWithdrawUserByEmail_Success() {
+        // Given
+        setupAdminAuthentication(); // 관리자 권한 설정
+        String email = "test@example.com";
+        User user = new User("login1", "pw", email, UserRole.USER);
+        user.setStatus(UserStatus.ACTIVE);
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
 
-            // when & then
-            assertThatThrownBy(() -> reviewService.createReview(createRequest, null))
-                    .isInstanceOf(BusinessException.class);
-        }
+        // When
+        userService.adminWithdrawUserByEmail(email);
+
+        // Then
+        assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
+        verify(userRepository, times(1)).save(user);
     }
 
     @Test
-    @DisplayName("상품이 존재하지 않으면 예외가 발생한다")
-    void createReviewWithNonExistentProduct() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.empty());
+    @DisplayName("회원 탈퇴 실패 - 관리자 권한 없이 이메일로 탈퇴 시도")
+    void adminWithdrawUserByEmail_Fail_NoAdminAuthority() {
+        // Given (No admin authority set)
+        String email = "test@example.com";
+        User user = new User("login1", "pw", email, UserRole.USER);
+        user.setStatus(UserStatus.ACTIVE);
 
-            // when & then
-            assertThatThrownBy(() -> reviewService.createReview(createRequest, null))
-                    .isInstanceOf(EntityNotFoundException.class)
-                    .hasMessageContaining("상품을 찾을 수 없습니다");
-        }
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.adminWithdrawUserByEmail(email)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(FORBIDDEN);
+        verify(userRepository, never()).findByEmail(anyString()); // 권한 없으므로 findByEmail도 호출 안됨
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("평균 평점이 null인 경우 0.0을 반환한다")
-    void getProductReviewsWithNullAverageRating() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
+    @DisplayName("회원 탈퇴 실패 - 관리자가 이메일로 탈퇴 시 사용자 없음")
+    void adminWithdrawUserByEmail_Fail_UserNotFound() {
+        // Given
+        setupAdminAuthentication(); // 관리자 권한 설정
+        String email = "nonexistent@example.com";
+        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
 
-        given(reviewRepository.findActiveReviewsByProductId(1L, PageRequest.of(0, 20)))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(null);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-
-        // when
-        ReviewListResponse response = reviewService.getProductReviews(1L, 0, 20, "latest");
-
-        // then
-        assertThat(response.getAverageRating()).isEqualTo(0.0);
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+                userService.adminWithdrawUserByEmail(email)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(USER_NOT_FOUND); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("이미 리뷰를 작성한 상품에 중복 리뷰를 작성하면 예외가 발생한다")
-    void createDuplicateReview() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
+    @DisplayName("회원 탈퇴 실패 - 관리자가 이메일로 탈퇴 시 이미 DELETED 상태")
+    void adminWithdrawUserByEmail_Fail_AlreadyDeleted() {
+        // Given
+        setupAdminAuthentication(); // 관리자 권한 설정
+        String email = "test@example.com";
+        User user = new User("login1", "pw", email, UserRole.USER);
+        user.setStatus(UserStatus.DELETED); // 이미 DELETED 상태
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
 
-            // 중복 검증에서 예외 발생하도록 설정
-            doThrow(new DuplicateReviewException(1L))
-                    .when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.createReview(createRequest, null))
-                    .isInstanceOf(DuplicateReviewException.class)
-                    .hasMessageContaining("상품 ID 1에 대한 리뷰를 이미 작성하셨습니다");
-
-            verify(duplicationValidator, times(1)).validateNoDuplicateActiveReview(1L, 1L);
-        }
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+                userService.adminWithdrawUserByEmail(email)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("중복 리뷰가 없으면 정상적으로 리뷰를 생성할 수 있다")
-    void createReviewWithNoDuplicate() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+    @DisplayName("회원 탈퇴 성공 - 이메일과 비밀번호로 탈퇴")
+    void withdrawUserWithPassword_Success() {
+        // Given
+        String email = "test@example.com";
+        String rawPassword = "password123!";
+        String encodedPassword = "encoded_password";
 
-            // 중복 검증 통과하도록 설정 (예외 발생 안함)
-            doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
+        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        user.setStatus(UserStatus.ACTIVE);
 
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
 
-            // then
-            assertThat(response.getReviewId()).isEqualTo(1L);
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");  // ✅ 수정: "등록"으로 변경
-            verify(duplicationValidator, times(1)).validateNoDuplicateActiveReview(1L, 1L);
-            verify(reviewRepository, times(1)).save(any(Review.class));
-        }
+        setupUserAuthentication(email); // 사용자 권한 설정
+
+        // When
+        userService.withdrawCurrentUserWithPassword(email, rawPassword);
+
+        // Then
+        assertThat(user.getStatus()).isEqualTo(UserStatus.DELETED);
+        verify(userRepository, times(1)).save(user);
     }
 
     @Test
-    @DisplayName("이미지와 함께 리뷰를 성공적으로 생성할 수 있다")
-    void createReviewWithImages() {
-        // given
-        MultipartFile imageFile = mock(MultipartFile.class);
-        List<MultipartFile> imageFiles = List.of(imageFile);
+    @DisplayName("회원 탈퇴 실패 - 이메일과 비밀번호로 탈퇴 시 로그인되지 않음")
+    void withdrawCurrentUserWithPassword_Fail_NotLoggedIn() {
+        // Given
+        String email = "test@example.com";
+        String rawPassword = "password123!";
+        SecurityContextHolder.clearContext(); // 로그인 상태 아님
 
-        GcpStorageService.UploadResult mockResult = mock(GcpStorageService.UploadResult.class);
-        given(mockResult.getOriginalFilename()).willReturn("image.jpg");
-        given(mockResult.getStoredFilename()).willReturn("uuid-image.jpg");
-        given(mockResult.getFilePath()).willReturn("reviews/uuid-image.jpg");
-        given(mockResult.getFileSize()).willReturn(12345L);
-        given(mockResult.getContentType()).willReturn("image/jpeg");
-
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
-            given(gcpStorageService.uploadFilesWithDetails(any(List.class), eq("reviews")))
-                    .willReturn(List.of(mockResult));
-
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, imageFiles);
-
-            // then
-            assertThat(response.getReviewId()).isEqualTo(1L);
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");
-            verify(reviewRepository, times(1)).save(any(Review.class));
-            verify(gcpStorageService, times(1)).uploadFilesWithDetails(any(List.class), eq("reviews"));
-        }
-
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.withdrawCurrentUserWithPassword(email, rawPassword)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(UNAUTHORIZED);
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("이미지 없이 리뷰를 생성할 수 있다")
-    void createReviewWithoutImages() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+    @DisplayName("회원 탈퇴 실패 - 이메일과 비밀번호로 탈퇴 시 다른 사용자 계정 시도")
+    void withdrawCurrentUserWithPassword_Fail_Forbidden() {
+        // Given
+        String loggedInUserEmail = "loggedin@example.com";
+        String targetUserEmail = "target@example.com";
+        String rawPassword = "password123!";
 
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
+        setupUserAuthentication(loggedInUserEmail); // 로그인된 사용자
 
-            // then
-            assertThat(response.getReviewId()).isEqualTo(1L);
-            verify(reviewRepository, times(1)).save(any(Review.class));
-            verify(reviewImageService, never()).saveReviewImages(any(), any());
-        }
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () ->
+                userService.withdrawCurrentUserWithPassword(targetUserEmail, rawPassword)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(FORBIDDEN);
+        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+
+    @Test
+    @DisplayName("회원 탈퇴 실패 - 이메일과 비밀번호로 탈퇴 시 사용자 없음")
+    void withdrawCurrentUserWithPassword_Fail_UserNotFound() {
+        // Given
+        String email = "nonexistent@example.com";
+        String rawPassword = "password123!";
+        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+
+        setupUserAuthentication(email); // 로그인된 사용자
+
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+                userService.withdrawCurrentUserWithPassword(email, rawPassword)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(USER_NOT_FOUND); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("리뷰 상세 조회 시 이미지 정보가 포함된다")
-    void getReviewWithImages() {
-        // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+    @DisplayName("회원 탈퇴 실패 - 이메일과 비밀번호로 탈퇴 시 비밀번호 불일치")
+    void withdrawCurrentUserWithPassword_Fail_InvalidPassword() {
+        // Given
+        String email = "test@example.com";
+        String rawPassword = "wrong_password";
+        String encodedPassword = "encoded_password";
 
-        ReviewImageResponse imageResponse = ReviewImageResponse.builder()
-                .reviewImageId(1L)
-                .originalFilename("test-image.jpg")
-                .imageUrl("http://localhost:8080/uploads/reviews/test-image.jpg")
-                .imageOrder(1)
-                .fileSize(1024L)
-                .build();
+        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        user.setStatus(UserStatus.ACTIVE);
 
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of(imageResponse));
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(false); // 비밀번호 불일치
 
-        // when
-        ReviewResponse response = reviewService.getReview(1L);
+        setupUserAuthentication(email); // 로그인된 사용자
 
-        // then
-        assertThat(response.getReviewId()).isEqualTo(1L);
-        assertThat(response.isHasImages()).isTrue();
-        assertThat(response.getImages()).hasSize(1);
-        assertThat(response.getImages().get(0).getOriginalFilename()).isEqualTo("test-image.jpg");
-        verify(reviewImageService, times(1)).getReviewImages(1L);
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+                userService.withdrawCurrentUserWithPassword(email, rawPassword)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(INVALID_PASSWORD); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("상품 리뷰 목록 조회 시 이미지 정보가 포함된다")
-    void getProductReviewsWithImages() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
+    @DisplayName("회원 탈퇴 실패 - 이메일과 비밀번호로 탈퇴 시 이미 DELETED 상태")
+    void withdrawCurrentUserWithPassword_Fail_AlreadyDeleted() {
+        // Given
+        String email = "test@example.com";
+        String rawPassword = "password123!";
+        String encodedPassword = "encoded_password";
 
-        given(reviewRepository.findActiveReviewsByProductId(1L, PageRequest.of(0, 20)))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
+        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        user.setStatus(UserStatus.DELETED); // 이미 DELETED 상태
 
-        ReviewImageResponse imageResponse = ReviewImageResponse.builder()
-                .reviewImageId(1L)
-                .originalFilename("test-image.jpg")
-                .imageUrl("http://localhost:8080/uploads/reviews/test-image.jpg")
-                .imageOrder(1)
-                .fileSize(1024L)
-                .build();
+        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
 
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of(imageResponse));
+        setupUserAuthentication(email); // 로그인된 사용자
 
-        // when
-        ReviewListResponse response = reviewService.getProductReviews(1L, 0, 20, "latest");
-
-        // then
-        assertThat(response.getReviews()).hasSize(1);
-        ReviewResponse reviewResponse = response.getReviews().get(0);
-        assertThat(reviewResponse.isHasImages()).isTrue();
-        assertThat(reviewResponse.getImages()).hasSize(1);
-        verify(reviewImageService, times(1)).getReviewImages(1L);
+        // When & Then
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+                userService.withdrawCurrentUserWithPassword(email, rawPassword)
+        );
+        assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("빈 이미지 리스트로 리뷰를 생성할 수 있다")
-    void createReviewWithEmptyImageList() {
-        // given
-        List<MultipartFile> emptyImageList = List.of();
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효한 사용자 이름과 전화번호로 계정을 성공적으로 찾아야 한다")
+    void shouldFindAccountSuccessfullyWithValidUsernameAndPhoneNumber() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-1234-5678";
+        User user = new User(1L, "login1", "password123", "testuser@example.com", UserRole.USER);
+        UserProfile userProfile = new UserProfile(user, username, "testnick", phoneNumber);
+        user.setUserProfile(userProfile);
+        UserResponse expectedResponse = UserResponse.from(user);
 
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(List.of(user));
 
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, emptyImageList);
+        // When
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
 
-            // then
-            assertThat(response.getReviewId()).isEqualTo(1L);
-            verify(reviewRepository, times(1)).save(any(Review.class));
-            verify(reviewImageService, never()).saveReviewImages(any(), any());
-        }
+        // Then
+        assertThat(resultList).isNotNull();
+        assertThat(resultList).hasSize(1);
+
+        UserResponse result = resultList.get(0);
+        assertThat(result.getUserId()).isEqualTo(user.getId());
+        assertThat(result.getUsername()).isEqualTo(user.getUserProfile().getName());
+        assertThat(result.getPhone()).isEqualTo(user.getUserProfile().getPhone());
+
+        // Verify
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
     }
 
     @Test
-    @DisplayName("이미지가 없는 리뷰 상세 조회")
-    void getReviewWithoutImages() {
-        // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of()); // 빈 이미지 리스트
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효하지 않은 사용자 이름으로 계정을 찾을 수 없을 때 UserNotFoundException이 발생해야 한다")
+    void shouldThrowUserNotFoundExceptionWithInvalidUsername() {
+        // Given
+        String username = "invaliduser";
+        String phoneNumber = "010-1234-5678";
 
-        // when
-        ReviewResponse response = reviewService.getReview(1L);
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(List.of());
 
-        // then
-        assertThat(response.getReviewId()).isEqualTo(1L);
-        assertThat(response.isHasImages()).isFalse();
-        assertThat(response.getImages()).isEmpty();
-        verify(reviewImageService, times(1)).getReviewImages(1L);
+        // When & Then
+        // UserNotFoundException이 발생하는지 검증합니다.
+        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(username, phoneNumber))
+                .isInstanceOf(UserNotFoundException.class)
+                .hasMessageContaining("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
+
+        // Verify
+        // userRepository가 한 번 호출되었는지 확인합니다.
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
     }
 
-    private void mockSecurityContext() {
-        given(securityContext.getAuthentication()).willReturn(authentication);
-        given(authentication.isAuthenticated()).willReturn(true);
-        given(authentication.getName()).willReturn("test@test.com");
-        // ✅ principal 모킹 추가 - NullPointerException 해결
-        given(authentication.getPrincipal()).willReturn("test@test.com");
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("유효하지 않은 전화번호로 계정을 찾지 못해야 한다")
+    void shouldNotFindAccountWithInvalidPhoneNumber() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-9999-9999";
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(List.of());
+
+        // When & Then
+        assertThrows(UserNotFoundException.class, () -> {
+            userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+        });
+
+        // Verify
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+    }
+
+    @Test
+    @DisplayName("중복된 이름과 전화번호로 여러 계정이 반환되어야 한다")
+    void shouldReturnMultipleAccountsWithDuplicateInfo() {
+        // Given
+        String username = "testuser";
+        String phoneNumber = "010-1234-5678";
+
+        // 첫 번째 사용자
+        User user1 = new User(1L, "login1", "password1", "user1@example.com", UserRole.USER);
+        user1.setUserProfile(new UserProfile(user1, username, "nick1", phoneNumber));
+
+        // 두 번째 사용자 (동일한 이름과 전화번호)
+        User user2 = new User(2L, "login2", "password2", "user2@example.com", UserRole.USER);
+        user2.setUserProfile(new UserProfile(user2, username, "nick2", phoneNumber));
+
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+                .thenReturn(List.of(user1, user2));
+
+        // When
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+
+        // Then
+        assertThat(resultList).isNotNull();
+        assertThat(resultList).hasSize(2);
+        // 기타 필요한 검증 로직 추가
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("사용자 이름이 null일 때 '이름을 입력해주세요.' 예외를 던져야 한다") // 테스트 이름도 구체적으로 변경
+    void shouldThrowExceptionWhenUsernameIsNull() { // 메서드 이름도 구체적으로 변경
+        // Given
+        String username = null;
+        String phoneNumber = "010-1234-5678";
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userService.findByUsernameAndPhoneNumber(username, phoneNumber)
+        );
+        // 기대하는 메시지를 실제 메서드가 던지는 메시지로 변경
+        assertThat(thrown.getMessage()).isEqualTo("이름을 입력해주세요.");
+
+        // Verify
+        verify(userRepository, never()).findByUserProfile_NameAndUserProfile_Phone(anyString(), anyString());
+    }
+
+    @Test
+    @WithMockUser(roles = {"USER"})
+    @DisplayName("전화번호가 null일 때 '전화번호를 입력해주세요.' 예외를 던져야 한다")
+    void shouldThrowExceptionWhenPhoneNumberIsNull() {
+        // Given
+        String username = "validUser";
+        String phoneNumber = null; // 전화번호만 null로 설정
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userService.findByUsernameAndPhoneNumber(username, phoneNumber)
+        );
+        // 전화번호가 null일 때 예상되는 메시지로 변경
+        assertThat(thrown.getMessage()).isEqualTo("전화번호를 입력해주세요.");
+
+        // Verify
+        verify(userRepository, never()).findByUserProfile_NameAndUserProfile_Phone(anyString(), anyString());
     }
 }
