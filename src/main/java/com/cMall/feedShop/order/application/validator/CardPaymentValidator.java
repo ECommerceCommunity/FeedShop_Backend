@@ -13,44 +13,44 @@ public class CardPaymentValidator implements ConstraintValidator<ValidCardPaymen
         }
 
         String paymentMethod = request.getPaymentMethod();
+        boolean isValid = true;
 
-        // 결제 방법이 "카드"가 아닌 경우
-        if (!"카드".equals(paymentMethod)) {
+        // 결제 방법이 "카드"인 경우
+        if ("카드".equals(paymentMethod)) {
+            context.disableDefaultConstraintViolation();
+
+            // 카드 번호 검증 (10~14자리 숫자)
+            if (!isValidCardNumber(request.getCardNumber())) {
+                context.buildConstraintViolationWithTemplate("카드 번호는 10~14자리 숫자여야 합니다.")
+                        .addPropertyNode("cardNumber")
+                        .addConstraintViolation();
+                isValid = false;
+            }
+
+            // 유효기간 검증 (4자리 숫자)
+            if (!isValidCardExpiry(request.getCardExpiry())) {
+                context.buildConstraintViolationWithTemplate("카드 유효기간은 4자리 숫자여야 합니다. (예: 1225)")
+                        .addPropertyNode("cardExpiry")
+                        .addConstraintViolation();
+                isValid = false;
+            }
+
+            // CVC 검증 (3자리 숫자)
+            if (!isValidCardCvc(request.getCardCvc())) {
+                context.buildConstraintViolationWithTemplate("카드 CVC는 3자리 숫자여야 합니다.")
+                        .addPropertyNode("cardCvc")
+                        .addConstraintViolation();
+                isValid = false;
+            }
+
+            return isValid;
+
+        } else { // 결제 방법이 "카드"가 아닌 경우
             // 카드 정보가 모두 빈 문자열이어야 함
             return isEmptyString(request.getCardNumber()) &&
                     isEmptyString(request.getCardExpiry()) &&
                     isEmptyString(request.getCardCvc());
         }
-
-        // 결제 방법이 "카드"인 경우 카드 정보 유효성 검증
-        boolean isValid = true;
-        context.disableDefaultConstraintViolation();
-
-        // 카드 번호 검증 (10~14자리 숫자)
-        if (!isValidCardNumber(request.getCardNumber())) {
-            context.buildConstraintViolationWithTemplate("카드 번호는 10~14자리 숫자여야 합니다.")
-                    .addPropertyNode("cardNumber")
-                    .addConstraintViolation();
-            isValid = false;
-        }
-
-        // 유효기간 검증 (4자리 숫자)
-        if (!isValidCardExpiry(request.getCardExpiry())) {
-            context.buildConstraintViolationWithTemplate("카드 유효기간은 4자리 숫자여야 합니다. (예: 1225)")
-                    .addPropertyNode("cardExpiry")
-                    .addConstraintViolation();
-            isValid = false;
-        }
-
-        // CVC 검증 (3자리 숫자)
-        if (!isValidCardCvc(request.getCardCvc())) {
-            context.buildConstraintViolationWithTemplate("카드 CVC는 3자리 숫자여야 합니다.")
-                    .addPropertyNode("cardCvc")
-                    .addConstraintViolation();
-            isValid = false;
-        }
-
-        return isValid;
     }
 
     private boolean isEmptyString(String value) {
