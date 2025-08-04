@@ -2,6 +2,7 @@ package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.cart.domain.model.Cart;
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.order.domain.model.Order;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import jakarta.persistence.*;
@@ -39,7 +40,13 @@ public class User extends BaseTimeEntity implements UserDetails {
     private UserProfile userProfile;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private UserPoint userPoint;
+
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Cart cart;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Order> orders;
 
     @Column(name = "login_id", unique = true, nullable = false, length = 100)
     private String loginId;

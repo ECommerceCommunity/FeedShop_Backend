@@ -201,8 +201,8 @@ class ProductReadServiceTest {
         given(productRepository.findByProductId(productId)).willReturn(Optional.empty());
 
         // when & then
-        ProductException.ProductNotFoundException thrown = assertThrows(
-                ProductException.ProductNotFoundException.class,
+        ProductException thrown = assertThrows(
+                ProductException.class,
                 () -> productReadService.getProductDetail(productId)
         );
 
