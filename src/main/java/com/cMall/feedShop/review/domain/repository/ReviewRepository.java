@@ -34,7 +34,6 @@ public interface ReviewRepository {
     Map<SizeFit, Long> getSizeFitDistributionByProductId(Long productId);
     Map<Stability, Long> getStabilityDistributionByProductId(Long productId);
 
-
     /**
      * 사용자가 특정 상품에 대해 이미 리뷰를 작성했는지 확인
      */
@@ -44,5 +43,4 @@ public interface ReviewRepository {
      * 사용자가 특정 상품에 대해 작성한 활성 리뷰가 있는지 확인
      */
     boolean existsActiveReviewByUserIdAndProductId(Long userId, Long productId);
-
 }

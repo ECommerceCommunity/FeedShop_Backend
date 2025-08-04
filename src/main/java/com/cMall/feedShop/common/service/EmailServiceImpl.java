@@ -1,4 +1,4 @@
-// src/main/java/com/cMall/feedShop/common/service/EmailServiceImpl.java
+
 package com.cMall.feedShop.common.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;

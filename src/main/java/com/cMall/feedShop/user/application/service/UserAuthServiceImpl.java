@@ -50,6 +50,7 @@ public class UserAuthServiceImpl implements UserAuthService {
         this.jwtProvider = jwtProvider;
         this.authenticationManager = authenticationManager;
     }
+
     /**
      * 사용자 로그인 처리 메서드.
      * 로그인 ID와 비밀번호를 받아 사용자 인증을 수행하고, 성공 시 JWT 토큰을 발급합니다.

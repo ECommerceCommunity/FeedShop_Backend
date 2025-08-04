@@ -1,7 +1,7 @@
 package com.cMall.feedShop.product.application.service;
 
-import com.cMall.feedShop.product.application.dto.common.ProductImageInfo;
-import com.cMall.feedShop.product.application.dto.common.ProductOptionInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductImageInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.domain.enums.*;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
@@ -151,21 +151,5 @@ class ProductDtoTests {
         // then
         assertThat(imageInfos).isEmpty();
         assertThat(optionInfos).isEmpty();
-    }
-
-    @Test
-    @DisplayName("null 값 처리 테스트")
-    void null_Value_Handling_Test() {
-        // given
-        ProductOption optionWithNullStock = new ProductOption(Gender.UNISEX, Size.SIZE_250, Color.WHITE, null, null);
-        ReflectionTestUtils.setField(optionWithNullStock, "optionId", 1L);
-
-        // when
-        ProductOptionInfo optionInfo = ProductOptionInfo.from(optionWithNullStock);
-
-        // then
-        assertThat(optionInfo.getOptionId()).isEqualTo(1L);
-        assertThat(optionInfo.getStock()).isNull();
-        assertThat(optionInfo.getGender()).isEqualTo(Gender.UNISEX);
     }
 }

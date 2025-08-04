@@ -188,8 +188,8 @@ class ProductServiceTest {
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.empty());
 
         // when & then
-        StoreException.StoreNotFoundException thrown = assertThrows(
-                StoreException.StoreNotFoundException.class, () ->
+        StoreException thrown = assertThrows(
+                StoreException.class, () ->
                         productService.createProduct(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.STORE_NOT_FOUND);
@@ -207,8 +207,8 @@ class ProductServiceTest {
         given(categoryRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
-        ProductException.CategoryNotFoundException thrown = assertThrows(
-                ProductException.CategoryNotFoundException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         productService.createProduct(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CATEGORY_NOT_FOUND);
@@ -242,8 +242,8 @@ class ProductServiceTest {
         given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         // when & then
-        ProductException.ProductNotFoundException thrown = assertThrows(
-                ProductException.ProductNotFoundException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         productService.updateProduct(1L, updateRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
@@ -274,8 +274,8 @@ class ProductServiceTest {
         given(productRepository.findByProductId(2L)).willReturn(Optional.of(otherProduct));
 
         // when & then
-        StoreException.StoreForbiddenException thrown = assertThrows(
-                StoreException.StoreForbiddenException.class, () ->
+        StoreException thrown = assertThrows(
+                StoreException.class, () ->
                         productService.updateProduct(2L, updateRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.STORE_FORBIDDEN);
@@ -308,8 +308,8 @@ class ProductServiceTest {
         given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         // when & then
-        ProductException.ProductNotFoundException thrown = assertThrows(
-                ProductException.ProductNotFoundException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         productService.deleteProduct(1L, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);

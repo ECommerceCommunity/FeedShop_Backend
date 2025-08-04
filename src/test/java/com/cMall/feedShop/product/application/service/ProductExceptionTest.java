@@ -39,18 +39,18 @@ class ProductExceptionTest {
     @DisplayName("ProductException 모든 서브클래스 테스트")
     void productException_AllSubclasses_Test() {
         // given & when
-        ProductException.ProductNotFoundException productNotFound =
-                new ProductException.ProductNotFoundException();
-        ProductException.CategoryNotFoundException categoryNotFound =
-                new ProductException.CategoryNotFoundException();
-        ProductException.OutOfStockException outOfStock =
-                new ProductException.OutOfStockException();
-        ProductException.ProductInOrderException productInOrder =
-                new ProductException.ProductInOrderException();
-        ProductException.ProductOptionNotFoundException optionNotFound =
-                new ProductException.ProductOptionNotFoundException();
-        ProductException.ProductImageNotFoundException imageNotFound =
-                new ProductException.ProductImageNotFoundException();
+        ProductException productNotFound =
+                new ProductException(ErrorCode.PRODUCT_NOT_FOUND);
+        ProductException categoryNotFound =
+                new ProductException(ErrorCode.CATEGORY_NOT_FOUND);
+        ProductException outOfStock =
+                new ProductException(ErrorCode.OUT_OF_STOCK);
+        ProductException productInOrder =
+                new ProductException(ErrorCode.PRODUCT_IN_ORDER);
+        ProductException optionNotFound =
+                new ProductException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
+        ProductException imageNotFound =
+                new ProductException(ErrorCode.PRODUCT_IMAGE_NOT_FOUND);
 
         // then
         assertThat(productNotFound.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
@@ -65,10 +65,10 @@ class ProductExceptionTest {
     @DisplayName("StoreException 모든 서브클래스 테스트")
     void storeException_AllSubclasses_Test() {
         // given & when
-        StoreException.StoreForbiddenException storeForbidden =
-                new StoreException.StoreForbiddenException();
-        StoreException.StoreNotFoundException storeNotFound =
-                new StoreException.StoreNotFoundException();
+        StoreException storeForbidden =
+                new StoreException(ErrorCode.STORE_FORBIDDEN);
+        StoreException storeNotFound =
+                new StoreException(ErrorCode.STORE_NOT_FOUND);
 
         // then
         assertThat(storeForbidden.getErrorCode()).isEqualTo(ErrorCode.STORE_FORBIDDEN);
@@ -128,10 +128,10 @@ class ProductExceptionTest {
     void exception_Inheritance_Test() {
         // given & when
         BusinessException businessException = new BusinessException(ErrorCode.USER_NOT_FOUND);
-        ProductException.ProductNotFoundException productException =
-                new ProductException.ProductNotFoundException();
-        StoreException.StoreNotFoundException storeException =
-                new StoreException.StoreNotFoundException();
+        ProductException productException =
+                new ProductException(ErrorCode.PRODUCT_NOT_FOUND);
+        StoreException storeException =
+                new StoreException(ErrorCode.STORE_NOT_FOUND);
 
         // then
         assertThat(businessException).isInstanceOf(RuntimeException.class);
