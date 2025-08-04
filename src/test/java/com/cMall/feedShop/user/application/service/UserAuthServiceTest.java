@@ -235,4 +235,3 @@ class UserAuthServiceTest {
         verify(passwordResetTokenRepository, times(1)).delete(token);
     }
 }
-
