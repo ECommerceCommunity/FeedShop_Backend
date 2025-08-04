@@ -40,12 +40,11 @@ public class OrderDetailResponse {
                 .map(item -> item.getTotalPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 총 할인 금액을 구한다.
-        // originalTotalPrice(할인전) - order.getFinalPrice()(최종결제) + order.getDeliveryFee()(배송비)
-        // = 상품 할인 + 포인트 할인
-        BigDecimal totalDiscountPrice = originalTotalPrice
-                .subtract(order.getFinalPrice())
-                .add(order.getDeliveryFee());
+        // 1. 배송비를 제외한 최종 결제 상품 금액을 먼저 계산한다.
+        BigDecimal finalItemPrice = order.getFinalPrice().subtract(order.getDeliveryFee());
+
+        // 2. 할인 전 상품 총 금액에서 최종 상품 금액을 빼서 총 할인 금액을 구한다.
+        BigDecimal totalDiscountPrice = originalTotalPrice.subtract(finalItemPrice);
 
         return OrderDetailResponse.builder()
                 .orderId(order.getOrderId())
