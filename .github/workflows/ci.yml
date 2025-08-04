@@ -41,7 +41,6 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
           JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
-          SPRING_MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
 
       - name: Generate Test Coverage Report
         run: ./gradlew jacocoTestReport
@@ -51,7 +50,6 @@ jobs:
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
-          SPRING_MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
 
       - name: Upload Test Results
         if: always()
