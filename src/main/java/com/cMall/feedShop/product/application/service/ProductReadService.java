@@ -1,5 +1,6 @@
 package com.cMall.feedShop.product.application.service;
 
+import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.application.dto.common.ProductImageInfo;
 import com.cMall.feedShop.product.application.dto.common.ProductOptionInfo;
 import com.cMall.feedShop.product.application.dto.response.*;
@@ -51,7 +52,7 @@ public class ProductReadService {
     // 상품 상세 조회
     public ProductDetailResponse getProductDetail(Long productId) {
         Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new ProductException.ProductNotFoundException());
+                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // productOptions 지연 로딩 강제 초기화
         Hibernate.initialize(product.getProductOptions());
