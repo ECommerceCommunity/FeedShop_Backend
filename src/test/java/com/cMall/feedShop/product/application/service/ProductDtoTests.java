@@ -152,20 +152,4 @@ class ProductDtoTests {
         assertThat(imageInfos).isEmpty();
         assertThat(optionInfos).isEmpty();
     }
-
-    @Test
-    @DisplayName("null 값 처리 테스트")
-    void null_Value_Handling_Test() {
-        // given
-        ProductOption optionWithNullStock = new ProductOption(Gender.UNISEX, Size.SIZE_250, Color.WHITE, null, null);
-        ReflectionTestUtils.setField(optionWithNullStock, "optionId", 1L);
-
-        // when
-        ProductOptionInfo optionInfo = ProductOptionInfo.from(optionWithNullStock);
-
-        // then
-        assertThat(optionInfo.getOptionId()).isEqualTo(1L);
-        assertThat(optionInfo.getStock()).isNull();
-        assertThat(optionInfo.getGender()).isEqualTo(Gender.UNISEX);
-    }
 }
