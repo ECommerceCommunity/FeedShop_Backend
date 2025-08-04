@@ -33,7 +33,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 	implementation 'com.google.cloud:google-cloud-storage:2.22.2'
-	implementation 'me.paulschwarz:spring-dotenv:3.0.0'
 	compileOnly 'org.projectlombok:lombok'
 
 	// devtools 배포 시에는 삭제
