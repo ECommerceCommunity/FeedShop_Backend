@@ -5,6 +5,8 @@ import com.cMall.feedShop.cart.domain.repository.CartItemRepository;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.order.application.dto.request.OrderCreateRequest;
 import com.cMall.feedShop.order.application.dto.response.OrderCreateResponse;
+import com.cMall.feedShop.order.application.dto.response.OrderListResponse;
+import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
 import com.cMall.feedShop.order.application.util.OrderCalculation;
 import com.cMall.feedShop.order.domain.enums.OrderStatus;
 import com.cMall.feedShop.order.domain.exception.OrderException;
@@ -25,6 +27,9 @@ import com.cMall.feedShop.user.domain.model.UserPoint;
 import com.cMall.feedShop.user.domain.repository.UserPointRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,6 +98,48 @@ public class OrderService {
 
         // 8. 주문 생성 응답 반환
         return OrderCreateResponse.from(order);
+    }
+
+    /**
+     * 주문 목록 조회
+     * @param page
+     * @param size
+     * @param status
+     * @param userDetails
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public OrderPageResponse getOrderList(int page, int size, String status, UserDetails userDetails) {
+        // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
+        User currentUser = getCurrentUserAndValidatePermission(userDetails);
+
+        // 2. 페이지 파라미터 검증
+        if (page < 0) {
+            page = 0;
+        }
+
+        if (size < 1 || size > 100) {
+            size = 10;
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 3. 주문 목록 조회
+        Page<Order> orderPage;
+        if (status != null && !status.equalsIgnoreCase("all")) {
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+                orderPage = orderRepository.findByUserAndStatusOrderByCreatedAtDesc(currentUser, orderStatus, pageable);
+            } catch (IllegalArgumentException e) {
+                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+            }
+        } else {
+            orderPage = orderRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable);
+        }
+
+        // 4. 주문 목록 응답 반환
+        Page<OrderListResponse> response = orderPage.map(OrderListResponse::from);
+        return OrderPageResponse.of(response);
     }
 
     // JWT 에서 현재 사용자 정보 조회
