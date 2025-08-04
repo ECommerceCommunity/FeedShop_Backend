@@ -2,7 +2,7 @@ package com.cMall.feedShop.user.domain.repository;
 
 import com.cMall.feedShop.user.domain.enums.UserCouponStatus;
 import com.cMall.feedShop.user.domain.model.User;
-import com.cMall.feedShop.user.domain.model.UserCoupon;
+import com.cMall.feedShop.event.domain.model.UserCoupon;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
