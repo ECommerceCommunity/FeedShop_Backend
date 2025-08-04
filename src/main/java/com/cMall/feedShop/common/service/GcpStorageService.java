@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Google Cloud Storage 서비스 (gcloud CLI 인증 사용)
@@ -33,9 +32,6 @@ public class GcpStorageService {
     @Value("${spring.cloud.gcp.storage.bucket:}")
     private String bucketName;
 
-    @Value("${gcp.storage.enabled:false}")
-    private boolean gcpStorageEnabled;
-
     private Storage storage;
 
     /**
@@ -43,11 +39,6 @@ public class GcpStorageService {
      */
     @PostConstruct
     public void init() {
-        if (!gcpStorageEnabled) {
-            log.info("GCP Storage가 비활성화되어 있습니다.");
-            return;
-        }
-
         if (projectId == null || projectId.trim().isEmpty()) {
             log.warn("GCP 프로젝트 ID가 설정되지 않았습니다.");
             return;
@@ -88,9 +79,9 @@ public class GcpStorageService {
      * 여러 파일을 GCP Storage에 업로드
      */
     public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, String directory) {
-        if (!gcpStorageEnabled || storage == null) {
-            log.warn("GCP Storage가 비활성화되어 있습니다.");
-            return new ArrayList<>();
+        if (storage == null) {
+            log.error("GCP Storage가 초기화되지 않았습니다.");
+            throw new RuntimeException("GCP Storage가 초기화되지 않았습니다.");
         }
 
         List<UploadResult> results = new ArrayList<>();
@@ -145,8 +136,8 @@ public class GcpStorageService {
      * 파일 삭제
      */
     public boolean deleteFile(String filePath) {
-        if (!gcpStorageEnabled || storage == null) {
-            log.warn("GCP Storage가 비활성화되어 있습니다.");
+        if (storage == null) {
+            log.error("GCP Storage가 초기화되지 않았습니다.");
             return false;
         }
 
