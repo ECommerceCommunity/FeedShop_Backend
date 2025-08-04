@@ -81,7 +81,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList(
-                "https://feedshop-frontend.vercel.app", 
+                "https://feedshop-frontend.vercel.app",
                 "https://www.feedshop.store",
                 "http://localhost:3000"
         ));

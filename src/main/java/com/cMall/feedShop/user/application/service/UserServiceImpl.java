@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -226,7 +228,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Transactional(readOnly = true)
-    public UserResponse findByUsernameAndPhoneNumber(String username, String phoneNumber) {
+    public List<UserResponse> findByUsernameAndPhoneNumber(String username, String phoneNumber) {
         if (username == null || username.trim().isEmpty()) {
             throw new BusinessException(INVALID_INPUT_VALUE, "이름을 입력해주세요.");
         }
@@ -235,29 +237,44 @@ public class UserServiceImpl implements UserService{
             throw new BusinessException(INVALID_INPUT_VALUE, "전화번호를 입력해주세요.");
         }
 
-        // 사용자 조회
-        User user = userRepository.findByUserProfile_NameAndUserProfile_Phone(username.trim(), phoneNumber.trim())
-                .orElseThrow(() -> new UserNotFoundException("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."));
+        List<User> users = userRepository.findByUserProfile_NameAndUserProfile_Phone(username.trim(), phoneNumber.trim());
 
-        // 계정 상태 확인
-        if (user.getStatus() == UserStatus.DELETED) {
-            throw new BusinessException(USER_ALREADY_DELETED, "탈퇴된 계정입니다.");
+        if (users.isEmpty()) {
+            throw new UserNotFoundException("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다.");
         }
 
-        if (user.getStatus() == UserStatus.PENDING) {
-            throw new AccountNotVerifiedException();
+        List<UserResponse> userResponses = new ArrayList<>();
+        for (User user : users) {
+            // 계정 상태 확인
+            if (user.getStatus() == UserStatus.DELETED) {
+                // 탈퇴된 계정은 리스트에 포함하지 않거나,
+                // 별도의 상태 메시지를 담아 반환할 수 있습니다.
+                // 여기서는 예외를 던지는 대신 건너뛰는 예시를 보여줍니다.
+                continue;
+            }
+
+            if (user.getStatus() == UserStatus.PENDING) {
+                throw new AccountNotVerifiedException();
+            }
+
+            // UserResponse 객체 생성 및 리스트에 추가
+            UserResponse response = UserResponse.builder()
+                    .userId(user.getId())
+                    .username(user.getUserProfile().getName())
+                    .email(maskEmail(user.getEmail()))
+                    .phone(user.getUserProfile().getPhone())
+                    .role(user.getRole())
+                    .status(user.getStatus())
+                    .createdAt(user.getCreatedAt())
+                    .message("계정 정보를 성공적으로 찾았습니다.")
+                    .build();
+            userResponses.add(response);
         }
 
-        return UserResponse.builder()
-                .userId(user.getId())
-                .username(user.getUserProfile().getName())
-                .email(maskEmail(user.getEmail()))
-                .phone(user.getUserProfile().getPhone())
-                .role(user.getRole())
-                .status(user.getStatus())
-                .createdAt(user.getCreatedAt())
-                .message("계정 정보를 성공적으로 찾았습니다.")
-                .build();
+        if (userResponses.isEmpty()) {
+            throw new UserNotFoundException("입력하신 정보와 일치하는 활성화된 계정을 찾을 수 없습니다.");
+        }
+        return userResponses;
     }
 
     private String maskEmail(String email) {

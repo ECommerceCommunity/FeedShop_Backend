@@ -64,7 +64,7 @@ public enum ErrorCode {
     ORDER_CART_EMPTY(400, "O004", "장바구니가 비어 있습니다. 주문할 상품이 없습니다."),
     INVALID_POINT(400, "O005", "유효하지 않은 포인트입니다."),
     ORDER_CANCEL_FORBIDDEN(403, "O006", "취소할 수 없는 주문 상태입니다."),
-
+    
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),
     DUPLICATE_REVIEW(409, "R002", "이미 해당 상품에 대한 리뷰를 작성하셨습니다."),
@@ -74,8 +74,6 @@ public enum ErrorCode {
     INVALID_FILE_FORMAT(400, "FILE_002", "지원하지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(400, "FILE_003", "파일 크기가 너무 큽니다."),
     IMAGE_COUNT_EXCEEDED(400, "FILE_004", "이미지 개수가 제한을 초과했습니다."),
-
-
 
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
