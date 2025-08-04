@@ -1,9 +1,6 @@
-package com.cMall.feedShop.cart.application.dto.common;
+package com.cMall.feedShop.cart.application.dto.response.info;
 
 import com.cMall.feedShop.cart.domain.model.CartItem;
-import com.cMall.feedShop.product.domain.enums.Color;
-import com.cMall.feedShop.product.domain.enums.Gender;
-import com.cMall.feedShop.product.domain.enums.Size;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;

@@ -1,7 +1,7 @@
 package com.cMall.feedShop.product.application.service;
 
-import com.cMall.feedShop.product.application.dto.common.ProductImageInfo;
-import com.cMall.feedShop.product.application.dto.common.ProductOptionInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductImageInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.domain.enums.*;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;

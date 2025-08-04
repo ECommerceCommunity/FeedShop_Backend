@@ -1,7 +1,7 @@
 package com.cMall.feedShop.product.application.dto.response;
 
-import com.cMall.feedShop.product.application.dto.common.ProductImageInfo;
-import com.cMall.feedShop.product.application.dto.common.ProductOptionInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductImageInfo;
+import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.domain.enums.CategoryType;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import lombok.Builder;

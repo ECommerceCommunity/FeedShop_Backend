@@ -1,6 +1,6 @@
 package com.cMall.feedShop.cart.application.service;
 
-import com.cMall.feedShop.cart.application.dto.common.CartItemInfo;
+import com.cMall.feedShop.cart.application.dto.response.info.CartItemInfo;
 import com.cMall.feedShop.cart.application.dto.request.CartItemCreateRequest;
 import com.cMall.feedShop.cart.application.dto.request.CartItemUpdateRequest;
 import com.cMall.feedShop.cart.application.dto.response.CartItemListResponse;
@@ -12,7 +12,6 @@ import com.cMall.feedShop.cart.domain.repository.CartItemQueryRepository;
 import com.cMall.feedShop.cart.domain.repository.CartItemQueryRepositoryImpl;
 import com.cMall.feedShop.cart.domain.repository.CartItemRepository;
 import com.cMall.feedShop.cart.domain.repository.CartRepository;
-import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.domain.exception.ProductException;
 import com.cMall.feedShop.product.application.util.DiscountCalculator;
