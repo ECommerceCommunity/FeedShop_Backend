@@ -50,7 +50,7 @@ public class ProductOption {
         this.gender = gender;
         this.size = size;
         this.color = color;
-        this.stock = stock;
+        this.stock = stock != null ? stock : 0;
         this.product = product;
     }
 
@@ -61,12 +61,10 @@ public class ProductOption {
 
     // 재고 차감
     public void decreaseStock(Integer quantity) {
-        if (quantity == null || quantity <= 0) {
-            throw new ProductException(ErrorCode.OUT_OF_STOCK, "차감할 수량은 1 이상이어야 합니다.");
-        }
+        validateQuantityForDecrease(quantity);
 
-        if (this.stock == null || this.stock < quantity) {
-            throw new ProductException(ErrorCode.OUT_OF_STOCK);
+        if (!hasEnoughStock(quantity)) {
+            throw new ProductException(ErrorCode.OUT_OF_STOCK, "재고가 부족합니다.");
         }
 
         this.stock -= quantity;
@@ -80,8 +78,18 @@ public class ProductOption {
 
         if (this.stock == null) {
             this.stock = quantity;
+        } else {
+            this.stock += quantity;
         }
+    }
 
-        this.stock += quantity;
+    private void validateQuantityForDecrease(Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new ProductException(ErrorCode.OUT_OF_STOCK, "차감할 수량은 1 이상이어야 합니다.");
+        }
+    }
+
+    private boolean hasEnoughStock(Integer quantity) {
+        return this.stock != null && this.stock >= quantity;
     }
 }
