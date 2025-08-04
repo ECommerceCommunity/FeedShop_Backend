@@ -13,6 +13,7 @@ import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class UserAuthServiceImpl implements UserAuthService {
 
@@ -39,6 +39,17 @@ public class UserAuthServiceImpl implements UserAuthService {
     @Value("${app.password-reset-url}")
     private String passwordResetBaseUrl;
 
+    public UserAuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                               PasswordResetTokenRepository passwordResetTokenRepository,
+                               @Qualifier("emailServiceImpl") EmailService emailService, // 빈 이름 확인 필요
+                               JwtTokenProvider jwtProvider, AuthenticationManager authenticationManager) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
+        this.jwtProvider = jwtProvider;
+        this.authenticationManager = authenticationManager;
+    }
     /**
      * 사용자 로그인 처리 메서드.
      * 로그인 ID와 비밀번호를 받아 사용자 인증을 수행하고, 성공 시 JWT 토큰을 발급합니다.
@@ -63,7 +74,7 @@ public class UserAuthServiceImpl implements UserAuthService {
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
 
-            if (!user.isEnabled()) {
+            if (user.getStatus() == UserStatus.PENDING) {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }
 
