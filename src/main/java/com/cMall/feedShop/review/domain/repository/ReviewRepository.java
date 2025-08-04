@@ -1,3 +1,4 @@
+// 1. ReviewRepository 인터페이스 (전체)
 package com.cMall.feedShop.review.domain.repository;
 
 import com.cMall.feedShop.review.domain.Review;
