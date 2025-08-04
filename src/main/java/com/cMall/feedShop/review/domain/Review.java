@@ -11,6 +11,9 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Entity
 @Table(name = "reviews")
@@ -68,6 +71,11 @@ public class Review extends BaseTimeEntity {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    // 🆕 이미지 연관관계 추가
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ReviewImage> images = new ArrayList<>();
+
+
     @Builder
     public Review(String title, Integer rating, SizeFit sizeFit, Cushion cushion,
                   Stability stability, String content, User user, Product product) {
@@ -109,6 +117,30 @@ public class Review extends BaseTimeEntity {
         return this.user.getId().equals(userId);
     }
 
+    // 🆕 이미지 관련 메서드들
+    public void addImage(ReviewImage image) {
+        this.images.add(image);
+    }
+
+    public void removeImage(ReviewImage image) {
+        this.images.remove(image);
+        image.delete();
+    }
+
+    public List<ReviewImage> getActiveImages() {
+        return images.stream()
+                .filter(ReviewImage::isActive)
+                .sorted(Comparator.comparing(ReviewImage::getImageOrder))
+                .toList();
+    }
+
+    public boolean hasImages() {
+        return !getActiveImages().isEmpty();
+    }
+
+    public int getActiveImageCount() {
+        return getActiveImages().size();
+    }
     // 검증 메서드들
     public static void validateTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
