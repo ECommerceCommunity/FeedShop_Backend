@@ -63,9 +63,7 @@ class CartItemTest {
     @DisplayName("수량 업데이트 실패 - 0개")
     void updateQuantity_Fail_ZeroQuantity() {
         // when & then
-        CartException.CartZeroQuantityException thrown = assertThrows(
-                CartException.CartZeroQuantityException.class, () ->
-                        cartItem.updateQuantity(0));
+        CartException thrown = assertThrows(CartException.class, () -> cartItem.updateQuantity(0));
 
         assertThat(thrown.getErrorCode().getMessage()).contains("수량은 1개 이상이어야 합니다");
     }
@@ -74,9 +72,7 @@ class CartItemTest {
     @DisplayName("수량 업데이트 실패 - 음수")
     void updateQuantity_Fail_NegativeQuantity() {
         // when & then
-        CartException.CartZeroQuantityException thrown = assertThrows(
-                CartException.CartZeroQuantityException.class, () ->
-                        cartItem.updateQuantity(-1));
+        CartException thrown = assertThrows(CartException.class, () -> cartItem.updateQuantity(-1));
 
         assertThat(thrown.getErrorCode().getMessage()).contains("수량은 1개 이상이어야 합니다");
     }

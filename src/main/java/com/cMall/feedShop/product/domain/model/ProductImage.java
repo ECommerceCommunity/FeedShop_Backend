@@ -1,9 +1,13 @@
 package com.cMall.feedShop.product.domain.model;
 
+import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.product.domain.enums.ImageType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product_images")
@@ -25,6 +29,9 @@ public class ProductImage {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
+
+    @OneToMany(mappedBy = "productImage", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     public ProductImage(String url, ImageType type, Product product) {
         this.url = url;

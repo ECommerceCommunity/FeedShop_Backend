@@ -2,6 +2,7 @@ package com.cMall.feedShop.cart.domain.model;
 
 import com.cMall.feedShop.cart.domain.exception.CartException;
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,7 +46,7 @@ public class CartItem extends BaseTimeEntity {
 
     public void updateQuantity(Integer newQuantity) {
         if (newQuantity < 1) {
-            throw new CartException.CartZeroQuantityException();
+            throw new CartException(ErrorCode.ZERO_QUANTITY);
         }
         this.quantity = newQuantity;
     }

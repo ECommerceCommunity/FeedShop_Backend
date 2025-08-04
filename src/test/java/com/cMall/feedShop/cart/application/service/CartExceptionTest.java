@@ -14,8 +14,7 @@ class CartExceptionTest {
     @DisplayName("CartZeroQuantityException 생성 및 속성 확인")
     void cartZeroQuantityException_Creation() {
         // when
-        CartException.CartZeroQuantityException exception =
-                new CartException.CartZeroQuantityException();
+        CartException exception = new CartException(ErrorCode.ZERO_QUANTITY);
 
         // then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.ZERO_QUANTITY);
@@ -28,8 +27,7 @@ class CartExceptionTest {
     @DisplayName("CartZeroQuantityException은 RuntimeException을 상속")
     void cartZeroQuantityException_ExtendsRuntimeException() {
         // when
-        CartException.CartZeroQuantityException exception =
-                new CartException.CartZeroQuantityException();
+        CartException exception = new CartException(ErrorCode.ZERO_QUANTITY);
 
         // then
         assertThat(exception).isInstanceOf(RuntimeException.class);
