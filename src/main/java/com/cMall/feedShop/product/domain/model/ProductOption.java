@@ -65,10 +65,6 @@ public class ProductOption {
             throw new ProductException(ErrorCode.OUT_OF_STOCK, "차감할 수량은 1 이상이어야 합니다.");
         }
 
-        if (!isStockSufficient(quantity)) {
-            throw new ProductException(ErrorCode.OUT_OF_STOCK);
-        }
-
         if (this.stock == null || this.stock < quantity) {
             throw new ProductException(ErrorCode.OUT_OF_STOCK);
         }
@@ -87,9 +83,5 @@ public class ProductOption {
         }
 
         this.stock += quantity;
-    }
-
-    public boolean isStockSufficient(Integer quantity) {
-        return this.stock != null && this.stock >= quantity;
     }
 }
