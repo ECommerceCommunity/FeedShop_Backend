@@ -42,7 +42,7 @@ public class OrderSellerController {
             @Parameter(description = "페이지 크기 (0~100)")
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.")
-            @Max(value = 100, message = "페이지 크기는 최대 100이어야 합니다.")
+            @Max(value = 100, message = "페이지 크기는 100 이하이어야 합니다.")
             int size,
             @Parameter(
                     description = "주문 상태 필터링(전체 조회시 'ALL' 또는 'NULL')",
@@ -67,7 +67,9 @@ public class OrderSellerController {
     @PreAuthorize("hasRole('SELLER')")
     @ApiResponseFormat(message = "주문 상태가 변경되었습니다.")
     public ApiResponse<OrderStatusUpdateResponse> updateOrderStatus(
-            @PathVariable Long orderId,
+            @PathVariable
+            @Min(value = 1, message = "주문 ID는 1 이상이어야 합니다.")
+            Long orderId,
             @Valid @RequestBody OrderStatusUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {

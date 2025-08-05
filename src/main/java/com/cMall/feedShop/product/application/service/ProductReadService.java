@@ -76,6 +76,7 @@ public class ProductReadService {
                 product.getName(),
                 product.getPrice(),
                 discountPrice,
+                product.getCategory().getCategoryId(),
                 product.getStore().getStoreId(),
                 product.getStore().getStoreName(),
                 product.getWishNumber(),

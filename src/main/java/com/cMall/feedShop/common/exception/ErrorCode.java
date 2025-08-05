@@ -52,6 +52,7 @@ public enum ErrorCode {
     PRODUCT_OPTION_NOT_FOUND(404, "P005", "존재하지 않는 상품 옵션입니다."),
     PRODUCT_IMAGE_NOT_FOUND(404, "P006", "존재하지 않는 상품 이미지입니다."),
     DUPLICATE_PRODUCT_NAME(409, "P007", "이미 존재하는 상품 이름입니다."),
+    INVALID_PRODUCT_FILTER_PRICE_RANGE(400, "P008", "잘못된 가격 범위입니다. 최소 가격은 최대 가격보다 작거나 같아야 합니다."),
 
     // 장바구니
     ZERO_QUANTITY(400, "CA001", "수량은 1개 이상이어야 합니다."),
