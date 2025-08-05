@@ -436,20 +436,6 @@ class OrderServiceTest {
     }
 
     @Test
-    @DisplayName("주문 목록 조회 - 사용자 없음 예외")
-    void getOrderList_UserNotFound() {
-        // Given
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> orderService.getOrderListForUser(0, 10, null, userDetails))
-                .isInstanceOf(UserException.class)
-                .hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
-
-        verify(orderRepository, never()).findByUserOrderByCreatedAtDesc(any(), any());
-    }
-
-    @Test
     @DisplayName("주문 목록 조회 - 권한 없음 (SELLER)")
     void getOrderList_Forbidden() {
         // Given

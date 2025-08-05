@@ -187,13 +187,13 @@ public class OrderService {
             try {
                 // 특정 주문 상태 필터링 조회
                 OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
-                return orderRepository.findByOrderItemsProductOptionProductStoreSellerIdAndStatusOrderByCreatedAtDesc(currentUser.getId(), orderStatus, pageable);
+                return orderRepository.findOrdersBySellerIdAndStatus(currentUser.getId(), orderStatus, pageable);
             } catch (IllegalArgumentException e) {
                 throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
             }
         } else {
             // 전체 조회
-            return orderRepository.findByOrderItemsProductOptionProductStoreSellerIdOrderByCreatedAtDesc(currentUser.getId(), pageable);
+            return orderRepository.findOrdersBySellerId(currentUser.getId(), pageable);
         }
     }
 
