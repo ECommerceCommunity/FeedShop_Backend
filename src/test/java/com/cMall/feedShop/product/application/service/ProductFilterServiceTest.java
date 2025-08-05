@@ -3,7 +3,6 @@ package com.cMall.feedShop.product.application.service;
 import com.cMall.feedShop.product.application.dto.request.ProductFilterRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductListResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
-import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.CategoryType;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.product.domain.model.Category;
@@ -44,7 +43,7 @@ class ProductFilterServiceTest {
     private ProductRepository productRepository; // 가짜 저장소 (실제 DB 없이 테스트)
 
     @Mock
-    private DiscountCalculator discountCalculator; // 가짜 할인 계산기
+    private ProductMapper productMapper; // 가짜 매퍼 (누락되어 있던 부분!)
 
     @InjectMocks
     private ProductFilterService productFilterService; // 테스트할 실제 서비스
@@ -52,6 +51,7 @@ class ProductFilterServiceTest {
     private Product testProduct; // 테스트용 상품 데이터
     private Store testStore; // 테스트용 스토어 데이터
     private Category testCategory; // 테스트용 카테고리 데이터
+    private ProductListResponse testProductResponse; // 테스트용 응답 데이터
 
     /**
      * 각 테스트 실행 전에 공통으로 사용할 테스트 데이터 준비
@@ -82,6 +82,18 @@ class ProductFilterServiceTest {
                 .category(testCategory)
                 .build();
         ReflectionTestUtils.setField(testProduct, "productId", 1L);
+
+        // 4. 테스트용 응답 데이터 생성
+        testProductResponse = ProductListResponse.builder()
+                .productId(1L)
+                .name("에어맥스 97")
+                .price(new BigDecimal("149000"))
+                .discountPrice(new BigDecimal("134100"))
+                .mainImageUrl("http://image.jpg")
+                .categoryId(1L)
+                .storeId(1L)
+                .storeName("테스트 스토어")
+                .build();
     }
 
     @Test
@@ -109,9 +121,9 @@ class ProductFilterServiceTest {
                 any(Pageable.class)
         )).willReturn(productPage);
 
-        // 할인 계산기가 할인된 가격을 반환하도록 설정
-        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
-                .willReturn(new BigDecimal("134100")); // 10% 할인 적용
+        // 가짜 매퍼가 Product를 ProductListResponse로 변환하도록 설정
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
 
         // when (실행 단계)
         // 실제로 필터링 메서드 호출
@@ -152,8 +164,9 @@ class ProductFilterServiceTest {
                 any(Pageable.class)
         )).willReturn(productPage);
 
-        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
-                .willReturn(new BigDecimal("134100"));
+        // 가짜 매퍼 설정
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
 
         // when (실행 단계)
         ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
@@ -187,8 +200,9 @@ class ProductFilterServiceTest {
                 any(Pageable.class)
         )).willReturn(productPage);
 
-        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
-                .willReturn(new BigDecimal("134100"));
+        // 가짜 매퍼 설정
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
 
         // when (실행 단계)
         ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
@@ -227,8 +241,9 @@ class ProductFilterServiceTest {
                 any(Pageable.class)
         )).willReturn(productPage);
 
-        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
-                .willReturn(new BigDecimal("134100"));
+        // 가짜 매퍼 설정
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
 
         // when (실행 단계)
         ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);

@@ -1,6 +1,5 @@
 package com.cMall.feedShop.product.application.service;
 
-import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.application.dto.request.ProductFilterRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductListResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
@@ -20,7 +19,7 @@ import java.math.BigDecimal;
 @Transactional(readOnly = true)
 public class ProductFilterService {
     private final ProductRepository productRepository;
-    private final DiscountCalculator discountCalculator;
+    private final ProductMapper productMapper;
 
     /**
      * 상품 목록 필터링 조회 서비스
@@ -53,29 +52,9 @@ public class ProductFilterService {
         );
 
         // 5. Product 엔티티를 ProductListResponse로 변환한다.
-        Page<ProductListResponse> responsePage = productPage.map(this::convertToResponse);
+        Page<ProductListResponse> responsePage = productPage.map(productMapper::toListResponse);
 
         // 6. 응답값 객체 생성하여 반환.
         return ProductPageResponse.of(responsePage);
-    }
-
-    private ProductListResponse convertToResponse(Product product) {
-        // 할인가 계산
-        BigDecimal discountPrice = product.getDiscountPrice(discountCalculator);
-
-        // 대표 이미지 URL 가져오기
-        String mainImageUrl = product.getMainImageUrl();
-
-        // 응답 객체 생성
-        return ProductListResponse.builder()
-                .productId(product.getProductId())
-                .name(product.getName())
-                .price(product.getPrice())
-                .discountPrice(discountPrice)
-                .mainImageUrl(mainImageUrl)
-                .categoryId(product.getCategory().getCategoryId())
-                .storeId(product.getStore().getStoreId())
-                .storeName(product.getStore().getStoreName())
-                .build();
     }
 }

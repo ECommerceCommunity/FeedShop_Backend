@@ -10,6 +10,7 @@ import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
 import com.cMall.feedShop.product.application.service.CategoryService;
 import com.cMall.feedShop.product.application.service.ProductFilterService;
 import com.cMall.feedShop.product.application.service.ProductReadService;
+import com.cMall.feedShop.product.application.validator.PriceValidator;
 import com.cMall.feedShop.product.domain.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -64,18 +65,18 @@ public class ProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        // 1. 필터링 요청 객체를 생성한다.
-        ProductFilterRequest request = new ProductFilterRequest().builder()
+        // 1. 가격 범위 유효성을 검증한다.
+        if (!PriceValidator.isValidPriceRange(minPrice, maxPrice)) {
+            throw new ProductException(ErrorCode.INVALID_PRODUCT_FILTER_PRICE_RANGE);
+        }
+
+        // 2. 필터링 요청 객체를 생성한다.
+        ProductFilterRequest request = ProductFilterRequest.builder()
                 .categoryId(categoryId)
                 .minPrice(minPrice)
                 .maxPrice(maxPrice)
                 .storeId(storeId)
                 .build();
-
-        // 2. 가격 범위 유효성을 검증한다.
-        if (!request.isValidPriceRange()) {
-            throw new ProductException(ErrorCode.INVALID_PRODUCT_FILTER_PRICE_RANGE);
-        }
 
         // 3. 필터링된 상품 목록을 조회한다.
         ProductPageResponse data = productFilterService.filterProductList(request, page, size);
