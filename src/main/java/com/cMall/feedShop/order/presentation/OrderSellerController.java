@@ -2,10 +2,13 @@ package com.cMall.feedShop.order.presentation;
 
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.order.application.dto.request.OrderStatusUpdateRequest;
 import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
+import com.cMall.feedShop.order.application.dto.response.OrderStatusUpdateResponse;
 import com.cMall.feedShop.order.application.service.OrderService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/seller")
@@ -55,6 +55,23 @@ public class OrderSellerController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         OrderPageResponse data = orderService.getOrderListForSeller(page, size, status, userDetails);
+        return ApiResponse.success(data);
+    }
+
+    /**
+     * 판매자 주문 상태 변경 API
+     * POST /api/seller/orders/{orderId}/status
+     * 판매자가 자신의 상품 주문 상태를 변경
+     */
+    @PostMapping("/orders/{orderId}/status")
+    @PreAuthorize("hasRole('SELLER')")
+    @ApiResponseFormat(message = "주문 상태가 변경되었습니다.")
+    public ApiResponse<OrderStatusUpdateResponse> updateOrderStatus(
+            @PathVariable Long orderId,
+            @Valid @RequestBody OrderStatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        OrderStatusUpdateResponse data = orderService.updateOrderStatus(orderId, request, userDetails);
         return ApiResponse.success(data);
     }
 }

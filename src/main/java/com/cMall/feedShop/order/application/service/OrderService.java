@@ -4,10 +4,8 @@ import com.cMall.feedShop.cart.domain.model.CartItem;
 import com.cMall.feedShop.cart.domain.repository.CartItemRepository;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.order.application.dto.request.OrderCreateRequest;
-import com.cMall.feedShop.order.application.dto.response.OrderCreateResponse;
-import com.cMall.feedShop.order.application.dto.response.OrderDetailResponse;
-import com.cMall.feedShop.order.application.dto.response.OrderListResponse;
-import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
+import com.cMall.feedShop.order.application.dto.request.OrderStatusUpdateRequest;
+import com.cMall.feedShop.order.application.dto.response.*;
 import com.cMall.feedShop.order.application.calculator.OrderCalculation;
 import com.cMall.feedShop.order.domain.enums.OrderStatus;
 import com.cMall.feedShop.order.domain.exception.OrderException;
@@ -214,6 +212,51 @@ public class OrderService {
 
         // 3. 주문 상세 조회 응답 반환
         return OrderDetailResponse.from(order);
+    }
+
+    /**
+     * 판매자 주문 상태 변경
+     * @param orderId
+     * @param request
+     * @param userDetails
+     * @return
+     */
+    @Transactional
+    public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, UserDetails userDetails) {
+        // 1. 판매자 권한 검증
+        User seller = getCurrentUserAndValidateSellerPermission(userDetails);
+
+        // 2. 주문 조회 및 권한 검증
+        Order order = orderRepository.findByOrderIdAndSellerId(orderId, seller.getId())
+                .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 3. 상태 변경 가능 여부 검증
+        validateStatusUpdate(order.getStatus(), request.getStatus());
+
+        // 4. 주문 상태 업데이트
+        order.updateStatus(request.getStatus());
+
+        // 5. 주문 상태 변경 응답 반환
+        return OrderStatusUpdateResponse.from(order);
+    }
+
+    private void validateStatusUpdate(OrderStatus currentStatus, OrderStatus newStatus) {
+        // 주문됨 -> 배송중, 취소로 변경 가능
+        if (currentStatus == OrderStatus.ORDERED) {
+            if (newStatus != OrderStatus.SHIPPED && newStatus != OrderStatus.CANCELLED) {
+                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+            }
+        }
+        // 배송중 -> 배송완료로 변경 가능
+        else if (currentStatus == OrderStatus.SHIPPED) {
+            if (newStatus != OrderStatus.DELIVERED) {
+                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+            }
+        }
+        // 배송완료, 취소됨, 반품됨 상태는 변경 불가
+        else {
+            throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+        }
     }
 
     // JWT 에서 현재 사용자 정보 조회

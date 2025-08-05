@@ -150,4 +150,35 @@ public class OrderQueryRepositoryImpl implements OrderQueryRepository {
         QOrder order = QOrder.order;
         return status != null ? order.status.eq(status) : null;
     }
+
+    /**
+     * 주문 ID와 판매자 ID로 주문 조회 (판매자 권한 검증용)
+     * @param orderId 주문 ID
+     * @param sellerId 판매자 ID
+     * @return 조회된 주문 Optional
+     */
+    public Optional<Order> findByOrderIdAndSellerId(Long orderId, Long sellerId) {
+        QOrder order = QOrder.order;
+        QOrderItem orderItem = QOrderItem.orderItem;
+        QProductOption productOption = QProductOption.productOption;
+        QProduct product = QProduct.product;
+        QStore store = QStore.store;
+        QProductImage productImage = QProductImage.productImage;
+
+        Order result = queryFactory
+                .selectFrom(order)
+                .distinct()
+                .leftJoin(order.orderItems, orderItem).fetchJoin()
+                .leftJoin(orderItem.productOption, productOption).fetchJoin()
+                .leftJoin(productOption.product, product).fetchJoin()
+                .leftJoin(product.store, store).fetchJoin()
+                .leftJoin(orderItem.productImage, productImage).fetchJoin()
+                .where(
+                        order.orderId.eq(orderId)
+                                .and(store.sellerId.eq(sellerId))
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(result);
+    }
 }

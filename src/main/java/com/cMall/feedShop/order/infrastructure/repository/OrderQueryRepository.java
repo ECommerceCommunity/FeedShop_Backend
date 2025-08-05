@@ -22,4 +22,7 @@ public interface OrderQueryRepository {
 
     // 사용자별 특정 주문 조회 (EntityGraph 대체)
     Optional<Order> findByOrderIdAndUserId(Long orderId, Long userId);
+
+    // 주문 ID와 판매자 ID로 주문 조회 (판매자 권한 검증용)
+    Optional<Order> findByOrderIdAndSellerId(Long orderId, Long sellerId);
 }
