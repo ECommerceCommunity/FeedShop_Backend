@@ -102,7 +102,7 @@ public class OrderService {
     }
 
     /**
-     * 주문 목록 조회
+     * 주문 목록 조회 (사용자)
      * @param page
      * @param size
      * @param status
@@ -110,7 +110,7 @@ public class OrderService {
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderPageResponse getOrderList(int page, int size, String status, UserDetails userDetails) {
+    public OrderPageResponse getOrderListForUser(int page, int size, String status, UserDetails userDetails) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
         User currentUser = getCurrentUserAndValidatePermission(userDetails);
 
@@ -126,21 +126,75 @@ public class OrderService {
         Pageable pageable = PageRequest.of(page, size);
 
         // 3. 주문 목록 조회
-        Page<Order> orderPage;
-        if (status != null && !status.equalsIgnoreCase("all")) {
-            try {
-                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
-                orderPage = orderRepository.findByUserAndStatusOrderByCreatedAtDesc(currentUser, orderStatus, pageable);
-            } catch (IllegalArgumentException e) {
-                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
-            }
-        } else {
-            orderPage = orderRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable);
-        }
+        Page<Order> orderPage = getOrderPageForUser(currentUser, status, pageable);
 
         // 4. 주문 목록 응답 반환
         Page<OrderListResponse> response = orderPage.map(OrderListResponse::from);
         return OrderPageResponse.of(response);
+    }
+
+    /**
+     * 주문 목록 조회 (판매자)
+     * @param page
+     * @param size
+     * @param status
+     * @param userDetails
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public OrderPageResponse getOrderListForSeller(int page, int size, String status, UserDetails userDetails) {
+        // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
+        User currentUser = getCurrentUserAndValidateSellerPermission(userDetails);
+
+        // 2. 페이지 파라미터 검증
+        if (page < 0) {
+            page = 0;
+        }
+
+        if (size < 1 || size > 100) {
+            size = 10;
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 3. 주문 목록 조회
+        Page<Order> orderPage = getOrderPageForSeller(currentUser, status, pageable);
+
+        // 4. 주문 목록 응답 반환
+        Page<OrderListResponse> response = orderPage.map(OrderListResponse::from);
+        return OrderPageResponse.of(response);
+    }
+
+    // 주문 페이지 조회 (사용자)
+    private Page<Order> getOrderPageForUser(User currentUser, String status, Pageable pageable) {
+        if (status != null && !status.equalsIgnoreCase("all")) {
+            try {
+                // 특정 주문 상태 필터링 조회
+                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+                return orderRepository.findByUserAndStatusOrderByCreatedAtDesc(currentUser, orderStatus, pageable);
+            } catch (IllegalArgumentException e) {
+                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+            }
+        } else {
+            // 전체 조회
+            return orderRepository.findByUserOrderByCreatedAtDesc(currentUser, pageable);
+        }
+    }
+
+    // 주문 페이지 조회 (판매자)
+    private Page<Order> getOrderPageForSeller(User currentUser, String status, Pageable pageable) {
+        if (status != null && !status.equalsIgnoreCase("all")) {
+            try {
+                // 특정 주문 상태 필터링 조회
+                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+                return orderRepository.findOrdersBySellerIdAndStatus(currentUser.getId(), orderStatus, pageable);
+            } catch (IllegalArgumentException e) {
+                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
+            }
+        } else {
+            // 전체 조회
+            return orderRepository.findOrdersBySellerId(currentUser.getId(), pageable);
+        }
     }
 
     /**
@@ -169,6 +223,19 @@ public class OrderService {
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.USER) {
+            throw new OrderException(ErrorCode.ORDER_FORBIDDEN);
+        }
+
+        return user;
+    }
+
+    // 판매자 권한 검증
+    private User getCurrentUserAndValidateSellerPermission(UserDetails userDetails) {
+        String loginId = userDetails.getUsername();
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getRole() != UserRole.SELLER) {
             throw new OrderException(ErrorCode.ORDER_FORBIDDEN);
         }
 

@@ -63,7 +63,7 @@ public class OrderUserController {
             @Parameter(description = "페이지 크기 (1~100)")
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.")
-            @Max(value = 100, message = "페이지 크기는 100 이하이어야 합니다.")
+            @Max(value = 100, message = "페이지 크기는 최대 100이어야 합니다.")
             int size,
             @Parameter(
                     description = "주문 상태 필터링(전체 조회시 'ALL' 또는 'NULL')",
@@ -74,7 +74,7 @@ public class OrderUserController {
             @RequestParam(required = false) String status,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderPageResponse data = orderService.getOrderList(page, size, status, userDetails);
+        OrderPageResponse data = orderService.getOrderListForUser(page, size, status, userDetails);
         return ApiResponse.success(data);
     }
 
@@ -88,7 +88,9 @@ public class OrderUserController {
     @GetMapping("/orders/{orderId}")
     @ApiResponseFormat(message = "주문 상세 조회 완료")
     public ApiResponse<OrderDetailResponse> getOrderDetail(
-            @PathVariable Long orderId,
+            @PathVariable
+            @Min(value = 1, message = "주문 ID는 1 이상이어야 합니다.")
+            Long orderId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         OrderDetailResponse data = orderService.getOrderDetail(orderId, userDetails);
