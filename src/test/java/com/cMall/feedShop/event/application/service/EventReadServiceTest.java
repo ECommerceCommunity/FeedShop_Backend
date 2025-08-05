@@ -1,5 +1,6 @@
 package com.cMall.feedShop.event.application.service;
 
+import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
 import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
 import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
@@ -153,7 +154,7 @@ class EventReadServiceTest {
     @DisplayName("이벤트 상세 조회 성공")
     void getEventDetail_Success() {
         // Given
-        when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(testEvent));
+        when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventMapper.toDetailDto(testEvent)).thenReturn(testEventDetailResponseDto);
 
         // When
@@ -169,11 +170,12 @@ class EventReadServiceTest {
     @DisplayName("이벤트 상세 조회 실패 - 존재하지 않는 이벤트")
     void getEventDetail_NotFound() {
         // Given
-        when(eventRepository.findDetailById(999L)).thenReturn(Optional.empty());
+        when(eventRepository.findById(999L)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> eventReadService.getEventDetail(999L))
-                .isInstanceOf(EventNotFoundException.class);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("이벤트를 찾을 수 없습니다");
     }
 
     @Test
@@ -187,12 +189,13 @@ class EventReadServiceTest {
                 .deletedAt(LocalDateTime.now()) // 소프트 딜리트됨
                 .build();
         
-        // 소프트 딜리트된 이벤트는 findDetailById에서 null을 반환해야 함
-        when(eventRepository.findDetailById(2L)).thenReturn(Optional.empty());
+        // 소프트 딜리트된 이벤트는 findById에서 null을 반환해야 함
+        when(eventRepository.findById(2L)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> eventReadService.getEventDetail(2L))
-                .isInstanceOf(EventNotFoundException.class);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("이벤트를 찾을 수 없습니다");
     }
 
     @Test

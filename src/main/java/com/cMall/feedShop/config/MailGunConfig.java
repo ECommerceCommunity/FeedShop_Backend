@@ -16,7 +16,7 @@ public class MailGunConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MailGunConfig.class);
 
-    @Value("${mailgun.api.key}") // application.properties 또는 application.yml에서 API 키를 주입합니다.
+    @Value("${mailgun.api.key}") // application-dev.properties 또는 application.yml에서 API 키를 주입합니다.
     private String apiKey;
 
     @Bean // 이 메서드가 Spring 빈을 생성하고 관리함을 나타냅니다.

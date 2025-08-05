@@ -79,7 +79,14 @@ public enum ErrorCode {
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
-    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다.");
+    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
+    EVENT_NOT_AVAILABLE(400, "E004", "참여할 수 없는 이벤트입니다."),
+
+    // 피드
+    FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
+    FEED_ACCESS_DENIED(403, "F002", "해당 피드에 대한 권한이 없습니다."),
+    DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
+    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다.");
 
     private final int status;
     private final String code;
