@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -81,31 +82,18 @@ public class EventReadService {
      * - 진행중인 이벤트만 조회 (실시간 상태 계산)
      * - 삭제되지 않은 이벤트만 조회
      * - 이벤트 종료일이 현재 날짜보다 미래인 이벤트만 조회
+     * - 캐싱 적용 (5분간 캐시)
      */
+    @Cacheable(value = "availableEvents", key = "'feed-available'", unless = "#result.isEmpty()")
     public List<EventSummaryDto> getFeedAvailableEvents() {
         LocalDate currentDate = LocalDate.now();
         
-        return eventRepository.findAll()
-                .stream()
-                .filter(event -> {
-                    // 삭제된 이벤트 제외
-                    if (event.getDeletedAt() != null) {
-                        return false;
-                    }
-                    
-                    // 실시간 상태가 ONGOING인지 확인
-                    EventStatus realTimeStatus = event.calculateStatus();
-                    if (realTimeStatus != EventStatus.ONGOING) {
-                        return false;
-                    }
-                    
-                    // 이벤트 종료일이 현재 날짜보다 미래인지 확인 (아직 종료되지 않은 이벤트)
-                    if (event.getEventDetail().getEventEndDate() != null) {
-                        return event.getEventDetail().getEventEndDate().isAfter(currentDate);
-                    }
-                    
-                    return false;
-                })
+        // DB에서 필터링된 이벤트만 가져옴
+        List<Event> availableEvents = eventRepository.findAvailableEvents(currentDate);
+        
+        return availableEvents.stream()
+                // 이 부분은 calculateStatus()가 DB에서 처리할 수 없는 비즈니스 로직이라면 유지
+                .filter(event -> event.calculateStatus() == EventStatus.ONGOING)
                 .map(eventMapper::toSummaryDto)
                 .toList();
     }

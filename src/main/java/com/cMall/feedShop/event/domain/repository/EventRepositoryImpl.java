@@ -4,6 +4,7 @@ import com.cMall.feedShop.event.domain.Event;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -52,5 +53,10 @@ public class EventRepositoryImpl implements EventRepository {
     @Override
     public Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable) {
         return eventQueryRepository.searchEvents(requestDto, pageable);
+    }
+    
+    @Override
+    public List<Event> findAvailableEvents(LocalDate currentDate) {
+        return eventJpaRepository.findAvailableEvents(currentDate);
     }
 } 
