@@ -3,7 +3,7 @@ package com.cMall.feedShop.order.application.service;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.order.application.dto.response.PurchasedItemListResponse;
 import com.cMall.feedShop.order.application.dto.response.info.PurchasedItemInfo;
-import com.cMall.feedShop.order.domain.repository.OrderItemQueryRepository;
+import com.cMall.feedShop.order.infrastructure.repository.OrderItemQueryRepository;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;

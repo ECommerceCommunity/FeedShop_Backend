@@ -1,7 +1,7 @@
 package com.cMall.feedShop.product.domain.model;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.product.domain.enums.ImageType;
 import com.cMall.feedShop.review.domain.Review;

@@ -1,7 +1,6 @@
-package com.cMall.feedShop.cart.domain.repository;
+package com.cMall.feedShop.cart.infrastructure.repository;
 
 import com.cMall.feedShop.cart.domain.model.CartItem;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;

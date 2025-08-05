@@ -1,6 +1,6 @@
 package com.cMall.feedShop.order.application.dto.request;
 
-import com.cMall.feedShop.order.application.util.ValidCardPayment;
+import com.cMall.feedShop.order.application.validator.ValidCardPayment;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.Getter;

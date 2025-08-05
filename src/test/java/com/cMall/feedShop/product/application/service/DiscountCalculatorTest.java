@@ -1,6 +1,6 @@
 package com.cMall.feedShop.product.application.service;
 
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import org.junit.jupiter.api.BeforeEach;

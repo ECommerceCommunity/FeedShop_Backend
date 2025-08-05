@@ -1,4 +1,4 @@
-package com.cMall.feedShop.cart.domain.repository;
+package com.cMall.feedShop.cart.infrastructure.repository;
 
 import com.cMall.feedShop.cart.domain.model.CartItem;
 import com.cMall.feedShop.cart.domain.model.QCart;
