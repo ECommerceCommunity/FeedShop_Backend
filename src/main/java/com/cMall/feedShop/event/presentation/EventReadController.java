@@ -6,6 +6,8 @@ import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.application.service.EventReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
@@ -36,5 +38,13 @@ public class EventReadController {
     @GetMapping("/{eventId}")
     public EventDetailResponseDto getEventDetail(@PathVariable Long eventId) {
         return eventReadService.getEventDetail(eventId);
+    }
+
+    /**
+     * 피드 생성에 참여 가능한 이벤트 목록 조회
+     */
+    @GetMapping("/feed-available")
+    public List<EventSummaryDto> getFeedAvailableEvents() {
+        return eventReadService.getFeedAvailableEvents();
     }
 } 
