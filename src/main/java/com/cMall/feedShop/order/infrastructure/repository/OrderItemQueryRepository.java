@@ -1,4 +1,4 @@
-package com.cMall.feedShop.order.domain.repository;
+package com.cMall.feedShop.order.infrastructure.repository;
 
 import com.cMall.feedShop.order.application.dto.response.info.PurchasedItemInfo;
 

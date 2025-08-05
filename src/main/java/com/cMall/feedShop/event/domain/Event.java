@@ -13,7 +13,10 @@ import com.cMall.feedShop.common.BaseTimeEntity;
 import java.util.List;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+    @Index(name = "idx_event_deleted_at", columnList = "deleted_at"),
+    @Index(name = "idx_event_status", columnList = "status")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -43,7 +46,7 @@ public class Event extends BaseTimeEntity {
     private LocalDateTime updatedBy;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

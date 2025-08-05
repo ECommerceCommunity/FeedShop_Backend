@@ -52,6 +52,7 @@ public enum ErrorCode {
     PRODUCT_OPTION_NOT_FOUND(404, "P005", "존재하지 않는 상품 옵션입니다."),
     PRODUCT_IMAGE_NOT_FOUND(404, "P006", "존재하지 않는 상품 이미지입니다."),
     DUPLICATE_PRODUCT_NAME(409, "P007", "이미 존재하는 상품 이름입니다."),
+    INVALID_PRODUCT_FILTER_PRICE_RANGE(400, "P008", "잘못된 가격 범위입니다. 최소 가격은 최대 가격보다 작거나 같아야 합니다."),
 
     // 장바구니
     ZERO_QUANTITY(400, "CA001", "수량은 1개 이상이어야 합니다."),
@@ -64,7 +65,7 @@ public enum ErrorCode {
     ORDER_CART_EMPTY(400, "O004", "장바구니가 비어 있습니다. 주문할 상품이 없습니다."),
     INVALID_POINT(400, "O005", "유효하지 않은 포인트입니다."),
     ORDER_CANCEL_FORBIDDEN(403, "O006", "취소할 수 없는 주문 상태입니다."),
-    
+
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),
     DUPLICATE_REVIEW(409, "R002", "이미 해당 상품에 대한 리뷰를 작성하셨습니다."),
@@ -78,7 +79,14 @@ public enum ErrorCode {
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
-    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다.");
+    INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
+    EVENT_NOT_AVAILABLE(400, "E004", "참여할 수 없는 이벤트입니다."),
+
+    // 피드
+    FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
+    FEED_ACCESS_DENIED(403, "F002", "해당 피드에 대한 권한이 없습니다."),
+    DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
+    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다.");
 
     private final int status;
     private final String code;

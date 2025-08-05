@@ -1,4 +1,4 @@
-package com.cMall.feedShop.product.application.util;
+package com.cMall.feedShop.product.application.calculator;
 
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import org.springframework.stereotype.Component;

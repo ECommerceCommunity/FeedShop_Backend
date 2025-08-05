@@ -1,4 +1,4 @@
-package com.cMall.feedShop.order.application.util;
+package com.cMall.feedShop.order.application.validator;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;

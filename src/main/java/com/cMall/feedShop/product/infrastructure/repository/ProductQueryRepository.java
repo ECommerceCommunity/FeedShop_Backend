@@ -1,0 +1,17 @@
+package com.cMall.feedShop.product.infrastructure.repository;
+
+import com.cMall.feedShop.product.domain.model.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.math.BigDecimal;
+
+public interface ProductQueryRepository {
+    Page<Product> findProductsWithFilters(
+            Long categoryId,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Long storeId,
+            Pageable pageable
+    );
+}
