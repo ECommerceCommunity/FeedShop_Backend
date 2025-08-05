@@ -36,12 +36,12 @@ public class FeedMapper {
      */
     public FeedCreateResponseDto toFeedCreateResponseDto(Feed feed) {
         return FeedCreateResponseDto.builder()
-                .feedId(feed.getId() != null ? feed.getId() : 0L)
-                .title(feed.getTitle() != null ? feed.getTitle() : "")
-                .content(feed.getContent() != null ? feed.getContent() : "")
-                .feedType(feed.getFeedType() != null ? feed.getFeedType() : com.cMall.feedShop.feed.domain.FeedType.DAILY)
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType())
                 .instagramId(feed.getInstagramId())
-                .createdAt(feed.getCreatedAt() != null ? feed.getCreatedAt() : LocalDateTime.now())
+                .createdAt(feed.getCreatedAt())
                 .userId(feed.getUser().getId())
                 .userNickname(getUserNickname(feed.getUser()))
                 .orderItemId(getOrderItemId(feed.getOrderItem()))

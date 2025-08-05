@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "feed_images")
 @Getter
@@ -30,21 +28,10 @@ public class FeedImage extends BaseTimeEntity {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
     
-    @Column(name = "uploaded_at")
-    private LocalDateTime uploadedAt;
-    
     @Builder
     public FeedImage(Feed feed, String imageUrl, Integer sortOrder) {
         this.feed = feed;
         this.imageUrl = imageUrl;
         this.sortOrder = sortOrder != null ? sortOrder : 0;
-        this.uploadedAt = LocalDateTime.now();
-    }
-    
-    @PrePersist
-    protected void onCreate() {
-        if (uploadedAt == null) {
-            uploadedAt = LocalDateTime.now();
-        }
     }
 } 
