@@ -5,6 +5,8 @@ import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
 import com.cMall.feedShop.feed.application.service.MyFeedReadService;
 import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -12,7 +14,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * 마이피드 조회 REST API 컨트롤러
@@ -25,11 +32,12 @@ import org.springframework.web.bind.annotation.*;
 public class MyFeedReadController {
 
     private final MyFeedReadService myFeedReadService;
+    private final UserRepository userRepository;
 
     /**
      * 마이피드 목록 조회 (FD-802)
      *
-     * @param userId 사용자 ID (인증된 사용자)
+     * @param userDetails JWT 토큰에서 추출된 사용자 정보
      * @param feedType 피드 타입 (DAILY, EVENT, RANKING)
      * @param page 페이지 번호 (기본값: 0)
      * @param size 페이지 크기 (기본값: 20)
@@ -38,11 +46,18 @@ public class MyFeedReadController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PaginatedResponse<MyFeedListResponseDto>>> getMyFeeds(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String feedType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "latest") String sort) {
+
+        // JWT 토큰에서 사용자 ID 추출
+        Long userId = getUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
 
         log.info("마이피드 목록 조회 요청 - userId: {}, feedType: {}, page: {}, size: {}, sort: {}",
                 userId, feedType, page, size, sort);
@@ -99,7 +114,7 @@ public class MyFeedReadController {
     /**
      * 마이피드 타입별 조회 (페이징)
      *
-     * @param userId 사용자 ID
+     * @param userDetails JWT 토큰에서 추출된 사용자 정보
      * @param feedType 피드 타입
      * @param page 페이지 번호 (기본값: 0)
      * @param size 페이지 크기 (기본값: 20)
@@ -108,11 +123,18 @@ public class MyFeedReadController {
      */
     @GetMapping("/type/{feedType}")
     public ResponseEntity<ApiResponse<PaginatedResponse<MyFeedListResponseDto>>> getMyFeedsByType(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String feedType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "latest") String sort) {
+
+        // JWT 토큰에서 사용자 ID 추출
+        Long userId = getUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
 
         log.info("마이피드 타입별 조회 요청 - userId: {}, feedType: {}, page: {}, size: {}, sort: {}",
                 userId, feedType, page, size, sort);
@@ -161,14 +183,21 @@ public class MyFeedReadController {
     /**
      * 마이피드 개수 조회
      *
-     * @param userId 사용자 ID
+     * @param userDetails JWT 토큰에서 추출된 사용자 정보
      * @param feedType 피드 타입 (선택사항)
      * @return 마이피드 개수
      */
     @GetMapping("/count")
     public ResponseEntity<ApiResponse<Long>> getMyFeedCount(
-            @RequestParam Long userId,
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String feedType) {
+
+        // JWT 토큰에서 사용자 ID 추출
+        Long userId = getUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
 
         log.info("마이피드 개수 조회 요청 - userId: {}, feedType: {}", userId, feedType);
 
@@ -189,5 +218,45 @@ public class MyFeedReadController {
         log.info("마이피드 개수 조회 완료 - userId: {}, feedType: {}, 개수: {}", userId, feedType, count);
 
         return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    /**
+     * UserDetails에서 사용자 ID를 추출하는 헬퍼 메서드
+     *
+     * @param userDetails JWT 토큰에서 추출된 사용자 정보
+     * @return 사용자 ID
+     */
+    private Long getUserIdFromUserDetails(UserDetails userDetails) {
+        if (userDetails == null) {
+            log.warn("UserDetails가 null입니다.");
+            return null;
+        }
+
+        String loginId = userDetails.getUsername();
+        log.debug("UserDetails에서 추출한 login_id: {}", loginId);
+
+        // 디버깅을 위해 데이터베이스의 사용자 목록 확인
+        log.debug("=== 데이터베이스 사용자 목록 확인 ===");
+        try {
+            List<User> allUsers = userRepository.findAll();
+            log.debug("전체 사용자 수: {}", allUsers.size());
+            for (User user : allUsers) {
+                log.debug("사용자 ID: {}, 이메일: {}, 로그인ID: {}", 
+                    user.getId(), user.getEmail(), user.getLoginId());
+            }
+        } catch (Exception e) {
+            log.error("사용자 목록 조회 중 오류: {}", e.getMessage());
+        }
+
+        Optional<User> userOptional = userRepository.findByLoginId(loginId);
+        if (userOptional.isEmpty()) {
+            log.warn("login_id로 사용자를 찾을 수 없습니다: {}", loginId);
+            log.warn("JWT 토큰의 login_id와 데이터베이스의 login_id가 일치하지 않습니다.");
+            return null;
+        }
+
+        User user = userOptional.get();
+        log.debug("사용자 ID 추출 완료: {}", user.getId());
+        return user.getId();
     }
 } 
