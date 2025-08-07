@@ -2,6 +2,8 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.request.FeedCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedHashtag;
 import com.cMall.feedShop.feed.domain.FeedImage;
@@ -113,5 +115,243 @@ public class FeedMapper {
         if (event == null) return null;
         if (event.getEventDetail() == null) return null;
         return event.getEventDetail().getTitle();
+    }
+    
+    // ==================== 피드 목록 조회 관련 매핑 메서드들 ====================
+    
+    /**
+     * Feed 엔티티를 FeedListResponseDto로 변환
+     */
+    public FeedListResponseDto toFeedListResponseDto(Feed feed) {
+        return FeedListResponseDto.builder()
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType())
+                .instagramId(feed.getInstagramId())
+                .createdAt(feed.getCreatedAt())
+                .likeCount(feed.getLikeCount())
+                .commentCount(feed.getCommentCount())
+                .participantVoteCount(feed.getParticipantVoteCount())
+                .userId(getUserId(feed.getUser()))
+                .userNickname(getUserNickname(feed.getUser()))
+                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
+                .orderItemId(getOrderItemId(feed.getOrderItem()))
+                .productName(getProductName(feed.getOrderItem()))
+                .productSize(getProductSize(feed.getOrderItem()))
+                .eventId(getEventId(feed.getEvent()))
+                .eventTitle(getEventTitle(feed.getEvent()))
+                .hashtags(getHashtags(feed.getHashtags()))
+                .imageUrls(getImageUrls(feed.getImages()))
+                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .build();
+    }
+    
+    /**
+     * Feed 리스트를 FeedListResponseDto 리스트로 변환
+     */
+    public List<FeedListResponseDto> toFeedListResponseDtoList(List<Feed> feeds) {
+        if (feeds == null || feeds.isEmpty()) {
+            return List.of();
+        }
+        return feeds.stream()
+                .map(this::toFeedListResponseDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Feed 엔티티를 FeedDetailResponseDto로 변환
+     */
+    public FeedDetailResponseDto toFeedDetailResponseDto(Feed feed) {
+        return FeedDetailResponseDto.builder()
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType())
+                .instagramId(feed.getInstagramId())
+                .createdAt(feed.getCreatedAt())
+                .updatedAt(feed.getUpdatedAt())
+                .likeCount(feed.getLikeCount())
+                .commentCount(feed.getCommentCount())
+                .participantVoteCount(feed.getParticipantVoteCount())
+                .userId(getUserId(feed.getUser()))
+                .userNickname(getUserNickname(feed.getUser()))
+                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
+                .userGender(null) // TODO: 추후 UserProfile에 gender 필드 추가 시 구현
+                .userHeight(null) // TODO: 추후 UserProfile에 height 필드 추가 시 구현
+                .orderItemId(getOrderItemId(feed.getOrderItem()))
+                .productName(getProductName(feed.getOrderItem()))
+                .productSize(getProductSize(feed.getOrderItem()))
+                .productImageUrl(getProductImageUrl(feed.getOrderItem()))
+                .productId(getProductId(feed.getOrderItem()))
+                .eventId(getEventId(feed.getEvent()))
+                .eventTitle(getEventTitle(feed.getEvent()))
+                .eventDescription(getEventDescription(feed.getEvent()))
+                .eventStartDate(getEventStartDate(feed.getEvent()))
+                .eventEndDate(getEventEndDate(feed.getEvent()))
+                .hashtags(toFeedHashtagDtoList(feed.getHashtags()))
+                .images(toFeedImageDtoList(feed.getImages()))
+                .comments(toFeedCommentDtoList(feed.getComments()))
+                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .canVote(feed.getFeedType() == com.cMall.feedShop.feed.domain.FeedType.EVENT) // 이벤트 피드만 투표 가능
+                .build();
+    }
+    
+    // ==================== 추가 헬퍼 메서드들 ====================
+    
+    /**
+     * 사용자 ID를 안전하게 가져오기
+     */
+    private Long getUserId(User user) {
+        return user != null ? user.getId() : null;
+    }
+    
+    /**
+     * 사용자 프로필 이미지를 안전하게 가져오기
+     * TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+     */
+    private String getUserProfileImg(User user) {
+        return null; // TODO: 추후 구현
+    }
+    
+    /**
+     * 사용자 레벨을 안전하게 가져오기
+     * TODO: 추후 UserProfile에 level 필드 추가 시 구현
+     */
+    private Integer getUserLevel(User user) {
+        return null; // TODO: 추후 구현
+    }
+    
+    /**
+     * 사용자 성별을 안전하게 가져오기
+     * TODO: 추후 UserProfile에 gender 필드 추가 시 구현
+     */
+    private String getUserGender(User user) {
+        return null; // TODO: 추후 구현
+    }
+    
+    /**
+     * 사용자 키를 안전하게 가져오기
+     * TODO: 추후 UserProfile에 height 필드 추가 시 구현
+     */
+    private Integer getUserHeight(User user) {
+        return null; // TODO: 추후 구현
+    }
+    
+    /**
+     * 상품 사이즈를 안전하게 가져오기
+     */
+    private Integer getProductSize(OrderItem orderItem) {
+        if (orderItem == null || orderItem.getProductOption() == null) return null;
+        try {
+            return Integer.parseInt(orderItem.getProductOption().getSize().getValue());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 상품 이미지 URL을 안전하게 가져오기
+     */
+    private String getProductImageUrl(OrderItem orderItem) {
+        if (orderItem == null || orderItem.getProductOption() == null || 
+            orderItem.getProductOption().getProduct() == null) return null;
+        return orderItem.getProductOption().getProduct().getMainImageUrl();
+    }
+    
+    /**
+     * 상품 ID를 안전하게 가져오기
+     */
+    private Long getProductId(OrderItem orderItem) {
+        if (orderItem == null || orderItem.getProductOption() == null || 
+            orderItem.getProductOption().getProduct() == null) return null;
+        return orderItem.getProductOption().getProduct().getProductId(); // productId 사용
+    }
+    
+    /**
+     * 이벤트 ID를 안전하게 가져오기
+     */
+    private Long getEventId(Event event) {
+        return event != null ? event.getId() : null;
+    }
+    
+    /**
+     * 이벤트 설명을 안전하게 가져오기
+     */
+    private String getEventDescription(Event event) {
+        if (event == null || event.getEventDetail() == null) return null;
+        return event.getEventDetail().getDescription();
+    }
+    
+    /**
+     * 이벤트 시작일을 안전하게 가져오기
+     */
+    private LocalDateTime getEventStartDate(Event event) {
+        if (event == null || event.getEventDetail() == null) return null;
+        return event.getEventDetail().getEventStartDate().atStartOfDay();
+    }
+    
+    /**
+     * 이벤트 종료일을 안전하게 가져오기
+     */
+    private LocalDateTime getEventEndDate(Event event) {
+        if (event == null || event.getEventDetail() == null) return null;
+        return event.getEventDetail().getEventEndDate().atStartOfDay();
+    }
+    
+    /**
+     * FeedHashtag 리스트를 FeedDetailResponseDto.FeedHashtagDto 리스트로 변환
+     */
+    private List<FeedDetailResponseDto.FeedHashtagDto> toFeedHashtagDtoList(List<FeedHashtag> hashtags) {
+        if (hashtags == null || hashtags.isEmpty()) {
+            return List.of();
+        }
+        return hashtags.stream()
+                .map(hashtag -> FeedDetailResponseDto.FeedHashtagDto.builder()
+                        .tagId(hashtag.getId())
+                        .tag(hashtag.getTag())
+                        .build())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * FeedImage 리스트를 FeedDetailResponseDto.FeedImageDto 리스트로 변환
+     */
+    private List<FeedDetailResponseDto.FeedImageDto> toFeedImageDtoList(List<FeedImage> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        return images.stream()
+                .sorted((img1, img2) -> Integer.compare(img1.getSortOrder(), img2.getSortOrder()))
+                .map(image -> FeedDetailResponseDto.FeedImageDto.builder()
+                        .imageId(image.getId())
+                        .imageUrl(image.getImageUrl())
+                        .sortOrder(image.getSortOrder())
+                        .uploadedAt(image.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Comment 리스트를 FeedDetailResponseDto.FeedCommentDto 리스트로 변환
+     */
+    private List<FeedDetailResponseDto.FeedCommentDto> toFeedCommentDtoList(List<com.cMall.feedShop.feed.domain.Comment> comments) {
+        if (comments == null || comments.isEmpty()) {
+            return List.of();
+        }
+        return comments.stream()
+                .map(comment -> FeedDetailResponseDto.FeedCommentDto.builder()
+                        .commentId(comment.getId())
+                        .content(comment.getContent())
+                        .createdAt(comment.getCreatedAt())
+                        .userId(comment.getUser() != null ? comment.getUser().getId() : null)
+                        .userNickname(comment.getUser() != null ? getUserNickname(comment.getUser()) : null)
+                        .userProfileImg(comment.getUser() != null ? getUserProfileImg(comment.getUser()) : null)
+                        .build())
+                .collect(Collectors.toList());
     }
 } 

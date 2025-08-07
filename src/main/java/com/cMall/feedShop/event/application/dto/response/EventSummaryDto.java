@@ -28,6 +28,7 @@ public class EventSummaryDto {
     private String purchasePeriod;
     private String votePeriod;
     private String announcementDate;
+    private Boolean isParticipatable; // 이벤트 참여 가능 여부
 
     @Getter
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
