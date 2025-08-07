@@ -22,11 +22,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @Slf4j
@@ -47,16 +47,10 @@ public class ReviewUserController {
             @Valid @RequestPart("review") ReviewCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
-        // ✅ 수정: DTO에 이미지를 설정하지 않고, Service에 별도 파라미터로 전달
         ReviewCreateResponse response = reviewService.createReview(request, images);
         return ApiResponse.success(response);
     }
 
-    // =================== 리뷰 수정 API ===================
-
-    /**
-     * 리뷰 수정 (이미지 포함)
-     */
     @PutMapping("/{reviewId}")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰가 성공적으로 수정되었습니다.")
@@ -82,7 +76,6 @@ public class ReviewUserController {
         log.info("리뷰 수정 API 호출: reviewId={}, hasNewImages={}",
                 reviewId, newImages != null && !newImages.isEmpty());
 
-        // ✅ 수정: DTO에 이미지를 설정하지 않고, Service에 별도 파라미터로 전달
         ReviewUpdateResponse response = reviewService.updateReview(reviewId, request, newImages);
 
         log.info("리뷰 수정 API 완료: reviewId={}, 새 이미지 수={}, 삭제된 이미지 수={}",
@@ -93,11 +86,6 @@ public class ReviewUserController {
         return ApiResponse.success(response);
     }
 
-    // =================== 간단한 수정 API들 ===================
-
-    /**
-     * 리뷰 제목만 수정
-     */
     @PatchMapping("/{reviewId}/title")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰 제목이 성공적으로 수정되었습니다.")
@@ -110,9 +98,6 @@ public class ReviewUserController {
         return ApiResponse.success(null);
     }
 
-    /**
-     * 리뷰 평점만 수정
-     */
     @PatchMapping("/{reviewId}/rating")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰 평점이 성공적으로 수정되었습니다.")
@@ -125,9 +110,6 @@ public class ReviewUserController {
         return ApiResponse.success(null);
     }
 
-    /**
-     * 리뷰 내용만 수정
-     */
     @PatchMapping("/{reviewId}/content")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰 내용이 성공적으로 수정되었습니다.")
@@ -140,9 +122,6 @@ public class ReviewUserController {
         return ApiResponse.success(null);
     }
 
-    /**
-     * 특정 이미지만 삭제
-     */
     @DeleteMapping("/{reviewId}/images/{imageId}")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "이미지가 성공적으로 삭제되었습니다.")
@@ -162,44 +141,43 @@ public class ReviewUserController {
 
     // =================== 간단한 수정용 DTO들 ===================
 
-    /**
-     * 제목 수정 요청 DTO
-     */
     @Getter
-    @Setter
     @NoArgsConstructor
     public static class UpdateTitleRequest {
         @NotBlank(message = "리뷰 제목은 필수입니다.")
         @Size(max = 100, message = "리뷰 제목은 100자를 초과할 수 없습니다.")
         private String title;
+
+        public UpdateTitleRequest(String title) {
+            this.title = title;
+        }
     }
 
-    /**
-     * 평점 수정 요청 DTO
-     */
     @Getter
-    @Setter
     @NoArgsConstructor
     public static class UpdateRatingRequest {
         @NotNull(message = "평점은 필수입니다.")
         @Min(value = 1, message = "평점은 1점 이상이어야 합니다.")
         @Max(value = 5, message = "평점은 5점 이하여야 합니다.")
         private Integer rating;
+
+        public UpdateRatingRequest(Integer rating) {
+            this.rating = rating;
+        }
     }
 
-    /**
-     * 내용 수정 요청 DTO
-     */
     @Getter
-    @Setter
     @NoArgsConstructor
     public static class UpdateContentRequest {
         @NotBlank(message = "리뷰 내용은 필수입니다.")
         @Size(min = 10, max = 1000, message = "리뷰 내용은 10자 이상 1000자 이하여야 합니다.")
         private String content;
+
+        public UpdateContentRequest(String content) {
+            this.content = content;
+        }
     }
 
-    // TODO: SPRINT 3에서 추가 예정 - 리뷰 삭제 기능
     /*
     @DeleteMapping("/{reviewId}")
     @PreAuthorize("isAuthenticated()")
