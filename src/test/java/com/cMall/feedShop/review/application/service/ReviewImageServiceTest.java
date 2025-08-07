@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -39,7 +38,6 @@ class ReviewImageServiceTest {
     @InjectMocks
     private ReviewImageService reviewImageService;
 
-    // ✅ @BeforeEach에서는 stubbing 완전 제거, 객체 생성만
     private Review testReview;
     private ReviewImage testReviewImage;
 
@@ -68,7 +66,6 @@ class ReviewImageServiceTest {
                         .contentType("image/jpeg")
                         .build();
 
-        // ✅ 수정: 0 → 0L로 변경
         given(reviewImageRepository.countActiveImagesByReviewId(1L)).willReturn(0L);
         given(uploadService.uploadImage(testImageFile)).willReturn(uploadInfo);
         given(reviewImageRepository.save(any(ReviewImage.class))).willReturn(testReviewImage);
@@ -161,7 +158,6 @@ class ReviewImageServiceTest {
     @DisplayName("활성 이미지 개수를 정확히 반환한다")
     void getActiveImageCount() {
         // given - 이 테스트에서만 필요한 stubbing
-        // ✅ 수정: 3 → 3L로 변경
         given(reviewImageRepository.countActiveImagesByReviewId(1L)).willReturn(3L);
 
         // when
@@ -202,7 +198,6 @@ class ReviewImageServiceTest {
 
         ReviewImage secondReviewImage = mock(ReviewImage.class);
 
-        // ✅ 수정: 0 → 0L로 변경
         given(reviewImageRepository.countActiveImagesByReviewId(1L)).willReturn(0L);
         given(uploadService.uploadImage(firstImageFile)).willReturn(uploadInfo1);
         given(uploadService.uploadImage(secondImageFile)).willReturn(uploadInfo2);
@@ -220,10 +215,156 @@ class ReviewImageServiceTest {
         verify(reviewImageRepository, times(2)).save(any(ReviewImage.class));
     }
 
-    // ✅ createTestImageFile에서도 stubbing 제거하고 필요할 때만 설정
-    private MultipartFile createTestImageFile(String filename) throws IOException {
+    // =================== 새로운 메서드 테스트 ===================
+
+    @Test
+    @DisplayName("선택된 이미지들을 성공적으로 삭제할 수 있다")
+    void deleteSelectedImages_Success() {
+        // given
+        given(testReviewImage.getReviewImageId()).willReturn(1L);
+        given(testReviewImage.getFilePath()).willReturn("2024/01/01/image1.jpg");
+
+        ReviewImage secondImage = mock(ReviewImage.class);
+        given(secondImage.getReviewImageId()).willReturn(2L);
+        given(secondImage.getFilePath()).willReturn("2024/01/01/image2.jpg");
+
+        List<Long> deleteImageIds = List.of(1L, 2L);
+        List<ReviewImage> existingImages = List.of(testReviewImage, secondImage);
+
+        given(reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, deleteImageIds))
+                .willReturn(existingImages);
+
+        // when
+        List<Long> deletedIds = reviewImageService.deleteSelectedImages(1L, deleteImageIds);
+
+        // then
+        assertThat(deletedIds).containsExactly(1L, 2L);
+
+        // 선택된 이미지들만 삭제되었는지 확인
+        verify(testReviewImage).delete();
+        verify(secondImage).delete();
+
+        // 파일 삭제도 호출되었는지 확인
+        verify(uploadService).deleteImage("2024/01/01/image1.jpg");
+        verify(uploadService).deleteImage("2024/01/01/image2.jpg");
+    }
+
+    @Test
+    @DisplayName("빈 삭제 목록이 주어지면 아무것도 삭제하지 않는다")
+    void deleteSelectedImages_EmptyList() {
+        // given
+        List<Long> emptyDeleteIds = List.of();
+
+        // when
+        List<Long> deletedIds = reviewImageService.deleteSelectedImages(1L, emptyDeleteIds);
+
+        // then
+        assertThat(deletedIds).isEmpty();
+        verify(reviewImageRepository, never()).findActiveImagesByReviewIdAndImageIds(any(), any());
+        verify(uploadService, never()).deleteImage(any());
+    }
+
+    @Test
+    @DisplayName("null 삭제 목록이 주어지면 빈 리스트를 반환한다")
+    void deleteSelectedImages_NullList() {
+        // when
+        List<Long> deletedIds = reviewImageService.deleteSelectedImages(1L, null);
+
+        // then
+        assertThat(deletedIds).isEmpty();
+        verify(reviewImageRepository, never()).findActiveImagesByReviewIdAndImageIds(any(), any());
+    }
+
+    @Test
+    @DisplayName("특정 이미지 하나만 삭제할 수 있다")
+    void deleteSingleImage_Success() {
+        // given
+        given(testReviewImage.getReviewImageId()).willReturn(1L);
+        given(testReviewImage.getFilePath()).willReturn("2024/01/01/image1.jpg");
+
+        given(reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, List.of(1L)))
+                .willReturn(List.of(testReviewImage));
+
+        // when
+        boolean success = reviewImageService.deleteSingleImage(1L, 1L);
+
+        // then
+        assertThat(success).isTrue();
+        verify(testReviewImage).delete();
+        verify(uploadService).deleteImage("2024/01/01/image1.jpg");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이미지를 삭제하려 하면 false를 반환한다")
+    void deleteSingleImage_NotFound() {
+        // given - 존재하지 않는 이미지 ID로 조회하면 빈 리스트 반환
+        given(reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, List.of(999L)))
+                .willReturn(List.of()); // 빈 리스트 반환
+
+        // when
+        boolean success = reviewImageService.deleteSingleImage(1L, 999L); // 999번 이미지 삭제 시도
+
+        // then
+        assertThat(success).isFalse();
+        verify(uploadService, never()).deleteImage(any());
+    }
+
+    @Test
+    @DisplayName("이미지 순서를 재정렬할 수 있다")
+    void reorderImages_Success() {
+        // given
+        ReviewImage image2 = mock(ReviewImage.class);
+        ReviewImage image3 = mock(ReviewImage.class);
+
+        List<ReviewImage> activeImages = List.of(testReviewImage, image2, image3);
+        given(reviewImageRepository.findActiveImagesByReviewId(1L))
+                .willReturn(activeImages);
+
+        // when
+        reviewImageService.reorderImages(1L);
+
+        // then
+        verify(testReviewImage).updateOrder(1);
+        verify(image2).updateOrder(2);
+        verify(image3).updateOrder(3);
+    }
+
+    @Test
+    @DisplayName("이미지가 없는 리뷰의 순서 재정렬 시 아무것도 하지 않는다")
+    void reorderImages_EmptyImages() {
+        // given
+        given(reviewImageRepository.findActiveImagesByReviewId(1L))
+                .willReturn(List.of());
+
+        // when
+        reviewImageService.reorderImages(1L);
+
+        // then
+        // 아무 이미지도 없으므로 updateOrder 호출되지 않음
+        verify(testReviewImage, never()).updateOrder(any());
+    }
+
+    @Test
+    @DisplayName("이미지 개수 제한을 확인할 수 있다")
+    void canAddMoreImages() {
+        // given
+        given(reviewImageRepository.countActiveImagesByReviewId(1L)).willReturn(3L);
+        given(imageProperties.getMaxImageCount()).willReturn(5);
+
+        // when
+        boolean canAdd2More = reviewImageService.canAddMoreImages(1L, 2); // 3 + 2 = 5 (허용)
+        boolean cannotAdd3More = reviewImageService.canAddMoreImages(1L, 3); // 3 + 3 = 6 (초과)
+
+        // then
+        assertThat(canAdd2More).isTrue();
+        assertThat(cannotAdd3More).isFalse();
+    }
+
+    // =================== 헬퍼 메서드 ===================
+
+    private MultipartFile createTestImageFile(String filename) {
         MultipartFile imageFile = mock(MultipartFile.class);
-        // 이 메서드에서는 stubbing하지 않고, 각 테스트에서 필요한 것만 설정
+        // 각 테스트에서 필요한 stubbing은 개별적으로 설정
         return imageFile;
     }
 }

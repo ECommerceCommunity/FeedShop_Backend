@@ -178,6 +178,60 @@ class ReviewImageRepositoryImplTest {
         verify(reviewImageJpaRepository, times(1)).deleteAll(images);
     }
 
+    // =================== 새로운 메서드 테스트 ===================
+
+    @Test
+    @DisplayName("특정 이미지 ID들로 활성 이미지를 조회할 수 있다")
+    void findActiveImagesByReviewIdAndImageIds() {
+        // given
+        List<Long> imageIds = List.of(1L, 2L, 3L);
+        List<ReviewImage> images = List.of(testReviewImage);
+        given(reviewImageJpaRepository.findActiveImagesByReviewIdAndImageIds(1L, imageIds))
+                .willReturn(images);
+
+        // when
+        List<ReviewImage> result = reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, imageIds);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testReviewImage);
+        verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIdAndImageIds(1L, imageIds);
+    }
+
+    @Test
+    @DisplayName("빈 이미지 ID 리스트로 조회하면 빈 리스트를 반환한다")
+    void findActiveImagesByReviewIdAndImageIds_EmptyIds() {
+        // given
+        List<Long> emptyIds = List.of();
+        given(reviewImageJpaRepository.findActiveImagesByReviewIdAndImageIds(1L, emptyIds))
+                .willReturn(List.of());
+
+        // when
+        List<ReviewImage> result = reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, emptyIds);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIdAndImageIds(1L, emptyIds);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이미지 ID들로 조회하면 빈 리스트를 반환한다")
+    void findActiveImagesByReviewIdAndImageIds_NonExistentIds() {
+        // given
+        List<Long> nonExistentIds = List.of(999L, 998L);
+        given(reviewImageJpaRepository.findActiveImagesByReviewIdAndImageIds(1L, nonExistentIds))
+                .willReturn(List.of());
+
+        // when
+        List<ReviewImage> result = reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, nonExistentIds);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIdAndImageIds(1L, nonExistentIds);
+    }
+
+    // =================== 기존 엣지 케이스 테스트 ===================
+
     @Test
     @DisplayName("활성 이미지가 없는 리뷰의 경우 빈 리스트를 반환한다")
     void findActiveImagesByReviewId_EmptyResult() {
@@ -233,5 +287,41 @@ class ReviewImageRepositoryImplTest {
         // then
         assertThat(result).isEmpty();
         verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIds(reviewIds);
+    }
+
+    @Test
+    @DisplayName("대량의 이미지 ID로 조회해도 정상 동작한다")
+    void findActiveImagesByReviewIdAndImageIds_LargeList() {
+        // given
+        List<Long> largeIdList = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
+        List<ReviewImage> images = List.of(testReviewImage);
+        given(reviewImageJpaRepository.findActiveImagesByReviewIdAndImageIds(1L, largeIdList))
+                .willReturn(images);
+
+        // when
+        List<ReviewImage> result = reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, largeIdList);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testReviewImage);
+        verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIdAndImageIds(1L, largeIdList);
+    }
+
+    @Test
+    @DisplayName("단일 이미지 ID로 조회할 수 있다")
+    void findActiveImagesByReviewIdAndImageIds_SingleId() {
+        // given
+        List<Long> singleId = List.of(1L);
+        List<ReviewImage> images = List.of(testReviewImage);
+        given(reviewImageJpaRepository.findActiveImagesByReviewIdAndImageIds(1L, singleId))
+                .willReturn(images);
+
+        // when
+        List<ReviewImage> result = reviewImageRepository.findActiveImagesByReviewIdAndImageIds(1L, singleId);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testReviewImage);
+        verify(reviewImageJpaRepository, times(1)).findActiveImagesByReviewIdAndImageIds(1L, singleId);
     }
 }

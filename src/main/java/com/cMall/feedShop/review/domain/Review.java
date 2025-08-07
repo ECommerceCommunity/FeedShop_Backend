@@ -71,10 +71,9 @@ public class Review extends BaseTimeEntity {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    // 🆕 이미지 연관관계 추가
+    // 이미지 연관관계
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReviewImage> images = new ArrayList<>();
-
 
     @Builder
     public Review(String title, Integer rating, SizeFit sizeFit, Cushion cushion,
@@ -98,7 +97,7 @@ public class Review extends BaseTimeEntity {
         this.status = ReviewStatus.ACTIVE;
     }
 
-    // 비즈니스 메서드 (SPRINT 1용 - 최소한만)
+    // 기존 비즈니스 메서드들
     public void addPoint() {
         this.points++;
     }
@@ -117,7 +116,7 @@ public class Review extends BaseTimeEntity {
         return this.user.getId().equals(userId);
     }
 
-    // 🆕 이미지 관련 메서드들
+    // 이미지 관련 메서드들
     public void addImage(ReviewImage image) {
         this.images.add(image);
     }
@@ -141,6 +140,127 @@ public class Review extends BaseTimeEntity {
     public int getActiveImageCount() {
         return getActiveImages().size();
     }
+
+    // =================== 리뷰 수정 관련 메서드들 ===================
+
+    /**
+     * 리뷰 정보 업데이트 (기본 정보만)
+     */
+    public void updateReviewInfo(String title, Integer rating, String content,
+                                 SizeFit sizeFit, Cushion cushion, Stability stability) {
+        // 입력값 검증 (기존 검증 메서드 재사용)
+        validateTitle(title);
+        validateRating(rating);
+        validateContent(content);
+
+        // 3요소 검증
+        if (sizeFit == null || cushion == null || stability == null) {
+            throw new IllegalArgumentException("3요소 평가(사이즈, 쿠션, 안정성)는 모두 필수입니다.");
+        }
+
+        // 실제 업데이트
+        this.title = title;
+        this.rating = rating;
+        this.content = content;
+        this.sizeFit = sizeFit;
+        this.cushion = cushion;
+        this.stability = stability;
+    }
+
+    /**
+     * 리뷰 제목만 수정
+     */
+    public void updateTitle(String title) {
+        validateTitle(title);
+        this.title = title;
+    }
+
+    /**
+     * 리뷰 평점만 수정
+     */
+    public void updateRating(Integer rating) {
+        validateRating(rating);
+        this.rating = rating;
+    }
+
+    /**
+     * 리뷰 내용만 수정
+     */
+    public void updateContent(String content) {
+        validateContent(content);
+        this.content = content;
+    }
+
+    /**
+     * 3요소 평가 수정
+     */
+    public void update3Elements(SizeFit sizeFit, Cushion cushion, Stability stability) {
+        if (sizeFit == null || cushion == null || stability == null) {
+            throw new IllegalArgumentException("3요소 평가는 모두 필수입니다.");
+        }
+
+        this.sizeFit = sizeFit;
+        this.cushion = cushion;
+        this.stability = stability;
+    }
+
+    /**
+     * 리뷰 수정 권한 확인
+     */
+    public boolean canBeUpdatedBy(Long userId) {
+        return isOwnedBy(userId) && isActive();
+    }
+
+    /**
+     * 리뷰가 수정 가능한 상태인지 확인
+     */
+    public boolean isUpdatable() {
+        return isActive(); // 활성 상태인 리뷰만 수정 가능
+    }
+
+    /**
+     * 리뷰 수정 권한 검증 (예외 발생)
+     */
+    public void validateUpdatePermission(Long userId) {
+        if (!canBeUpdatedBy(userId)) {
+            if (!isOwnedBy(userId)) {
+                throw new IllegalArgumentException("본인이 작성한 리뷰만 수정할 수 있습니다.");
+            }
+            if (!isActive()) {
+                throw new IllegalArgumentException("삭제되거나 숨김 처리된 리뷰는 수정할 수 없습니다.");
+            }
+        }
+    }
+
+    /**
+     * 특정 이미지 삭제 (이미지 ID로)
+     */
+    public void removeImageById(Long imageId) {
+        ReviewImage imageToRemove = this.images.stream()
+                .filter(image -> image.getReviewImageId().equals(imageId))
+                .findFirst()
+                .orElse(null);
+
+        if (imageToRemove != null) {
+            removeImage(imageToRemove);
+        }
+    }
+
+    /**
+     * 여러 이미지 한 번에 삭제
+     */
+    public void removeImagesByIds(List<Long> imageIds) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            return;
+        }
+
+        List<ReviewImage> imagesToRemove = this.images.stream()
+                .filter(image -> imageIds.contains(image.getReviewImageId()))
+                .toList();
+
+        imagesToRemove.forEach(this::removeImage);
+    }
+
     // 검증 메서드들
     public static void validateTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
@@ -172,6 +292,4 @@ public class Review extends BaseTimeEntity {
     public boolean hasCompleteReviewElements() {
         return this.sizeFit != null && this.cushion != null && this.stability != null;
     }
-
-
 }

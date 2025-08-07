@@ -39,6 +39,7 @@ public class EventMapper {
                 .purchasePeriod(createPurchasePeriod(detail))
                 .votePeriod(createVotePeriod(detail))
                 .announcementDate(getSafeLocalDateString(detail, EventDetail::getAnnouncement))
+                .isParticipatable(event.isParticipatable()) // 참여 가능 여부 추가
                 .build();
     }
 
@@ -63,6 +64,7 @@ public class EventMapper {
                 .createdBy(event.getCreatedUser() != null ? event.getCreatedUser().getUsername() : null)
                 .createdAt(event.getCreatedBy() != null ? event.getCreatedBy().toString() : null)
                 .rewards(mapDetailRewards(event))
+                .isParticipatable(event.isParticipatable()) // 참여 가능 여부 추가
                 .build();
     }
 
