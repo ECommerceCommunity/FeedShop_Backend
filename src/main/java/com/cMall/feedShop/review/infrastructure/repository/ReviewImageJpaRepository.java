@@ -45,4 +45,12 @@ public interface ReviewImageJpaRepository extends JpaRepository<ReviewImage, Lon
      */
     @Query("SELECT ri FROM ReviewImage ri WHERE ri.review.reviewId IN :reviewIds AND ri.isDeleted = false ORDER BY ri.review.reviewId, ri.imageOrder ASC")
     List<ReviewImage> findActiveImagesByReviewIds(@Param("reviewIds") List<Long> reviewIds);
+
+    @Query("SELECT ri FROM ReviewImage ri WHERE ri.review.reviewId = :reviewId " +
+            "AND ri.reviewImageId IN :imageIds AND ri.isDeleted = false " +
+            "ORDER BY ri.imageOrder ASC")
+    List<ReviewImage> findActiveImagesByReviewIdAndImageIds(
+            @Param("reviewId") Long reviewId,
+            @Param("imageIds") List<Long> imageIds);
+
 }

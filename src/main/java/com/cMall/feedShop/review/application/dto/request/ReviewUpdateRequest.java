@@ -13,12 +13,20 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * 리뷰 수정 요청 DTO
+ *
+ * 🔍 설명:
+ * - 이 클래스는 사용자가 리뷰를 수정할 때 보내는 데이터를 담는 그릇입니다
+ * - @ValidReviewElements로 3요소(사이즈, 쿠션, 안정성)가 모두 있는지 검증합니다
+ * - 검증 어노테이션들(@NotBlank, @Size 등)이 잘못된 데이터를 미리 막아줍니다
+ */
 @Getter
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@JsonDeserialize(builder = ReviewCreateRequest.ReviewCreateRequestBuilder.class)
+@JsonDeserialize(builder = ReviewUpdateRequest.ReviewUpdateRequestBuilder.class)
 @ValidReviewElements
-public class ReviewCreateRequest implements ReviewElements { // ✅ implements 추가
+public class ReviewUpdateRequest implements ReviewElements { // ✅ implements 추가
 
     @NotBlank(message = "리뷰 제목은 필수입니다.")
     @Size(max = 100, message = "리뷰 제목은 100자를 초과할 수 없습니다.")
@@ -42,16 +50,16 @@ public class ReviewCreateRequest implements ReviewElements { // ✅ implements �
     @Size(min = 10, max = 1000, message = "리뷰 내용은 10자 이상 1000자 이하여야 합니다.")
     private final String content;
 
-    @NotNull(message = "상품 ID는 필수입니다.")
-    private final Long productId;
+    // 새로 추가할 이미지들
+    private final List<MultipartFile> newImages;
 
-    // 이미지는 별도 처리 (MultipartFile은 불변 객체가 아니므로)
-    private final List<MultipartFile> images;
+    // 삭제할 기존 이미지 ID 목록
+    private final List<Long> deleteImageIds;
 
     // ✅ 인터페이스 메서드들은 Lombok이 자동으로 구현해줌 (getter가 이미 있음)
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class ReviewCreateRequestBuilder {
+    public static class ReviewUpdateRequestBuilder {
         // Lombok이 자동 생성
     }
 }

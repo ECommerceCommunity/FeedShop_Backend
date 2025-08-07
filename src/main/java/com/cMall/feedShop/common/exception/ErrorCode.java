@@ -75,7 +75,7 @@ public enum ErrorCode {
     INVALID_FILE_FORMAT(400, "FILE_002", "지원하지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(400, "FILE_003", "파일 크기가 너무 큽니다."),
     IMAGE_COUNT_EXCEEDED(400, "FILE_004", "이미지 개수가 제한을 초과했습니다."),
-
+  
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
