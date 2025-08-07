@@ -59,7 +59,7 @@ public class MyFeedReadController {
                     .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
         }
 
-        log.info("마이피드 목록 조회 요청 - userId: {}, feedType: {}, page: {}, size: {}, sort: {}",
+        log.info("마이피드 목록 조회 요청 - 사용자: {}, feedType: {}, page: {}, size: {}, sort: {}",
                 userId, feedType, page, size, sort);
 
         // FeedType 변환
@@ -105,7 +105,7 @@ public class MyFeedReadController {
                 .hasPrevious(feedPage.hasPrevious())
                 .build();
 
-        log.info("마이피드 목록 조회 완료 - userId: {}, 총 {}개, 현재 페이지 {}개",
+        log.info("마이피드 목록 조회 완료 - 사용자: {}, 총 {}개, 현재 페이지 {}개",
                 userId, response.getTotalElements(), response.getContent().size());
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -136,7 +136,7 @@ public class MyFeedReadController {
                     .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
         }
 
-        log.info("마이피드 타입별 조회 요청 - userId: {}, feedType: {}, page: {}, size: {}, sort: {}",
+        log.info("마이피드 타입별 조회 요청 - 사용자: {}, feedType: {}, page: {}, size: {}, sort: {}",
                 userId, feedType, page, size, sort);
 
         try {
@@ -168,7 +168,7 @@ public class MyFeedReadController {
                     .hasPrevious(feedPage.hasPrevious())
                     .build();
 
-            log.info("마이피드 타입별 조회 완료 - userId: {}, feedType: {}, 총 {}개, 현재 페이지 {}개",
+            log.info("마이피드 타입별 조회 완료 - 사용자: {}, feedType: {}, 총 {}개, 현재 페이지 {}개",
                     userId, feedType, response.getTotalElements(), response.getContent().size());
 
             return ResponseEntity.ok(ApiResponse.success(response));
@@ -199,7 +199,7 @@ public class MyFeedReadController {
                     .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
         }
 
-        log.info("마이피드 개수 조회 요청 - userId: {}, feedType: {}", userId, feedType);
+        log.info("마이피드 개수 조회 요청 - 사용자: {}, feedType: {}", userId, feedType);
 
         long count;
         if (feedType != null && !feedType.isEmpty()) {
@@ -215,7 +215,7 @@ public class MyFeedReadController {
             count = myFeedReadService.getMyFeedCount(userId);
         }
 
-        log.info("마이피드 개수 조회 완료 - userId: {}, feedType: {}, 개수: {}", userId, feedType, count);
+        log.info("마이피드 개수 조회 완료 - 사용자: {}, feedType: {}, 개수: {}", userId, feedType, count);
 
         return ResponseEntity.ok(ApiResponse.success(count));
     }
@@ -233,25 +233,11 @@ public class MyFeedReadController {
         }
 
         String loginId = userDetails.getUsername();
-        log.debug("UserDetails에서 추출한 login_id: {}", loginId);
-
-        // 디버깅을 위해 데이터베이스의 사용자 목록 확인
-        log.debug("=== 데이터베이스 사용자 목록 확인 ===");
-        try {
-            List<User> allUsers = userRepository.findAll();
-            log.debug("전체 사용자 수: {}", allUsers.size());
-            for (User user : allUsers) {
-                log.debug("사용자 ID: {}, 이메일: {}, 로그인ID: {}", 
-                    user.getId(), user.getEmail(), user.getLoginId());
-            }
-        } catch (Exception e) {
-            log.error("사용자 목록 조회 중 오류: {}", e.getMessage());
-        }
+        log.debug("UserDetails에서 사용자 정보 추출 완료");
 
         Optional<User> userOptional = userRepository.findByLoginId(loginId);
         if (userOptional.isEmpty()) {
-            log.warn("login_id로 사용자를 찾을 수 없습니다: {}", loginId);
-            log.warn("JWT 토큰의 login_id와 데이터베이스의 login_id가 일치하지 않습니다.");
+            log.warn("login_id로 사용자를 찾을 수 없습니다");
             return null;
         }
 
