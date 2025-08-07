@@ -77,7 +77,7 @@ class FeedDetailServiceTest {
         // given
         Long feedId = 1L;
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
-        when(feedMapper.toDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
+        when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId);
