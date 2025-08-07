@@ -296,8 +296,10 @@ class ReviewElementsValidatorTest {
         assertThat(violations).anyMatch(v -> v.getMessage().contains("10자 이상"));
 
         // @ValidReviewElements 관련 오류는 없어야 함 (3요소는 모두 입력됨)
-        assertThat(violations).noneMatch(v -> v.getConstraintDescriptor()
-                .getAnnotation().annotationType().getSimpleName().equals("ValidReviewElements"));
+
+        assertThat(violations).noneMatch(v ->
+                v.getConstraintDescriptor().getAnnotation() instanceof ValidReviewElements);
+
     }
 
     // =================== 헬퍼 메서드 ===================
