@@ -9,7 +9,6 @@ Thumbs.db             # Windows system files
 
 # Additions for sensitive configuration files
 .env.development
-.env.development
 .env.production
 application.properties
 application-dev.properties
