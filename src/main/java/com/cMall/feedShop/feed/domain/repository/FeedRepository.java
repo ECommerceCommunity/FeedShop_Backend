@@ -31,4 +31,13 @@ public interface FeedRepository {
     
     // 주문 아이템별 피드 조회
     List<Feed> findByOrderItemId(Long orderItemId);
+    
+    // 사용자별 피드 타입 조회 (마이피드용)
+    Page<Feed> findByUserIdAndFeedType(Long userId, String feedType, Pageable pageable);
+    
+    // 사용자별 피드 개수 조회 (마이피드용)
+    long countByUserId(Long userId);
+    
+    // 사용자별 피드 타입 개수 조회 (마이피드용)
+    long countByUserIdAndFeedType(Long userId, String feedType);
 } 

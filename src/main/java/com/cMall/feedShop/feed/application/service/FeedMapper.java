@@ -4,6 +4,7 @@ import com.cMall.feedShop.feed.application.dto.request.FeedCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedHashtag;
 import com.cMall.feedShop.feed.domain.FeedImage;
@@ -158,6 +159,48 @@ public class FeedMapper {
         }
         return feeds.stream()
                 .map(this::toFeedListResponseDto)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Feed 엔티티를 MyFeedListResponseDto로 변환
+     */
+    public MyFeedListResponseDto toMyFeedListResponseDto(Feed feed) {
+        return MyFeedListResponseDto.builder()
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType())
+                .instagramId(feed.getInstagramId())
+                .createdAt(feed.getCreatedAt())
+                .likeCount(feed.getLikeCount())
+                .commentCount(feed.getCommentCount())
+                .participantVoteCount(feed.getParticipantVoteCount())
+                .userId(getUserId(feed.getUser()))
+                .userNickname(getUserNickname(feed.getUser()))
+                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
+                .orderItemId(getOrderItemId(feed.getOrderItem()))
+                .productName(getProductName(feed.getOrderItem()))
+                .productSize(getProductSize(feed.getOrderItem()))
+                .eventId(getEventId(feed.getEvent()))
+                .eventTitle(getEventTitle(feed.getEvent()))
+                .hashtags(getHashtags(feed.getHashtags()))
+                .imageUrls(getImageUrls(feed.getImages()))
+                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .build();
+    }
+    
+    /**
+     * Feed 리스트를 MyFeedListResponseDto 리스트로 변환
+     */
+    public List<MyFeedListResponseDto> toMyFeedListResponseDtoList(List<Feed> feeds) {
+        if (feeds == null || feeds.isEmpty()) {
+            return List.of();
+        }
+        return feeds.stream()
+                .map(this::toMyFeedListResponseDto)
                 .collect(Collectors.toList());
     }
     
