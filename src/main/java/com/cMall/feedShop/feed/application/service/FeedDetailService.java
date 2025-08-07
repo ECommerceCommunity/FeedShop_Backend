@@ -44,6 +44,6 @@ public class FeedDetailService {
         log.info("피드 상세 조회 완료 - feedId: {}, 제목: {}", feedId, feed.getTitle());
         
         // DTO 변환 및 반환
-        return feedMapper.toDetailResponseDto(feed);
+        return feedMapper.toFeedDetailResponseDto(feed);
     }
 }
