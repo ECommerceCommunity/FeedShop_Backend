@@ -59,4 +59,14 @@ public class FeedRepositoryImpl implements FeedRepository {
     public List<Feed> findByOrderItemId(Long orderItemId) {
         return feedJpaRepository.findByOrderItemOrderItemId(orderItemId);
     }
+
+    @Override
+    public Optional<Feed> findDetailById(Long id) {
+        return feedJpaRepository.findDetailById(id);
+    }
+
+    @Override
+    public Optional<Feed> findDetailWithAllById(Long id) {
+        return feedJpaRepository.findDetailWithAllById(id);
+    }
 } 
