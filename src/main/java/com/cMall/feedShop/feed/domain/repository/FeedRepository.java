@@ -31,4 +31,10 @@ public interface FeedRepository {
     
     // 주문 아이템별 피드 조회
     List<Feed> findByOrderItemId(Long orderItemId);
+    
+    // 피드 상세 조회 (삭제되지 않은 피드만)
+    Optional<Feed> findDetailById(Long id);
+    
+    // 피드 상세 조회 (모든 관계 엔티티 포함)
+    Optional<Feed> findDetailWithAllById(Long id);
 } 
