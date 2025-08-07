@@ -55,4 +55,16 @@ public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
            "LEFT JOIN FETCH f.votes " +
            "WHERE f.id = :id AND f.deletedAt IS NULL")
     Optional<Feed> findDetailWithAllById(@Param("id") Long id);
+    
+    // 사용자별 피드 타입 활성 조회 (마이피드용)
+    @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.feedType = :feedType AND f.deletedAt IS NULL")
+    Page<Feed> findByUserIdAndFeedTypeActive(@Param("userId") Long userId, @Param("feedType") FeedType feedType, Pageable pageable);
+    
+    // 사용자별 활성 피드 개수 조회 (마이피드용)
+    @Query("SELECT COUNT(f) FROM Feed f WHERE f.user.id = :userId AND f.deletedAt IS NULL")
+    long countByUserIdActive(@Param("userId") Long userId);
+    
+    // 사용자별 피드 타입 활성 개수 조회 (마이피드용)
+    @Query("SELECT COUNT(f) FROM Feed f WHERE f.user.id = :userId AND f.feedType = :feedType AND f.deletedAt IS NULL")
+    long countByUserIdAndFeedTypeActive(@Param("userId") Long userId, @Param("feedType") FeedType feedType);
 } 

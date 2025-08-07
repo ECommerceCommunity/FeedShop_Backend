@@ -19,4 +19,4 @@ public class FeedNotFoundException extends BusinessException {
     public FeedNotFoundException(Long feedId, String message) {
         super(ErrorCode.FEED_NOT_FOUND, "피드를 찾을 수 없습니다. feedId: " + feedId + ", " + message);
     }
-}
+} 

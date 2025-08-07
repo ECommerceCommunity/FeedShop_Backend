@@ -62,4 +62,8 @@ public class ReviewImageRepositoryImpl implements ReviewImageRepository {
     public void deleteAll(Iterable<ReviewImage> reviewImages) {
         jpaRepository.deleteAll(reviewImages);
     }
+    @Override
+    public List<ReviewImage> findActiveImagesByReviewIdAndImageIds(Long reviewId, List<Long> imageIds) {
+        return jpaRepository.findActiveImagesByReviewIdAndImageIds(reviewId, imageIds);
+    }
 }
