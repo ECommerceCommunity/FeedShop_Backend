@@ -1,6 +1,7 @@
 package com.cMall.feedShop.feed.presentation;
 
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedDetailService;
 import lombok.RequiredArgsConstructor;
@@ -26,30 +27,11 @@ public class FeedDetailController {
      * @return 피드 상세 정보
      */
     @GetMapping("/{feedId}")
+    @ApiResponseFormat(message = "요청하신 피드 상세 정보를 성공적으로 가져왔습니다.", status = 200)
     public ResponseEntity<ApiResponse<FeedDetailResponseDto>> getFeedDetail(@PathVariable Long feedId) {
         log.info("피드 상세 조회 요청 - feedId: {}", feedId);
 
-        try {
-            FeedDetailResponseDto feedDetail = feedDetailService.getFeedDetail(feedId);
-            
-            ApiResponse<FeedDetailResponseDto> response = ApiResponse.<FeedDetailResponseDto>builder()
-                    .success(true)
-                    .message("피드 상세 정보를 성공적으로 조회했습니다.")
-                    .data(feedDetail)
-                    .build();
-
-            log.info("피드 상세 조회 완료 - feedId: {}", feedId);
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            log.error("피드 상세 조회 실패 - feedId: {}, 오류: {}", feedId, e.getMessage());
-            
-            ApiResponse<FeedDetailResponseDto> errorResponse = ApiResponse.<FeedDetailResponseDto>builder()
-                    .success(false)
-                    .message("피드 상세 조회에 실패했습니다: " + e.getMessage())
-                    .build();
-            
-            return ResponseEntity.badRequest().body(errorResponse);
-        }
+        FeedDetailResponseDto feedDetail = feedDetailService.getFeedDetail(feedId);
+        return ResponseEntity.ok(ApiResponse.success(feedDetail));
     }
 }
