@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     
@@ -41,6 +42,19 @@ public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     // 사용자별 활성 피드 조회
     @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.deletedAt IS NULL")
     Page<Feed> findByUserIdActive(@Param("userId") Long userId, Pageable pageable);
+    
+    // 피드 상세 조회 (삭제되지 않은 피드만)
+    @Query("SELECT f FROM Feed f WHERE f.id = :id AND f.deletedAt IS NULL")
+    Optional<Feed> findDetailById(@Param("id") Long id);
+    
+    // 피드 상세 조회 (모든 관계 엔티티 포함, 삭제되지 않은 피드만)
+    @Query("SELECT DISTINCT f FROM Feed f " +
+           "LEFT JOIN FETCH f.hashtags " +
+           "LEFT JOIN FETCH f.images " +
+           "LEFT JOIN FETCH f.comments " +
+           "LEFT JOIN FETCH f.votes " +
+           "WHERE f.id = :id AND f.deletedAt IS NULL")
+    Optional<Feed> findDetailWithAllById(@Param("id") Long id);
     
     // 사용자별 피드 타입 활성 조회 (마이피드용)
     @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.feedType = :feedType AND f.deletedAt IS NULL")

@@ -174,4 +174,32 @@ public class Feed extends BaseTimeEntity {
         this.content = content;
         this.instagramId = instagramId;
     }
+
+    /**
+     * 피드가 삭제되었는지 확인
+     */
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
+
+    /**
+     * 피드 상세 조회 가능 여부 확인
+     */
+    public boolean isViewable() {
+        return !isDeleted();
+    }
+
+    /**
+     * 이벤트 피드인지 확인
+     */
+    public boolean isEventFeed() {
+        return this.feedType == FeedType.EVENT && this.event != null;
+    }
+
+    /**
+     * 데일리 피드인지 확인
+     */
+    public boolean isDailyFeed() {
+        return this.feedType == FeedType.DAILY;
+    }
 } 
