@@ -1,6 +1,5 @@
 package com.cMall.feedShop.product.application.service;
 
-import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.application.dto.request.ProductCreateRequest;
 import com.cMall.feedShop.product.application.dto.request.ProductImageRequest;
@@ -17,7 +16,6 @@ import com.cMall.feedShop.product.domain.repository.CategoryRepository;
 import com.cMall.feedShop.product.domain.repository.ProductImageRepository;
 import com.cMall.feedShop.product.domain.repository.ProductOptionRepository;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
-import com.cMall.feedShop.store.domain.exception.StoreException;
 import com.cMall.feedShop.store.domain.model.Store;
 import com.cMall.feedShop.store.domain.repository.StoreRepository;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -141,7 +139,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.of(store));
         given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
         given(productRepository.save(any(Product.class))).willAnswer(invocation -> {
@@ -168,10 +165,9 @@ class ProductServiceTest {
 
         given(userDetails.getUsername()).willReturn("user@test.com");
         given(userRepository.findByLoginId("user@test.com")).willReturn(Optional.of(user));
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
 
         // when & then
-        BusinessException thrown = assertThrows(BusinessException.class, () ->
+        ProductException thrown = assertThrows(ProductException.class, () ->
                 productService.createProduct(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN);
@@ -184,12 +180,11 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.empty());
 
         // when & then
-        StoreException thrown = assertThrows(
-                StoreException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         productService.createProduct(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.STORE_NOT_FOUND);
@@ -202,7 +197,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.of(store));
         given(categoryRepository.findById(1L)).willReturn(Optional.empty());
 
@@ -221,7 +215,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
         given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
 
@@ -238,7 +231,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         // when & then
@@ -270,12 +262,11 @@ class ProductServiceTest {
 
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(2L)).willReturn(Optional.of(otherProduct));
 
         // when & then
-        StoreException thrown = assertThrows(
-                StoreException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         productService.updateProduct(2L, updateRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.STORE_FORBIDDEN);
@@ -288,7 +279,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
 
         // when
@@ -304,7 +294,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         // when & then
@@ -405,7 +394,6 @@ class ProductServiceTest {
 
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
         given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
 
@@ -424,7 +412,6 @@ class ProductServiceTest {
         // given
         given(userDetails.getUsername()).willReturn("seller@test.com");
         given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
-        given(userRepository.findById(1L)).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
         given(categoryRepository.findById(1L)).willReturn(Optional.of(category));
 

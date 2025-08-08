@@ -49,6 +49,7 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
                 builder.and(detail.eventStartDate.gt(TimeUtil.nowDate()));
             } else if ("ongoing".equals(status)) {
                 // 현재 날짜가 이벤트 시작일과 종료일 사이인 경우
+                // 종료일은 다음날 자정까지 유효하도록 처리
                 builder.and(detail.eventStartDate.loe(TimeUtil.nowDate())
                         .and(detail.eventEndDate.goe(TimeUtil.nowDate())));
             } else if ("ended".equals(status)) {

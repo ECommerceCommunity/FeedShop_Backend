@@ -59,4 +59,36 @@ public class FeedRepositoryImpl implements FeedRepository {
     public List<Feed> findByOrderItemId(Long orderItemId) {
         return feedJpaRepository.findByOrderItemOrderItemId(orderItemId);
     }
+
+    @Override
+    public Optional<Feed> findDetailById(Long id) {
+        return feedJpaRepository.findDetailById(id);
+    }
+
+    @Override
+    public Optional<Feed> findDetailWithAllById(Long id) {
+        return feedJpaRepository.findDetailWithAllById(id);
+    }
+    
+    @Override
+    public Page<Feed> findByUserIdAndFeedType(Long userId, String feedType, Pageable pageable) {
+        return feedJpaRepository.findByUserIdAndFeedTypeActive(
+                userId, 
+                com.cMall.feedShop.feed.domain.FeedType.valueOf(feedType), 
+                pageable
+        );
+    }
+    
+    @Override
+    public long countByUserId(Long userId) {
+        return feedJpaRepository.countByUserIdActive(userId);
+    }
+    
+    @Override
+    public long countByUserIdAndFeedType(Long userId, String feedType) {
+        return feedJpaRepository.countByUserIdAndFeedTypeActive(
+                userId, 
+                com.cMall.feedShop.feed.domain.FeedType.valueOf(feedType)
+        );
+    }
 } 

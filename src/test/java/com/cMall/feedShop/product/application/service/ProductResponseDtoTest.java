@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Product Response DTO 테스트")
-class ResponseDtoTests {
+class ProductResponseDtoTest {
 
     @Test
     @DisplayName("ProductCreateResponse of 메서드 테스트")

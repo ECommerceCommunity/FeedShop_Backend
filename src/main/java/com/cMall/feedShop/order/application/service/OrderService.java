@@ -167,7 +167,6 @@ public class OrderService {
     private Page<Order> getOrderPageForUser(User currentUser, String status, Pageable pageable) {
         if (status != null && !status.equalsIgnoreCase("all")) {
             try {
-                // 특정 주문 상태 필터링 조회
                 OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
                 return orderRepository.findByUserAndStatusOrderByCreatedAtDesc(currentUser, orderStatus, pageable);
             } catch (IllegalArgumentException e) {

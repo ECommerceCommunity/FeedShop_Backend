@@ -53,6 +53,8 @@ public enum ErrorCode {
     PRODUCT_IMAGE_NOT_FOUND(404, "P006", "존재하지 않는 상품 이미지입니다."),
     DUPLICATE_PRODUCT_NAME(409, "P007", "이미 존재하는 상품 이름입니다."),
     INVALID_PRODUCT_FILTER_PRICE_RANGE(400, "P008", "잘못된 가격 범위입니다. 최소 가격은 최대 가격보다 작거나 같아야 합니다."),
+    PRODUCT_NOT_BELONG_TO_STORE(403, "P009", "해당 상품은 현재 스토어에 속하지 않습니다."),
+    DUPLICATE_PRODUCT_OPTION(409, "P010", "이미 존재하는 상품 옵션입니다."),
 
     // 장바구니
     ZERO_QUANTITY(400, "CA001", "수량은 1개 이상이어야 합니다."),
@@ -75,7 +77,7 @@ public enum ErrorCode {
     INVALID_FILE_FORMAT(400, "FILE_002", "지원하지 않는 파일 형식입니다."),
     FILE_SIZE_EXCEEDED(400, "FILE_003", "파일 크기가 너무 큽니다."),
     IMAGE_COUNT_EXCEEDED(400, "FILE_004", "이미지 개수가 제한을 초과했습니다."),
-
+  
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
     EVENT_NOT_FOUND(404, "E001", "이벤트를 찾을 수 없습니다."),
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
