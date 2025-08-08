@@ -2,11 +2,7 @@ package com.cMall.feedShop.common.storage;
 
 import com.cMall.feedShop.common.dto.UploadResult;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
-import jakarta.annotation.PostConstruct;
+import com.google.cloud.storage.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -180,7 +177,6 @@ public class GcpStorageService implements  StorageService {
         if (filePath.startsWith(prefix)) {
             return filePath.substring(prefix.length());
         }
-
         return null;
     }
 
@@ -193,6 +189,4 @@ public class GcpStorageService implements  StorageService {
         }
         return filename.substring(filename.lastIndexOf("."));
     }
-
-
 }

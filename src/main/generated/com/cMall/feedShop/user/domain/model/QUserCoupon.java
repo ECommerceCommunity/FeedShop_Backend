@@ -30,7 +30,7 @@ public class QUserCoupon extends EntityPathBase<UserCoupon> {
 
     public final EnumPath<com.cMall.feedShop.user.domain.enums.DiscountType> discountType = createEnum("discountType", com.cMall.feedShop.user.domain.enums.DiscountType.class);
 
-    public final NumberPath<Double> discountValue = createNumber("discountValue", Double.class);
+    public final NumberPath<java.math.BigDecimal> discountValue = createNumber("discountValue", java.math.BigDecimal.class);
 
     public final DateTimePath<java.time.LocalDateTime> expiresAt = createDateTime("expiresAt", java.time.LocalDateTime.class);
 

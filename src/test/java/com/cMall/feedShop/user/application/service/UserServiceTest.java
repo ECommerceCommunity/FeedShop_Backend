@@ -1,7 +1,7 @@
 package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.EmailService;
+import com.cMall.feedShop.common.email.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils; // @Value 필드 주입을 위한 유틸리티
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -109,7 +110,14 @@ class UserServiceTest {
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setId(1L); // ID 설정
-            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone())); // UserProfile 설정
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name(signUpRequest.getName())
+                    .nickname(signUpRequest.getName()) // 또는 signUpRequest.getNickname()
+                    .phone(signUpRequest.getPhone())
+                    .build();
+
+            savedUser.setUserProfile(userProfile);
             return savedUser;
         });
 
@@ -156,7 +164,13 @@ class UserServiceTest {
         existingPendingUser.setStatus(UserStatus.PENDING);
         existingPendingUser.setVerificationToken("oldToken");
         existingPendingUser.setVerificationTokenExpiry(LocalDateTime.now().minusHours(1)); // 만료된 토큰
-        existingPendingUser.setUserProfile(new UserProfile(existingPendingUser, "기존이름", "기존이름", "01011112222"));
+        UserProfile userProfile = UserProfile.builder()
+                .user(existingPendingUser)
+                .name(signUpRequest.getName())
+                .nickname(signUpRequest.getName()) // 또는 signUpRequest.getNickname()
+                .phone(signUpRequest.getPhone())
+                .build();
+        existingPendingUser.setUserProfile(userProfile);
 
         given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingPendingUser));
         // save 호출 시 업데이트된 existingPendingUser를 반환하도록 Mocking
@@ -205,7 +219,18 @@ class UserServiceTest {
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setId(2L);
-            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone()));
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name("테스트사용자")
+                    .nickname("테스트닉네임")
+                    .phone("010-1234-5678")
+                    // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                    .birthDate(LocalDate.of(1990, 1, 1))
+                    .height(175)
+                    .footSize(270)
+                    .profileImageUrl("https://test-image.com/profile.jpg")
+                    .build();
+            savedUser.setUserProfile(userProfile);
             assertThat(savedUser.getPassword()).isEqualTo(preEncryptedPassword); // 암호화되지 않고 그대로 저장됨을 검증
             return savedUser;
         });
@@ -451,7 +476,7 @@ class UserServiceTest {
         given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
 
         // When & Then
-        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
+        UserException thrown = assertThrows(UserException.class, () ->
                 userService.adminWithdrawUserByEmail(email)
         );
         assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
@@ -593,7 +618,17 @@ class UserServiceTest {
         String username = "testuser";
         String phoneNumber = "010-1234-5678";
         User user = new User(1L, "login1", "password123", "testuser@example.com", UserRole.USER);
-        UserProfile userProfile = new UserProfile(user, username, "testnick", phoneNumber);
+        UserProfile userProfile = UserProfile.builder()
+                .user(user)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
         user.setUserProfile(userProfile);
         UserResponse expectedResponse = UserResponse.from(user);
 
@@ -668,11 +703,33 @@ class UserServiceTest {
 
         // 첫 번째 사용자
         User user1 = new User(1L, "login1", "password1", "user1@example.com", UserRole.USER);
-        user1.setUserProfile(new UserProfile(user1, username, "nick1", phoneNumber));
+        UserProfile testUserProfile = UserProfile.builder()
+                .user(user1)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
+        user1.setUserProfile(testUserProfile);
 
         // 두 번째 사용자 (동일한 이름과 전화번호)
         User user2 = new User(2L, "login2", "password2", "user2@example.com", UserRole.USER);
-        user2.setUserProfile(new UserProfile(user2, username, "nick2", phoneNumber));
+        UserProfile testUserProfile2 = UserProfile.builder()
+                .user(user2)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
+        user2.setUserProfile(testUserProfile2);
 
         when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
                 .thenReturn(List.of(user1, user2));

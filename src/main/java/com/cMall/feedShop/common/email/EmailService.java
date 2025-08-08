@@ -1,4 +1,4 @@
-package com.cMall.feedShop.common.service;
+package com.cMall.feedShop.common.email;
 
 public interface EmailService {
     void sendSimpleEmail(String toEmail, String subject, String text);
