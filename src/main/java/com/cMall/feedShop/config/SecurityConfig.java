@@ -80,16 +80,29 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+
         config.setAllowedOrigins(Arrays.asList(
                 "https://feedshop-frontend.vercel.app",
-                "https://www.feedshop.store",
-                "http://localhost:3000"
+                "https://www.feedshop.store"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
+        // 2. 반드시 필요한 HTTP 메서드만 허용
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // 3. 와일드카드(*) 대신 필요한 헤더만 명시적으로 나열하여 보안 강화
+        //    (Authorization, Content-Type, Accept 등)
+        config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization"));
+
+        // 4. 인증 정보(쿠키, 인증 헤더 등)를 포함한 요청을 허용
         config.setAllowCredentials(true);
+
+        // 5. preflight 요청의 결과를 캐시할 시간(초) 설정
+        //    잦은 preflight 요청으로 인한 성능 저하 방지
+        config.setMaxAge(3600L); // 1시간 캐시
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }

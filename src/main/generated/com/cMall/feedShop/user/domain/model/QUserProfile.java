@@ -22,6 +22,19 @@ public class QUserProfile extends EntityPathBase<UserProfile> {
 
     public static final QUserProfile userProfile = new QUserProfile("userProfile");
 
+    public final com.cMall.feedShop.common.QBaseTimeEntity _super = new com.cMall.feedShop.common.QBaseTimeEntity(this);
+
+    public final DatePath<java.time.LocalDate> birthDate = createDate("birthDate", java.time.LocalDate.class);
+
+    //inherited
+    public final DateTimePath<java.time.LocalDateTime> createdAt = _super.createdAt;
+
+    public final NumberPath<Integer> footSize = createNumber("footSize", Integer.class);
+
+    public final EnumPath<com.cMall.feedShop.user.domain.enums.Gender> gender = createEnum("gender", com.cMall.feedShop.user.domain.enums.Gender.class);
+
+    public final NumberPath<Integer> height = createNumber("height", Integer.class);
+
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
     public final StringPath name = createString("name");
@@ -29,6 +42,11 @@ public class QUserProfile extends EntityPathBase<UserProfile> {
     public final StringPath nickname = createString("nickname");
 
     public final StringPath phone = createString("phone");
+
+    public final StringPath profileImageUrl = createString("profileImageUrl");
+
+    //inherited
+    public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
 
     public final QUser user;
 
