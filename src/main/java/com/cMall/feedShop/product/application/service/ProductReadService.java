@@ -5,7 +5,7 @@ import com.cMall.feedShop.product.application.dto.response.info.ProductImageInfo
 import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.application.dto.response.*;
 import com.cMall.feedShop.product.domain.exception.ProductException;
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +76,7 @@ public class ProductReadService {
                 product.getName(),
                 product.getPrice(),
                 discountPrice,
+                product.getCategory().getCategoryId(),
                 product.getStore().getStoreId(),
                 product.getStore().getStoreName(),
                 product.getWishNumber(),

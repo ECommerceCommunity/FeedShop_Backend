@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Product Response DTO 테스트")
-class ResponseDtoTests {
+class ProductResponseDtoTest {
 
     @Test
     @DisplayName("ProductCreateResponse of 메서드 테스트")
@@ -32,7 +32,7 @@ class ResponseDtoTests {
         // when
         ProductListResponse response = ProductListResponse.of(
                 1L, "상품명", new BigDecimal("50000"), new BigDecimal("45000"),
-                1L, "스토어명", 10, "http://image.jpg");
+                1L, 1L,"스토어명", 10, "http://image.jpg");
 
         // then
         assertThat(response.getProductId()).isEqualTo(1L);
@@ -51,7 +51,7 @@ class ResponseDtoTests {
         // when
         ProductListResponse response = ProductListResponse.of(
                 1L, "상품명", new BigDecimal("50000"), new BigDecimal("45000"),
-                1L, "스토어명", null, "http://image.jpg");
+                1L, 1L, "스토어명", null, "http://image.jpg");
 
         // then
         assertThat(response.getWishNumber()).isEqualTo(0);
@@ -63,11 +63,11 @@ class ResponseDtoTests {
         // given
         ProductListResponse product1 = ProductListResponse.of(
                 1L, "상품1", new BigDecimal("50000"), new BigDecimal("45000"),
-                1L, "스토어1", 5, "http://image1.jpg");
+                1L, 1L,"스토어1", 5, "http://image1.jpg");
 
         ProductListResponse product2 = ProductListResponse.of(
                 2L, "상품2", new BigDecimal("30000"), new BigDecimal("30000"),
-                1L, "스토어1", 3, "http://image2.jpg");
+                1L, 1L,"스토어1", 3, "http://image2.jpg");
 
         List<ProductListResponse> content = Arrays.asList(product1, product2);
         Page<ProductListResponse> page = new PageImpl<>(content, PageRequest.of(0, 20), 2);

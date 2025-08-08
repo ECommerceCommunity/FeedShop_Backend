@@ -15,7 +15,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("CartItemCreateRequest 유효성 검증 테스트")
-class CartItemCreateRequestValidationTest {
+class CartItemValidationTest {
 
     private Validator validator;
 
