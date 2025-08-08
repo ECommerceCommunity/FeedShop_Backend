@@ -1,6 +1,7 @@
 package com.cMall.feedShop.product.domain.repository;
 
 import com.cMall.feedShop.product.domain.model.Product;
+import com.cMall.feedShop.product.infrastructure.repository.ProductQueryRepository;
 import com.cMall.feedShop.store.domain.model.Store;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface ProductRepository extends JpaRepository<Product, Long> {
+public interface ProductRepository extends JpaRepository<Product, Long>, ProductQueryRepository {
 
     // 상품 목록 조회 (store, productImages 포함)
     @EntityGraph(attributePaths = {"store", "category", "productImages"})

@@ -13,7 +13,10 @@ import com.cMall.feedShop.common.BaseTimeEntity;
 import java.util.List;
 
 @Entity
-@Table(name = "events")
+@Table(name = "events", indexes = {
+    @Index(name = "idx_event_deleted_at", columnList = "deleted_at"),
+    @Index(name = "idx_event_status", columnList = "status")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -43,7 +46,7 @@ public class Event extends BaseTimeEntity {
     private LocalDateTime updatedBy;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -123,6 +126,12 @@ public class Event extends BaseTimeEntity {
 
     /**
      * 현재 날짜 기준으로 이벤트 상태 계산
+     * 종료일은 다음날 자정까지 유효하도록 처리
+     * 
+     * 예시:
+     * - eventEndDate = 2025-08-06인 경우
+     * - 2025-08-06 23:59:59까지 이벤트 참여 가능
+     * - 2025-08-07 00:00:00부터 ENDED 상태
      */
     public EventStatus calculateStatus() {
         if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
@@ -179,5 +188,17 @@ public class Event extends BaseTimeEntity {
      */
     public boolean isDeleted() {
         return this.deletedAt != null;
+    }
+
+    /**
+     * 이벤트 참여 가능 여부 확인
+     * 종료일은 다음날 자정까지 유효하도록 처리
+     */
+    public boolean isParticipatable() {
+        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
+            return false;
+        }
+        LocalDate today = TimeUtil.nowDate();
+        return !today.isBefore(eventDetail.getEventStartDate()) && !today.isAfter(eventDetail.getEventEndDate());
     }
 }

@@ -1,10 +1,14 @@
 package com.cMall.feedShop.review.domain.validation;
 
-import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class ReviewElementsValidator implements ConstraintValidator<ValidReviewElements, ReviewCreateRequest> {
+/**
+ * 리뷰 3요소 검증 Validator
+ * - ReviewElements 인터페이스를 구현한 모든 객체를 지원
+ * - SizeFit, Cushion, Stability가 모두 입력되었는지 검증
+ */
+public class ReviewElementsValidator implements ConstraintValidator<ValidReviewElements, ReviewElements> { // ✅ 타입 변경
 
     @Override
     public void initialize(ValidReviewElements constraintAnnotation) {
@@ -12,7 +16,7 @@ public class ReviewElementsValidator implements ConstraintValidator<ValidReviewE
     }
 
     @Override
-    public boolean isValid(ReviewCreateRequest request, ConstraintValidatorContext context) {
+    public boolean isValid(ReviewElements request, ConstraintValidatorContext context) { // ✅ 파라미터 타입 변경
         if (request == null) {
             return true; // null 체크는 다른 어노테이션에서 처리
         }

@@ -1,6 +1,6 @@
 package com.cMall.feedShop.cart.application.dto.response;
 
-import com.cMall.feedShop.cart.application.dto.common.CartItemInfo;
+import com.cMall.feedShop.cart.application.dto.response.info.CartItemInfo;
 import lombok.Builder;
 import lombok.Getter;
 

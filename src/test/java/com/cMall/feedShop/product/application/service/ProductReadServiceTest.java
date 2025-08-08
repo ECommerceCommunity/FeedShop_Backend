@@ -3,7 +3,7 @@ package com.cMall.feedShop.product.application.service;
 import com.cMall.feedShop.product.application.dto.response.ProductDetailResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
 import com.cMall.feedShop.product.domain.exception.ProductException;
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.*;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.product.domain.model.Product;
@@ -201,8 +201,8 @@ class ProductReadServiceTest {
         given(productRepository.findByProductId(productId)).willReturn(Optional.empty());
 
         // when & then
-        ProductException.ProductNotFoundException thrown = assertThrows(
-                ProductException.ProductNotFoundException.class,
+        ProductException thrown = assertThrows(
+                ProductException.class,
                 () -> productReadService.getProductDetail(productId)
         );
 

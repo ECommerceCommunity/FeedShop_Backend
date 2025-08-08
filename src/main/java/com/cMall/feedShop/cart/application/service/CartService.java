@@ -1,6 +1,6 @@
 package com.cMall.feedShop.cart.application.service;
 
-import com.cMall.feedShop.cart.application.dto.common.CartItemInfo;
+import com.cMall.feedShop.cart.application.dto.response.info.CartItemInfo;
 import com.cMall.feedShop.cart.application.dto.request.CartItemCreateRequest;
 import com.cMall.feedShop.cart.application.dto.request.CartItemUpdateRequest;
 import com.cMall.feedShop.cart.application.dto.response.CartItemListResponse;
@@ -8,19 +8,17 @@ import com.cMall.feedShop.cart.application.dto.response.CartItemResponse;
 import com.cMall.feedShop.cart.domain.exception.CartException;
 import com.cMall.feedShop.cart.domain.model.Cart;
 import com.cMall.feedShop.cart.domain.model.CartItem;
-import com.cMall.feedShop.cart.domain.repository.CartItemQueryRepository;
-import com.cMall.feedShop.cart.domain.repository.CartItemQueryRepositoryImpl;
 import com.cMall.feedShop.cart.domain.repository.CartItemRepository;
 import com.cMall.feedShop.cart.domain.repository.CartRepository;
-import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.domain.exception.ProductException;
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
 import com.cMall.feedShop.product.domain.repository.ProductImageRepository;
 import com.cMall.feedShop.product.domain.repository.ProductOptionRepository;
+import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -145,11 +143,11 @@ public class CartService {
                     ProductImage image = imageMap.get(cartItem.getImageId());
 
                     if (option == null) {
-                        throw new ProductException.ProductOptionNotFoundException();
+                        throw new ProductException(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
                     }
 
                     if (image == null) {
-                        throw new ProductException.ProductImageNotFoundException();
+                        throw new ProductException(ErrorCode.PRODUCT_IMAGE_NOT_FOUND);
                     }
 
                     Product product = option.getProduct();
@@ -186,7 +184,7 @@ public class CartService {
 
         // 2. 장바구니 아이템 조회
         CartItem cartItem = cartItemRepository.findByCartItemIdAndUserId(cartItemId, currentUser.getId())
-                .orElseThrow(() -> new CartException.CartItemNotFoundException());
+                .orElseThrow(() -> new CartException(ErrorCode.CART_ITEM_NOT_FOUND));
 
         // 3. 수량 변경 처리
         if (request.getQuantity() != null) {
@@ -219,11 +217,12 @@ public class CartService {
 
         // 2. 장바구니 아이템 조회
         CartItem cartItem = cartItemRepository.findByCartItemIdAndUserId(cartItemId, currentUser.getId())
-                .orElseThrow(() -> new CartException.CartItemNotFoundException());
+                .orElseThrow(() -> new CartException(ErrorCode.CART_ITEM_NOT_FOUND));
 
         // 3. 장바구니 아이템 삭제
         cartItemRepository.delete(cartItem);
     }
+
     private CartItemListResponse calculateCartSummary(List<CartItemInfo> items) {
 
         // 선택된 아이템들만 계산한다. (실제 결제 대상)
@@ -252,13 +251,13 @@ public class CartService {
     private User getCurrentUser(UserDetails userDetails) {
         String login_id = userDetails.getUsername();
         return userRepository.findByLoginId(login_id)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
     }
 
     private ProductOption validateProductOption(Long optionId) {
         // ProductOption을 찾는다.
         ProductOption productOption = productOptionRepository.findByOptionId(optionId)
-                .orElseThrow(() -> new ProductException.ProductOptionNotFoundException());
+                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_OPTION_NOT_FOUND));
 
         return productOption;
     }
@@ -266,14 +265,14 @@ public class CartService {
     private ProductImage validateProductImage(Long imageId) {
         // ProductImage를 찾는다.
         ProductImage productImage = productImageRepository.findByImageId(imageId)
-                .orElseThrow(() -> new ProductException.ProductImageNotFoundException());
+                .orElseThrow(() -> new ProductException(ErrorCode.PRODUCT_IMAGE_NOT_FOUND));
         return productImage;
     }
 
     private void validateStock(ProductOption productOption, Integer quantity) {
         // 재고가 충분한지 확인한다.
         if (!productOption.isInStock() || productOption.getStock() < quantity) {
-            throw new ProductException.OutOfStockException();
+            throw new ProductException(ErrorCode.OUT_OF_STOCK);
         }
     }
 

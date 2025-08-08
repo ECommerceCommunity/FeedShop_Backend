@@ -26,7 +26,7 @@ class ProductServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(null, null, null, null, null, null);
+        productService = new ProductService(null, null, null, null, null, null, null);
 
         store = Store.builder()
                 .storeName("테스트 스토어")

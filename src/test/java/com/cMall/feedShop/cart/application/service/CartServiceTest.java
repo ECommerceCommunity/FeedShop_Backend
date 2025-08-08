@@ -6,13 +6,12 @@ import com.cMall.feedShop.cart.application.dto.response.CartItemResponse;
 import com.cMall.feedShop.cart.domain.exception.CartException;
 import com.cMall.feedShop.cart.domain.model.Cart;
 import com.cMall.feedShop.cart.domain.model.CartItem;
-import com.cMall.feedShop.cart.domain.repository.CartItemQueryRepository;
 import com.cMall.feedShop.cart.domain.repository.CartItemRepository;
 import com.cMall.feedShop.cart.domain.repository.CartRepository;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.domain.exception.ProductException;
-import com.cMall.feedShop.product.application.util.DiscountCalculator;
+import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.*;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.product.domain.model.Product;
@@ -211,8 +210,8 @@ class CartServiceTest {
         // 불필요한 stubbing 제거
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.empty());
 
-        ProductException.ProductOptionNotFoundException thrown = assertThrows(
-                ProductException.ProductOptionNotFoundException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         cartService.addCartItem(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
@@ -228,8 +227,8 @@ class CartServiceTest {
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.empty());
 
-        ProductException.ProductImageNotFoundException thrown = assertThrows(
-                ProductException.ProductImageNotFoundException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         cartService.addCartItem(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_IMAGE_NOT_FOUND);
@@ -248,8 +247,8 @@ class CartServiceTest {
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(lowStockOption));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
 
-        ProductException.OutOfStockException thrown = assertThrows(
-                ProductException.OutOfStockException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         cartService.addCartItem(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
@@ -268,8 +267,8 @@ class CartServiceTest {
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(noStockOption));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
 
-        ProductException.OutOfStockException thrown = assertThrows(
-                ProductException.OutOfStockException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         cartService.addCartItem(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
@@ -453,8 +452,8 @@ class CartServiceTest {
                 .willReturn(Optional.of(existingCartItem));
 
         // when & then
-        ProductException.OutOfStockException thrown = assertThrows(
-                ProductException.OutOfStockException.class, () ->
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
                         cartService.addCartItem(createRequest, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
@@ -526,9 +525,7 @@ class CartServiceTest {
                 .willReturn(Optional.empty());
 
         // when & then
-        CartException.CartItemNotFoundException thrown = assertThrows(
-                CartException.CartItemNotFoundException.class, () ->
-                        cartService.deleteCartItem(cartItemId, userDetails));
+        CartException thrown = assertThrows(CartException.class, () -> cartService.deleteCartItem(cartItemId, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
         verify(cartItemRepository, never()).delete(any());
@@ -546,9 +543,7 @@ class CartServiceTest {
                 .willReturn(Optional.empty()); // 다른 사용자의 아이템이므로 조회되지 않음
 
         // when & then
-        CartException.CartItemNotFoundException thrown = assertThrows(
-                CartException.CartItemNotFoundException.class, () ->
-                        cartService.deleteCartItem(cartItemId, userDetails));
+        CartException thrown = assertThrows(CartException.class, () -> cartService.deleteCartItem(cartItemId, userDetails));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
         verify(cartItemRepository, never()).delete(any());

@@ -12,6 +12,7 @@ public class ProductListResponse {
     private String name;
     private BigDecimal price;
     private BigDecimal discountPrice;
+    private Long categoryId;
     private Long storeId;
     private String storeName;
     private Integer wishNumber;
@@ -22,6 +23,7 @@ public class ProductListResponse {
             String name,
             BigDecimal price,
             BigDecimal discountPrice,
+            Long categoryId,
             Long storeId,
             String storeName,
             Integer wishNumber,
@@ -31,6 +33,7 @@ public class ProductListResponse {
                 .name(name)
                 .price(price)
                 .discountPrice(discountPrice)
+                .categoryId(categoryId)
                 .storeId(storeId)
                 .storeName(storeName)
                 .wishNumber(wishNumber != null ? wishNumber : 0)

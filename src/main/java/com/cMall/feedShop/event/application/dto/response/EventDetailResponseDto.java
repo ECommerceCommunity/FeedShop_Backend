@@ -27,6 +27,7 @@ public class EventDetailResponseDto {
     private String createdBy;
     private String createdAt;
     private List<RewardDto> rewards;
+    private Boolean isParticipatable; // 이벤트 참여 가능 여부
 
     @Getter
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
