@@ -4,6 +4,7 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.application.dto.request.ProductOptionCreateRequest;
 import com.cMall.feedShop.product.application.dto.request.ProductOptionUpdateRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductOptionCreateResponse;
+import com.cMall.feedShop.order.domain.repository.OrderItemRepository;
 import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.domain.enums.Color;
 import com.cMall.feedShop.product.domain.enums.Gender;
@@ -28,10 +29,12 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductOptionService {
+
     private final ProductRepository productRepository;
+    private final ProductOptionRepository productOptionRepository;
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
-    private final ProductOptionRepository productOptionRepository;
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * 상품 ID로 상품 옵션 정보를 조회하는 서비스 메서드
@@ -110,6 +113,27 @@ public class ProductOptionService {
 
         // 6. 변경된 상품 옵션을 저장한다.
         productOptionRepository.save(productOption);
+    }
+
+    @Transactional
+    public void deleteProductOption(Long optionId, UserDetails userDetails) {
+        // 1. 현재 사용자 정보를 가져온다.
+        User currentUser = getCurrentUser(userDetails);
+
+        // 2. 판매자 권한을 검증한다.
+        validateSellerRole(currentUser);
+
+        // 3. 상품 옵션 정보를 가져온다.
+        ProductOption productOption = getProductOption(optionId);
+
+        // 4. 해당 상품 옵션이 내 가게 상품인지 검증한다.
+        validateSellerPermission(currentUser, productOption);
+
+        // 5. 주문 내역이 있는지 확인한다.
+        validateNotOrderedOption(productOption);
+
+        // 6. 상품 옵션을 삭제한다.
+        productOptionRepository.delete(productOption);
     }
 
     private User getCurrentUser(UserDetails userDetails) {
@@ -219,6 +243,13 @@ public class ProductOptionService {
             } catch (IllegalArgumentException e) {
                 throw new ProductException(ErrorCode.INVALID_INPUT_VALUE, "유효하지 않은 색상 값입니다: " + request.getColor());
             }
+        }
+    }
+
+    // 추후 리팩토링으로 soft delete로 변경할 예정.
+    private void validateNotOrderedOption(ProductOption productOption) {
+        if (orderItemRepository.existsByProductOption(productOption)) {
+            throw new ProductException(ErrorCode.PRODUCT_IN_ORDER);
         }
     }
 }

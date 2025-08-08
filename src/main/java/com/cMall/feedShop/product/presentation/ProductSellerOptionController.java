@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
@@ -82,6 +83,21 @@ public class ProductSellerOptionController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         productOptionService.updateProductOption(optionId, request, userDetails);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 상품 옵션 삭제 API
+     * DELETE /api/seller/products/options/{optionId}
+     */
+    @DeleteMapping("/products/options/{optionId}")
+    @PreAuthorize("hasRole('SELLER')")
+    @ApiResponseFormat(message = "상품 옵션이 성공적으로 삭제되었습니다.")
+    public ApiResponse<Void> deleteProductOption(
+            @PathVariable Long optionId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        productOptionService.deleteProductOption(optionId, userDetails);
         return ApiResponse.success(null);
     }
 }
