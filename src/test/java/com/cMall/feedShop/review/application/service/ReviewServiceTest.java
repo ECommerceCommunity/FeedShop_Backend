@@ -1,7 +1,8 @@
 package com.cMall.feedShop.review.application.service;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;
+import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
@@ -345,7 +346,7 @@ class ReviewServiceTest {
         MultipartFile imageFile = mock(MultipartFile.class);
         List<MultipartFile> imageFiles = List.of(imageFile);
 
-        GcpStorageService.UploadResult mockResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult mockResult = mock(UploadResult.class);
         given(mockResult.getOriginalFilename()).willReturn("image.jpg");
         given(mockResult.getStoredFilename()).willReturn("uuid-image.jpg");
         given(mockResult.getFilePath()).willReturn("reviews/uuid-image.jpg");

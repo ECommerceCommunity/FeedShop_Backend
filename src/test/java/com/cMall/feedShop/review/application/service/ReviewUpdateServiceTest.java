@@ -1,7 +1,8 @@
 package com.cMall.feedShop.review.application.service;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;
+import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.review.application.dto.request.ReviewUpdateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewUpdateResponse;
 import com.cMall.feedShop.review.domain.Review;
@@ -177,7 +178,7 @@ class ReviewUpdateServiceTest {
                 .willReturn(List.of(1L, 2L));
 
         // GCP Storage 응답 모킹 - 완전한 Mock 설정
-        GcpStorageService.UploadResult uploadResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult uploadResult = mock(UploadResult.class);
         given(uploadResult.getFilePath()).willReturn("reviews/new-image.jpg");
         given(uploadResult.getOriginalFilename()).willReturn("new-image.jpg");
         given(uploadResult.getStoredFilename()).willReturn("uuid-new-image.jpg");
@@ -520,7 +521,7 @@ class ReviewUpdateServiceTest {
         given(reviewImageService.getActiveImageCount(1L)).willReturn(4);
 
         // GCP Storage 응답 모킹
-        GcpStorageService.UploadResult uploadResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult uploadResult = mock(UploadResult.class);
         given(uploadResult.getFilePath()).willReturn("reviews/new-image.jpg");
         given(uploadResult.getOriginalFilename()).willReturn("new-image.jpg");
         given(uploadResult.getStoredFilename()).willReturn("uuid-new-image.jpg");
