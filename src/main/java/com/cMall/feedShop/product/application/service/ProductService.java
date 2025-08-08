@@ -1,6 +1,7 @@
 package com.cMall.feedShop.product.application.service;
 
 import com.cMall.feedShop.common.exception.ErrorCode;
+import com.cMall.feedShop.order.domain.repository.OrderItemRepository;
 import com.cMall.feedShop.product.application.dto.request.ProductCreateRequest;
 import com.cMall.feedShop.product.application.dto.request.ProductImageRequest;
 import com.cMall.feedShop.product.application.dto.request.ProductOptionRequest;
@@ -37,6 +38,7 @@ public class ProductService {
     private final UserRepository userRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final OrderItemRepository orderItemRepository;
 
     // 상품 등록
     public ProductCreateResponse createProduct(ProductCreateRequest request, UserDetails userDetails) {
@@ -136,7 +138,10 @@ public class ProductService {
         // 3. 상품 조회 (소유권 검증 포함)
         Product product = getProductOwnership(productId, currentUser.getId());
 
-        // 4. DB 에서 삭제 (CASCADE DELETE)
+        // 4. 주문에 포함된 상품인지 확인
+        validateProductNotInOrder(product);
+
+        // 5. DB 에서 삭제 (CASCADE DELETE)
         productRepository.delete(product);
     }
 
@@ -193,6 +198,19 @@ public class ProductService {
     private void validateProductNameDuplicationForUpdate(Store store, String productName, Long productId) {
         if (productRepository.existsByStoreAndNameAndProductIdNot(store, productName, productId)) {
             throw new ProductException(ErrorCode.DUPLICATE_PRODUCT_NAME);
+        }
+    }
+
+    // 주문에 포함된 상품인지 확인 (추후 리팩토링으로 soft delete로 변경 예정)
+    private void validateProductNotInOrder(Product product) {
+        // 해당 상품의 모든 옵션들을 가져와서 주문에 포함되었는지 확인
+        List<ProductOption> productOptions = product.getProductOptions();
+
+        // 상품 옵션들 중 하나라도 주문에 포함되어 있다면 삭제 불가
+        for (ProductOption option : productOptions) {
+            if (orderItemRepository.existsByProductOption(option)) {
+                throw new ProductException(ErrorCode.PRODUCT_IN_ORDER);
+            }
         }
     }
 
