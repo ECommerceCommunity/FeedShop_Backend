@@ -147,12 +147,14 @@ class ProductOptionServiceAddTest {
 
         given(userDetails.getUsername()).willReturn("buyer123");
         given(userRepository.findByLoginId("buyer123")).willReturn(Optional.of(buyer));
+        given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
+        given(storeRepository.findBySellerId(buyer.getId())).willReturn(Optional.empty());  // 구매자는 스토어가 없음
 
-        // when & then - 권한 없음 예외가 발생하는지 확인
+        // when & then - 스토어를 찾을 수 없다는 예외가 발생하는지 확인 (서비스 로직 순서상 먼저 발생)
         assertThatThrownBy(() ->
                 productOptionService.addProductOption(productId, request, userDetails))
                 .isInstanceOf(ProductException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
     }
 
     /**
