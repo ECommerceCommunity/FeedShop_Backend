@@ -1,13 +1,13 @@
 package com.cMall.feedShop.review.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;  // ✅ 추가: GcpStorageService import
+import com.cMall.feedShop.common.storage.GcpStorageService;
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
-import com.cMall.feedShop.review.domain.ReviewImage;
 import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
@@ -46,6 +46,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ReviewService 테스트")
+@DisplayName("ReviewService 테스트 (DTO 불변성 적용)")
 class ReviewServiceTest {
 
     @Mock
@@ -83,7 +84,7 @@ class ReviewServiceTest {
     private ReviewImageService reviewImageService;
 
     @Mock
-    private GcpStorageService gcpStorageService;  // ✅ 추가: GcpStorageService Mock
+    private GcpStorageService gcpStorageService;
 
     @InjectMocks
     private ReviewService reviewService;
@@ -101,7 +102,17 @@ class ReviewServiceTest {
         testUser = new User("testLogin", "password", "test@test.com", UserRole.USER);
         ReflectionTestUtils.setField(testUser, "id", 1L);
 
-        testUserProfile = new UserProfile(testUser, "테스트사용자", "테스트닉네임", "010-1234-5678");
+        UserProfile testUserProfile = UserProfile.builder()
+                .user(testUser)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
         testUser.setUserProfile(testUserProfile);
 
         // Store와 Category 모킹
@@ -134,14 +145,16 @@ class ReviewServiceTest {
         ReflectionTestUtils.setField(testReview, "createdAt", LocalDateTime.now());
         ReflectionTestUtils.setField(testReview, "updatedAt", LocalDateTime.now());
 
-        createRequest = new ReviewCreateRequest();
-        createRequest.setTitle("좋은 신발입니다");
-        createRequest.setRating(5);
-        createRequest.setSizeFit(SizeFit.NORMAL);
-        createRequest.setCushion(Cushion.SOFT);
-        createRequest.setStability(Stability.STABLE);
-        createRequest.setContent("정말 편하고 좋습니다. 추천해요!");
-        createRequest.setProductId(1L);
+        // ✅ Builder 패턴으로 불변 DTO 생성
+        createRequest = ReviewCreateRequest.builder()
+                .title("좋은 신발입니다")
+                .rating(5)
+                .sizeFit(SizeFit.NORMAL)
+                .cushion(Cushion.SOFT)
+                .stability(Stability.STABLE)
+                .content("정말 편하고 좋습니다. 추천해요!")
+                .productId(1L)
+                .build();
 
         ReflectionTestUtils.setField(reviewService, "gcpStorageService", gcpStorageService);
     }
@@ -152,7 +165,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    @DisplayName("리뷰를 성공적으로 생성할 수 있다")
+    @DisplayName("리뷰를 성공적으로 생성할 수 있다 (불변 DTO)")
     void createReviewSuccessfully() {
         // given
         try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
@@ -167,7 +180,7 @@ class ReviewServiceTest {
 
             // then
             assertThat(response.getReviewId()).isEqualTo(1L);
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");  // ✅ 수정: "등록"으로 변경
+            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");
             verify(reviewRepository, times(1)).save(any(Review.class));
         }
     }
@@ -330,7 +343,7 @@ class ReviewServiceTest {
 
             // then
             assertThat(response.getReviewId()).isEqualTo(1L);
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");  // ✅ 수정: "등록"으로 변경
+            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");
             verify(duplicationValidator, times(1)).validateNoDuplicateActiveReview(1L, 1L);
             verify(reviewRepository, times(1)).save(any(Review.class));
         }
@@ -343,7 +356,7 @@ class ReviewServiceTest {
         MultipartFile imageFile = mock(MultipartFile.class);
         List<MultipartFile> imageFiles = List.of(imageFile);
 
-        GcpStorageService.UploadResult mockResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult mockResult = mock(UploadResult.class);
         given(mockResult.getOriginalFilename()).willReturn("image.jpg");
         given(mockResult.getStoredFilename()).willReturn("uuid-image.jpg");
         given(mockResult.getFilePath()).willReturn("reviews/uuid-image.jpg");
@@ -368,7 +381,6 @@ class ReviewServiceTest {
             verify(reviewRepository, times(1)).save(any(Review.class));
             verify(gcpStorageService, times(1)).uploadFilesWithDetails(any(List.class), eq("reviews"));
         }
-
     }
 
     @Test
@@ -492,11 +504,39 @@ class ReviewServiceTest {
         verify(reviewImageService, times(1)).getReviewImages(1L);
     }
 
+    @Test
+    @DisplayName("불변 DTO의 필드 값이 올바르게 Review 엔티티에 전달된다")
+    void immutableDtoFieldsTransferCorrectly() {
+        // given
+        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
+            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+            mockSecurityContext();
+            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
+            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
+            given(reviewRepository.save(any(Review.class))).willAnswer(invocation -> {
+                Review savedReview = invocation.getArgument(0);
+                // DTO의 값들이 올바르게 전달되었는지 검증
+                assertThat(savedReview.getTitle()).isEqualTo(createRequest.getTitle());
+                assertThat(savedReview.getRating()).isEqualTo(createRequest.getRating());
+                assertThat(savedReview.getSizeFit()).isEqualTo(createRequest.getSizeFit());
+                assertThat(savedReview.getCushion()).isEqualTo(createRequest.getCushion());
+                assertThat(savedReview.getStability()).isEqualTo(createRequest.getStability());
+                assertThat(savedReview.getContent()).isEqualTo(createRequest.getContent());
+                return testReview;
+            });
+
+            // when
+            reviewService.createReview(createRequest, null);
+
+            // then
+            verify(reviewRepository, times(1)).save(any(Review.class));
+        }
+    }
+
     private void mockSecurityContext() {
         given(securityContext.getAuthentication()).willReturn(authentication);
         given(authentication.isAuthenticated()).willReturn(true);
         given(authentication.getName()).willReturn("test@test.com");
-        // ✅ principal 모킹 추가 - NullPointerException 해결
         given(authentication.getPrincipal()).willReturn("test@test.com");
     }
 }

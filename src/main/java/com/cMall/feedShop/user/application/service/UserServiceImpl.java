@@ -1,7 +1,7 @@
 package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.EmailService;
+import com.cMall.feedShop.common.email.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -94,12 +94,12 @@ public class UserServiceImpl implements UserService{
 
         updateVerificationToken(user);
 
-        UserProfile userProfile = new UserProfile(
-                user,
-                request.getName(),
-                request.getName(),
-                request.getPhone()
-        );
+        UserProfile userProfile = UserProfile.builder()
+            .user(user)
+            .name(request.getName())
+            .nickname(request.getNickname())
+        .build();
+
 
         user.setUserProfile(userProfile);
 
