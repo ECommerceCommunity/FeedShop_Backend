@@ -265,44 +265,16 @@ public class OrderService {
         return OrderStatusUpdateResponse.from(order);
     }
 
+    // 판매자가 주문 상태를 변경할 수 있는지 검증한다.
     private void validateStatusUpdate(OrderStatus currentStatus, OrderStatus newStatus) {
-        // 주문된 상태에서만 배송중, 취소로 변경 가능하다
-        if (currentStatus == OrderStatus.ORDERED) {
-            // 배송중, 취소로만 변경 가능하다
-            if (newStatus != OrderStatus.SHIPPED && newStatus != OrderStatus.CANCELLED) {
-                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
-            }
-        }
-        // 배송중 상태에서만 배송완료로 변경 가능하다
-        else if (currentStatus == OrderStatus.SHIPPED) {
-            // 배송완료로만 변경 가능하다
-            if (newStatus != OrderStatus.DELIVERED) {
-                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
-            }
-        }
-        // 그 외 다른 상태에서는 변경이 불가능하다
-        else {
+        if (!currentStatus.canChangeTo(newStatus)) {
             throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
         }
     }
 
+    // 유저가 주문 상태를 변경할 수 있는지 검증한다.
     private void validateUserStatusUpdate(OrderStatus currentStatus, OrderStatus newStatus) {
-        // 주문된 상태에서만 취소가 가능하다
-        if (currentStatus == OrderStatus.ORDERED) {
-            // 취소로만 변경 가능하다
-            if (newStatus != OrderStatus.CANCELLED) {
-                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
-            }
-        }
-        // 배송완료된 상태에서만 반품이 가능하다
-        else if (currentStatus == OrderStatus.DELIVERED) {
-            // 반품으로만 변경 가능하다
-            if (newStatus != OrderStatus.RETURNED) {
-                throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
-            }
-        }
-        // 그 외 다른 상태에서는 변경이 불가능하다
-        else {
+        if (!currentStatus.canUserChangeTo(newStatus)) {
             throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
         }
     }
