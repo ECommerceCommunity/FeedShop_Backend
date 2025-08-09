@@ -94,12 +94,11 @@ public class UserServiceImpl implements UserService{
 
         updateVerificationToken(user);
 
-        UserProfile userProfile = new UserProfile(
-                user,
-                request.getName(),
-                request.getName(),
-                request.getPhone()
-        );
+        UserProfile userProfile = UserProfile.builder()
+                .user(user)
+                .name(request.getName())
+                .nickname(request.getNickname())
+                .build();
 
         user.setUserProfile(userProfile);
 

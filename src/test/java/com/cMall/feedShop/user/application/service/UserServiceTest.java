@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.util.ReflectionTestUtils; // @Value 필드 주입을 위한 유틸리티
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -108,8 +109,16 @@ class UserServiceTest {
         given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
-            savedUser.setId(1L); // ID 설정
-            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone())); // UserProfile 설정
+            savedUser.setId(1L);
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name(signUpRequest.getName())
+                    .nickname(signUpRequest.getNickname())
+                    .phone(signUpRequest.getPhone())
+                    .build();
+
+            savedUser.setUserProfile(userProfile);
+
             return savedUser;
         });
 
@@ -156,7 +165,13 @@ class UserServiceTest {
         existingPendingUser.setStatus(UserStatus.PENDING);
         existingPendingUser.setVerificationToken("oldToken");
         existingPendingUser.setVerificationTokenExpiry(LocalDateTime.now().minusHours(1)); // 만료된 토큰
-        existingPendingUser.setUserProfile(new UserProfile(existingPendingUser, "기존이름", "기존이름", "01011112222"));
+        UserProfile userProfile = UserProfile.builder()
+                .user(existingPendingUser)
+                .name(signUpRequest.getName())
+                .nickname(signUpRequest.getName()) // 또는 signUpRequest.getNickname()
+                .phone(signUpRequest.getPhone())
+                .build();
+        existingPendingUser.setUserProfile(userProfile);
 
         given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingPendingUser));
         // save 호출 시 업데이트된 existingPendingUser를 반환하도록 Mocking
@@ -205,7 +220,20 @@ class UserServiceTest {
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setId(2L);
-            savedUser.setUserProfile(new UserProfile(savedUser, signUpRequest.getName(), signUpRequest.getName(), signUpRequest.getPhone()));
+
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name("테스트사용자")
+                    .nickname("테스트닉네임")
+                    .phone("010-1234-5678")
+                    // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                    .birthDate(LocalDate.of(1990, 1, 1))
+                    .height(175)
+                    .footSize(270)
+                    .profileImageUrl("https://test-image.com/profile.jpg")
+                    .build();
+            savedUser.setUserProfile(userProfile);
+
             assertThat(savedUser.getPassword()).isEqualTo(preEncryptedPassword); // 암호화되지 않고 그대로 저장됨을 검증
             return savedUser;
         });
@@ -590,18 +618,28 @@ class UserServiceTest {
     @DisplayName("유효한 사용자 이름과 전화번호로 계정을 성공적으로 찾아야 한다")
     void shouldFindAccountSuccessfullyWithValidUsernameAndPhoneNumber() {
         // Given
-        String username = "testuser";
+        String name = "테스트사용자";
         String phoneNumber = "010-1234-5678";
         User user = new User(1L, "login1", "password123", "testuser@example.com", UserRole.USER);
-        UserProfile userProfile = new UserProfile(user, username, "testnick", phoneNumber);
+
+        UserProfile userProfile = UserProfile.builder()
+                .user(user)
+                .name(name)
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
         user.setUserProfile(userProfile);
         UserResponse expectedResponse = UserResponse.from(user);
 
-        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber))
                 .thenReturn(List.of(user));
 
         // When
-        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(name, phoneNumber);
 
         // Then
         assertThat(resultList).isNotNull();
@@ -613,7 +651,7 @@ class UserServiceTest {
         assertThat(result.getPhone()).isEqualTo(user.getUserProfile().getPhone());
 
         // Verify
-        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber);
     }
 
     @Test
@@ -621,21 +659,21 @@ class UserServiceTest {
     @DisplayName("유효하지 않은 사용자 이름으로 계정을 찾을 수 없을 때 UserNotFoundException이 발생해야 한다")
     void shouldThrowUserNotFoundExceptionWithInvalidUsername() {
         // Given
-        String username = "invaliduser";
+        String name = "invaliduser";
         String phoneNumber = "010-1234-5678";
 
-        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber))
                 .thenReturn(List.of());
 
         // When & Then
         // UserNotFoundException이 발생하는지 검증합니다.
-        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(username, phoneNumber))
+        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(name, phoneNumber))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
 
         // Verify
         // userRepository가 한 번 호출되었는지 확인합니다.
-        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber);
     }
 
 
@@ -668,11 +706,33 @@ class UserServiceTest {
 
         // 첫 번째 사용자
         User user1 = new User(1L, "login1", "password1", "user1@example.com", UserRole.USER);
-        user1.setUserProfile(new UserProfile(user1, username, "nick1", phoneNumber));
+        UserProfile testUserProfile = UserProfile.builder()
+                .user(user1)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
+        user1.setUserProfile(testUserProfile);
 
         // 두 번째 사용자 (동일한 이름과 전화번호)
         User user2 = new User(2L, "login2", "password2", "user2@example.com", UserRole.USER);
-        user2.setUserProfile(new UserProfile(user2, username, "nick2", phoneNumber));
+        UserProfile testUserProfile2 = UserProfile.builder()
+                .user(user2)
+                .name("테스트사용자")
+                .nickname("테스트닉네임")
+                .phone("010-1234-5678")
+                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .height(175)
+                .footSize(270)
+                .profileImageUrl("https://test-image.com/profile.jpg")
+                .build();
+        user2.setUserProfile(testUserProfile2);
 
         when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
                 .thenReturn(List.of(user1, user2));

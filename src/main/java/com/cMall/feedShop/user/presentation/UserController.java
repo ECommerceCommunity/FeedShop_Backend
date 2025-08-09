@@ -22,6 +22,13 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final UserService userService;
 
+    @GetMapping("/me/profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = (User) userDetails;
+        return userProfileService.getUserProfile(currentUser.getId());
+    }
+
     // 사용자 프로필을 조회하는 예시 메서드
     @GetMapping("/{userId}/profile")
     public UserProfileResponse getUserProfile(@PathVariable Long userId, @AuthenticationPrincipal UserDetails userDetails) {
