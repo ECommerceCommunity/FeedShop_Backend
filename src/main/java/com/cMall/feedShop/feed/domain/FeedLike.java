@@ -34,18 +34,9 @@ public class FeedLike extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /**
-     * 표시용 닉네임(비정규화 저장)
-     * - 목록 조회시 조인 없이 표시 가능
-     * - 변경 가능성 있으므로 최신값이 필요하면 UserProfile을 우선 조회
-     */
-    @Column(name = "nickname", length = 100)
-    private String nickname;
-
     @Builder
-    public FeedLike(Feed feed, User user, String nickname) {
+    public FeedLike(Feed feed, User user) {
         this.feed = feed;
         this.user = user;
-        this.nickname = nickname;
     }
 }
