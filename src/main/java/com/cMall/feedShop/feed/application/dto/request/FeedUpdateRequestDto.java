@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,8 +30,16 @@ public class FeedUpdateRequestDto {
     private String content;
 
     /**
-     * 인스타그램 ID: 선택, 영문/숫자/밑줄/점, 1~30자
+     * 인스타그램 ID: 선택, 영문/숫자/밑줄/점, 0~30자
      */
     @Pattern(regexp = "^[a-zA-Z0-9._]{0,30}$", message = "인스타그램 ID는 영문/숫자/밑줄/점으로 30자 이내여야 합니다.")
     private String instagramId;
+
+    /**
+     * 해시태그 목록: 선택, 최대 20개, 각 태그는 영문/숫자/밑줄/한글로 구성(공백 제외), 최대 30자
+     */
+    @Size(max = 20, message = "해시태그는 최대 20개까지 가능합니다.")
+    private List<@Size(max = 30, message = "태그는 최대 30자까지 가능합니다.")
+                 @Pattern(regexp = "^[A-Za-z0-9_가-힣]+$", message = "태그는 영문/숫자/밑줄/한글만 사용할 수 있습니다.")
+                 String> hashtags;
 }
