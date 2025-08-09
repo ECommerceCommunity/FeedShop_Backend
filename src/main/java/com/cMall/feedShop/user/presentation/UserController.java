@@ -1,5 +1,6 @@
 package com.cMall.feedShop.user.presentation;
 
+import com.cMall.feedShop.user.application.dto.request.ProfileUpdateRequest;
 import com.cMall.feedShop.user.application.dto.request.UserWithdrawRequest;
 import com.cMall.feedShop.user.application.dto.response.UserProfileResponse;
 import com.cMall.feedShop.user.application.service.UserProfileService;
@@ -9,11 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/users")
@@ -50,6 +52,44 @@ public class UserController {
         // userProfileService를 사용하여 실제 비즈니스 로직 호출
         UserProfileResponse response = userProfileService.getUserProfile(userId);
         return response;
+    }
+
+    // 현재 로그인한 사용자의 프로필 정보 조회
+    @GetMapping("/me/profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = (User) userDetails;
+        return userProfileService.getUserProfile(currentUser.getId());
+    }
+
+    @PutMapping("/{userId}/profile")
+    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
+    public ResponseEntity<Void> updateUserProfile(@PathVariable Long userId, @RequestBody ProfileUpdateRequest request) {
+        userProfileService.updateUserProfile(userId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/me/profile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> updateMyProfile(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ProfileUpdateRequest request) {
+        User currentUser = (User) userDetails;
+        userProfileService.updateUserProfile(currentUser.getId(), request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{userId}/profile/image")
+    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
+    public ResponseEntity<String> uploadProfileImage(@PathVariable Long userId, @RequestParam("image") MultipartFile image) throws IOException {
+        String imageUrl = userProfileService.updateProfileImage(userId, image);
+        return ResponseEntity.ok(imageUrl);
+    }
+
+    @PostMapping("/me/profile/image")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> uploadMyProfileImage(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("image") MultipartFile image) throws IOException {
+        User currentUser = (User) userDetails;
+        String imageUrl = userProfileService.updateProfileImage(currentUser.getId(), image);
+        return ResponseEntity.ok(imageUrl);
     }
 
     // 관리자가 이메일로 사용자 탈퇴 처리

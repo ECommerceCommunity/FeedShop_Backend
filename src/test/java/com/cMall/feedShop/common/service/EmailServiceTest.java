@@ -1,5 +1,6 @@
 package com.cMall.feedShop.common.service;
 
+import com.cMall.feedShop.common.email.EmailServiceImpl;
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
