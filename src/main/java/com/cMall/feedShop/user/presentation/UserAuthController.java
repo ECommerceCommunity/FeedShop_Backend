@@ -28,7 +28,7 @@ public class UserAuthController {
 
     private final UserService userService;
     private final UserAuthService userAuthService;
-    private final RecaptchaVerificationService recaptchaVerificationService;
+    private final RecaptchaVerificationService recaptchaService;
 
 
     @PostMapping("/signup")
@@ -39,7 +39,7 @@ public class UserAuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
-        recaptchaVerificationService.verify(request.getRecaptchaToken(), "login_submit");
+        recaptchaService.verifyRecaptcha(request.getRecaptchaToken(), "login_submit");
         return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
     }
 

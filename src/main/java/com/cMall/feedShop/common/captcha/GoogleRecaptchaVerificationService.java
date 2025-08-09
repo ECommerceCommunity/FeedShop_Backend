@@ -33,7 +33,7 @@ public class GoogleRecaptchaVerificationService implements RecaptchaVerification
     }
 
     @Override
-    public void verify(String recaptchaToken, String expectedAction) {
+    public void verifyRecaptcha(String recaptchaToken, String expectedAction) {
 
         if (recaptchaToken == null || recaptchaToken.isEmpty()) {
             throw new BusinessException(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, "reCAPTCHA 토큰이 없습니다.");
