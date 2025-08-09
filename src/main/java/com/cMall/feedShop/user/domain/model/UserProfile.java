@@ -43,6 +43,9 @@ public class UserProfile extends BaseTimeEntity {
     @Column(name="height")
     private Integer height;
 
+    @Column(name="weight")
+    private Integer weight;
+
     @Column(name="foot_size")
     private Integer footSize;
 
@@ -52,7 +55,7 @@ public class UserProfile extends BaseTimeEntity {
     @Builder
     public UserProfile(User user, String name, String nickname, String phone,
                        Gender gender, LocalDate birthDate,
-                       Integer height, Integer footSize, String profileImageUrl) {
+                       Integer height, Integer weight, Integer footSize, String profileImageUrl) {
         this.user = user;
         this.name = name;
         this.nickname = nickname;
@@ -60,6 +63,7 @@ public class UserProfile extends BaseTimeEntity {
         this.gender = gender;
         this.birthDate = birthDate;
         this.height = height;
+        this.weight = weight;
         this.footSize = footSize;
         this.profileImageUrl = profileImageUrl;
     }

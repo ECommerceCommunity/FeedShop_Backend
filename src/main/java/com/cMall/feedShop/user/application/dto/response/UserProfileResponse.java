@@ -22,10 +22,10 @@ public class UserProfileResponse {
     private Gender gender;
     private LocalDate birthDate;
     private Integer height;
+    private Integer weight;
     private Integer footSize;
     private String profileImageUrl;
 
-    // 엔티티를 DTO로 변환하는 정적 팩토리 메서드 (권장되는 패턴)
     public static UserProfileResponse from(User user, UserProfile userProfile) {
         return UserProfileResponse.builder()
                 .userId(user.getId())
@@ -37,12 +37,12 @@ public class UserProfileResponse {
                 .gender(userProfile != null ? userProfile.getGender() : null)
                 .birthDate(userProfile != null ? userProfile.getBirthDate() : null)
                 .height(userProfile != null ? userProfile.getHeight() : null)
+                .weight(userProfile != null ? userProfile.getWeight() : null)
                 .footSize(userProfile != null ? userProfile.getFootSize() : null)
                 .profileImageUrl(userProfile != null ? userProfile.getProfileImageUrl() : null)
                 .build();
     }
 
-    // 또는 User 엔티티만으로도 만들 수 있도록 오버로드
     public static UserProfileResponse from(User user) {
         return UserProfileResponse.builder()
                 .userId(user.getId())

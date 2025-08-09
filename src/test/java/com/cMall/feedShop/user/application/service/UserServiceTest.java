@@ -711,11 +711,6 @@ class UserServiceTest {
                 .name("테스트사용자")
                 .nickname("테스트닉네임")
                 .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .height(175)
-                .footSize(270)
-                .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
         user1.setUserProfile(testUserProfile);
 
@@ -726,11 +721,6 @@ class UserServiceTest {
                 .name("테스트사용자")
                 .nickname("테스트닉네임")
                 .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .height(175)
-                .footSize(270)
-                .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
         user2.setUserProfile(testUserProfile2);
 
