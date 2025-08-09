@@ -1,13 +1,13 @@
 package com.cMall.feedShop.review.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.storage.GcpStorageService;
-import com.cMall.feedShop.common.dto.UploadResult;
+import com.cMall.feedShop.common.service.GcpStorageService;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
+import com.cMall.feedShop.review.domain.ReviewImage;
 import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
@@ -46,7 +46,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -102,17 +101,7 @@ class ReviewServiceTest {
         testUser = new User("testLogin", "password", "test@test.com", UserRole.USER);
         ReflectionTestUtils.setField(testUser, "id", 1L);
 
-        UserProfile testUserProfile = UserProfile.builder()
-                .user(testUser)
-                .name("테스트사용자")
-                .nickname("테스트닉네임")
-                .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .height(175)
-                .footSize(270)
-                .profileImageUrl("https://test-image.com/profile.jpg")
-                .build();
+        testUserProfile = new UserProfile(testUser, "테스트사용자", "테스트닉네임", "010-1234-5678");
         testUser.setUserProfile(testUserProfile);
 
         // Store와 Category 모킹
@@ -356,7 +345,7 @@ class ReviewServiceTest {
         MultipartFile imageFile = mock(MultipartFile.class);
         List<MultipartFile> imageFiles = List.of(imageFile);
 
-        UploadResult mockResult = mock(UploadResult.class);
+        GcpStorageService.UploadResult mockResult = mock(GcpStorageService.UploadResult.class);
         given(mockResult.getOriginalFilename()).willReturn("image.jpg");
         given(mockResult.getStoredFilename()).willReturn("uuid-image.jpg");
         given(mockResult.getFilePath()).willReturn("reviews/uuid-image.jpg");

@@ -1,5 +1,5 @@
 package com.cMall.feedShop.common.captcha;
 
 public interface RecaptchaVerificationService {
-    void verify(String recaptchaToken, String expectedAction);
+    void verifyRecaptcha(String recaptchaToken, String expectedAction);
 }
