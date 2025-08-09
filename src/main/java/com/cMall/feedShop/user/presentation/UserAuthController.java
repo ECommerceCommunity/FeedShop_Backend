@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.presentation;
 
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
+import com.cMall.feedShop.common.captcha.RecaptchaVerificationService;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.user.application.dto.request.EmailRequest;
 import com.cMall.feedShop.user.application.dto.request.PasswordResetConfirmRequest;
@@ -9,7 +10,7 @@ import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
-import com.cMall.feedShop.user.application.service.RecaptchaService;
+import com.cMall.feedShop.common.captcha.GoogleRecaptchaVerificationService;
 import com.cMall.feedShop.user.application.service.UserAuthService;
 import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
@@ -27,7 +28,7 @@ public class UserAuthController {
 
     private final UserService userService;
     private final UserAuthService userAuthService;
-    private final RecaptchaService recaptchaService;
+    private final RecaptchaVerificationService recaptchaService;
 
 
     @PostMapping("/signup")

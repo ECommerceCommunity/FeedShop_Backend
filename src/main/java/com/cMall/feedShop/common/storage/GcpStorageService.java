@@ -1,13 +1,12 @@
-package com.cMall.feedShop.common.service;
+package com.cMall.feedShop.common.storage;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.*;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,8 +22,8 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "gcp.storage.enabled", havingValue = "true", matchIfMissing = false)
-public class GcpStorageService {
+@Profile("prod")
+public class GcpStorageService implements  StorageService {
 
     @Value("${spring.cloud.gcp.project-id:}")
     private String projectId;
@@ -192,16 +191,5 @@ public class GcpStorageService {
         return filename.substring(filename.lastIndexOf("."));
     }
 
-    /**
-     * 파일 업로드 결과 DTO
-     */
-    @Builder
-    @Getter
-    public static class UploadResult {
-        private String originalFilename;
-        private String storedFilename;
-        private String filePath;
-        private Long fileSize;
-        private String contentType;
-    }
+
 }

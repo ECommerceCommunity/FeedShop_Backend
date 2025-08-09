@@ -1,10 +1,11 @@
-package com.cMall.feedShop.user.application.service;
+package com.cMall.feedShop.common.captcha;
 
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.user.application.dto.response.RecaptchaResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -14,8 +15,9 @@ import java.util.Collections;
 
 @Slf4j
 @Service
-public class RecaptchaService {
-
+@Profile("prod")
+public class GoogleRecaptchaVerificationService implements RecaptchaVerificationService {
+ 
     @Value("${recaptcha.secret-key}")
     private String secretKey;
 
@@ -26,11 +28,13 @@ public class RecaptchaService {
 
     private final RestTemplate restTemplate;
 
-    public RecaptchaService(RestTemplate restTemplate) {
+    public GoogleRecaptchaVerificationService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
+    @Override
     public void verifyRecaptcha(String recaptchaToken, String expectedAction) {
+
         if (recaptchaToken == null || recaptchaToken.isEmpty()) {
             throw new BusinessException(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, "reCAPTCHA 토큰이 없습니다.");
         }
