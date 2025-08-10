@@ -23,6 +23,7 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final UserService userService;
 
+    // 로그인 한 내 정보 가져오기
     @GetMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
@@ -53,6 +54,7 @@ public class UserController {
         return response;
     }
 
+    // 사용자 프로필 정보 수정
     @PutMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> updateMyProfile(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ProfileUpdateRequest request) {
