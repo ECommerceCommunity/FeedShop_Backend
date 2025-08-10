@@ -2,7 +2,7 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.common.service.EmailService;
+import com.cMall.feedShop.common.email.EmailService;
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
@@ -12,7 +12,6 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -50,7 +49,7 @@ public class UserAuthServiceImpl implements UserAuthService {
         this.jwtProvider = jwtProvider;
         this.authenticationManager = authenticationManager;
     }
-  
+
     /**
      * 사용자 로그인 처리 메서드.
      * 로그인 ID와 비밀번호를 받아 사용자 인증을 수행하고, 성공 시 JWT 토큰을 발급합니다.
@@ -74,6 +73,7 @@ public class UserAuthServiceImpl implements UserAuthService {
             // JWT 토큰 생성에 필요한 정보를 얻기 위해 User 객체를 다시 조회합니다.
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
+
             if (user.getStatus() == UserStatus.PENDING) {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }

@@ -1,6 +1,6 @@
 package com.cMall.feedShop;
 
-import com.cMall.feedShop.user.application.service.RecaptchaService;
+import com.cMall.feedShop.common.captcha.GoogleRecaptchaVerificationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
@@ -11,8 +11,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-import com.cMall.feedShop.common.service.EmailService;
-import com.cMall.feedShop.common.service.EmailServiceImpl;
+import com.cMall.feedShop.common.email.EmailService;
+import com.cMall.feedShop.common.email.EmailServiceImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -39,7 +39,7 @@ class FeedShopApplicationTests {
     private EmailServiceImpl emailServiceImpl;
 
     @MockBean
-    private RecaptchaService recaptchaService;
+    private GoogleRecaptchaVerificationService googleRecaptchaVerificationService;
 
     @Test
     void contextLoads() {
@@ -84,13 +84,13 @@ class FeedShopApplicationTests {
         String action = "test-action";
 
         // RecaptchaService Mock 동작 정의
-        doNothing().when(recaptchaService).verifyRecaptcha(token, action);
+        doNothing().when(googleRecaptchaVerificationService).verify(token, action);
 
         // Mock 호출
-        recaptchaService.verifyRecaptcha(token, action);
+        googleRecaptchaVerificationService.verify(token, action);
 
         // 검증
-        verify(recaptchaService, times(1)).verifyRecaptcha(token, action);
+        verify(googleRecaptchaVerificationService, times(1)).verify(token, action);
     }
 
     @Test
