@@ -1,14 +1,11 @@
 
-package com.cMall.feedShop.common.service;
+package com.cMall.feedShop.common.email;
 
 import com.mailgun.api.v3.MailgunMessagesApi;
 import com.mailgun.model.message.Message;
 import com.mailgun.model.message.MessageResponse;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.mailgun.api.v3.MailgunMessagesApi;
-import com.mailgun.model.message.Message;
-import com.mailgun.model.message.MessageResponse;
 import feign.FeignException;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;

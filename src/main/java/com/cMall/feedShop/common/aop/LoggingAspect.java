@@ -205,6 +205,11 @@ public class LoggingAspect {
 
         String str = obj.toString();
 
+        // reCAPTCHA 토큰 필드 마스킹
+        if (str.contains("recaptchaToken=")) {
+            str = str.replaceAll("recaptchaToken=[^,\\s)]+", "recaptchaToken=***");
+        }
+
         // 비밀번호 필드 마스킹
         if (str.contains("password") || str.contains("pwd")) {
             return str.replaceAll("(password|pwd)=[^,\\s}]+", "$1=***");
