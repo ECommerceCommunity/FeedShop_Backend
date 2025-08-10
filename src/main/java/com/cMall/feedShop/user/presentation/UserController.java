@@ -21,7 +21,6 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final UserService userService;
 
-    // 로그인 한 내 정보 가져오기
     @GetMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
