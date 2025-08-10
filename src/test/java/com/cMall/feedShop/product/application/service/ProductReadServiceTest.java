@@ -34,8 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProductReadService 테스트")
@@ -228,5 +227,110 @@ class ProductReadServiceTest {
         assertThat(response.getImages()).isEmpty();
         assertThat(response.getOptions()).isEmpty();
         assertThat(response.getWishNumber()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 성공 - 최신순 정렬")
+    void getProductList_Success_LatestSort() {
+        // given
+        List<Product> products = Arrays.asList(product1, product2);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 20), 2);
+
+        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class))).willReturn(productPage);
+        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
+                .willReturn(new BigDecimal("45000"))
+                .willReturn(new BigDecimal("30000"));
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(0, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+        assertThat(response.getTotalElements()).isEqualTo(2);
+
+        // 최신순 정렬 메서드가 호출되었는지 확인
+        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        verify(productRepository, never()).findAllByOrderByWishNumberDesc(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 성공 - 인기순 정렬")
+    void getProductList_Success_PopularSort() {
+        // given
+        // 인기순을 위해 wishNumber 설정
+        ReflectionTestUtils.setField(product1, "wishNumber", 15);
+        ReflectionTestUtils.setField(product2, "wishNumber", 5);
+
+        List<Product> products = Arrays.asList(product1, product2); // 인기순으로 정렬된 순서
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 20), 2);
+
+        given(productRepository.findAllByOrderByWishNumberDesc(any(Pageable.class))).willReturn(productPage);
+        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
+                .willReturn(new BigDecimal("45000"))
+                .willReturn(new BigDecimal("30000"));
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(0, 20, ProductSortType.POPULAR);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+        assertThat(response.getTotalElements()).isEqualTo(2);
+
+        // 인기순 정렬 메서드가 호출되었는지 확인
+        verify(productRepository, times(1)).findAllByOrderByWishNumberDesc(any(Pageable.class));
+        verify(productRepository, never()).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 성공 - null 정렬 타입은 최신순으로 처리")
+    void getProductList_Success_NullSortTypeDefaultsToLatest() {
+        // given
+        List<Product> products = Arrays.asList(product1, product2);
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 20), 2);
+
+        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class))).willReturn(productPage);
+        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
+                .willReturn(new BigDecimal("45000"))
+                .willReturn(new BigDecimal("30000"));
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(0, 20, null);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+
+        // null인 경우 최신순 정렬이 호출되는지 확인
+        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        verify(productRepository, never()).findAllByOrderByWishNumberDesc(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회 성공 - 인기순 정렬 시 wishNumber 순서 확인")
+    void getProductList_Success_PopularSortOrderCheck() {
+        // given
+        ReflectionTestUtils.setField(product1, "wishNumber", 25);
+        ReflectionTestUtils.setField(product2, "wishNumber", 10);
+
+        List<Product> products = Arrays.asList(product1, product2); // wishNumber 내림차순
+        Page<Product> productPage = new PageImpl<>(products, PageRequest.of(0, 20), 2);
+
+        given(productRepository.findAllByOrderByWishNumberDesc(any(Pageable.class))).willReturn(productPage);
+        given(discountCalculator.calculateDiscountPrice(any(), any(), any()))
+                .willReturn(new BigDecimal("45000"))
+                .willReturn(new BigDecimal("30000"));
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(0, 20, ProductSortType.POPULAR);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+
+        // 첫 번째 상품이 더 높은 wishNumber를 가지는지 확인
+        assertThat(response.getContent().get(0).getName()).isEqualTo("상품1");
+        assertThat(response.getContent().get(1).getName()).isEqualTo("상품2");
     }
 }

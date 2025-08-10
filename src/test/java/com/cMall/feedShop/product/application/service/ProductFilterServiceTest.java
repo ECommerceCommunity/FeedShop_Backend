@@ -5,6 +5,7 @@ import com.cMall.feedShop.product.application.dto.response.ProductListResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
 import com.cMall.feedShop.product.domain.enums.CategoryType;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
@@ -29,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * ProductFilterService 테스트 클래스
@@ -301,5 +304,192 @@ class ProductFilterServiceTest {
 
         // then (검증 단계)
         assertThat(result).isNotNull(); // 에러 없이 정상 처리됨
+    }
+
+    @Test
+    @DisplayName("필터링 + 최신순 정렬 - 카테고리 필터와 최신순 정렬 조합")
+    void filterProducts_WithLatestSort_Success() {
+        // given
+        ProductFilterRequest request = ProductFilterRequest.builder()
+                .categoryId(1L)
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Product> products = List.of(testProduct);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 1);
+
+        given(productRepository.findProductsWithFilters(
+                eq(1L), // 카테고리 ID
+                eq(null), // 최소 가격 없음
+                eq(null), // 최대 가격 없음
+                eq(null), // 스토어 ID 없음
+                eq(ProductSortType.LATEST), // 최신순 정렬
+                any(Pageable.class)
+        )).willReturn(productPage);
+
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
+
+        // when
+        ProductPageResponse result = productFilterService.filterProductList(
+                request, 0, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+
+        // Repository 호출 시 정렬 타입이 올바르게 전달되었는지 확인
+        verify(productRepository, times(1)).findProductsWithFilters(
+                eq(1L), eq(null), eq(null), eq(null), eq(ProductSortType.LATEST), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("필터링 + 인기순 정렬 - 가격 범위 필터와 인기순 정렬 조합")
+    void filterProducts_WithPopularSort_Success() {
+        // given
+        ProductFilterRequest request = ProductFilterRequest.builder()
+                .minPrice(new BigDecimal("100000"))
+                .maxPrice(new BigDecimal("200000"))
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Product> products = List.of(testProduct);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 1);
+
+        given(productRepository.findProductsWithFilters(
+                eq(null), // 카테고리 ID 없음
+                eq(new BigDecimal("100000")), // 최소 가격
+                eq(new BigDecimal("200000")), // 최대 가격
+                eq(null), // 스토어 ID 없음
+                eq(ProductSortType.POPULAR), // 인기순 정렬
+                any(Pageable.class)
+        )).willReturn(productPage);
+
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
+
+        // when
+        ProductPageResponse result = productFilterService.filterProductList(
+                request, 0, 20, ProductSortType.POPULAR);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+
+        // Repository 호출 시 정렬 타입이 올바르게 전달되었는지 확인
+        verify(productRepository, times(1)).findProductsWithFilters(
+                eq(null), eq(new BigDecimal("100000")), eq(new BigDecimal("200000")),
+                eq(null), eq(ProductSortType.POPULAR), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("필터링 + null 정렬 - null 정렬 타입 처리")
+    void filterProducts_WithNullSort_Success() {
+        // given
+        ProductFilterRequest request = ProductFilterRequest.builder()
+                .storeId(1L)
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Product> products = List.of(testProduct);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 1);
+
+        given(productRepository.findProductsWithFilters(
+                eq(null), eq(null), eq(null), eq(1L), eq(null), any(Pageable.class)
+        )).willReturn(productPage);
+
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
+
+        // when
+        ProductPageResponse result = productFilterService.filterProductList(
+                request, 0, 20, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+
+        // null 정렬 타입이 그대로 전달되는지 확인
+        verify(productRepository, times(1)).findProductsWithFilters(
+                eq(null), eq(null), eq(null), eq(1L), eq(null), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("복합 필터링 + 인기순 정렬 - 모든 필터 조건과 인기순 정렬 조합")
+    void filterProducts_ComplexFiltersWithPopularSort_Success() {
+        // given
+        ProductFilterRequest request = ProductFilterRequest.builder()
+                .categoryId(1L)
+                .minPrice(new BigDecimal("100000"))
+                .maxPrice(new BigDecimal("200000"))
+                .storeId(1L)
+                .build();
+
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Product> products = List.of(testProduct);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 1);
+
+        given(productRepository.findProductsWithFilters(
+                eq(1L), // 카테고리 ID
+                eq(new BigDecimal("100000")), // 최소 가격
+                eq(new BigDecimal("200000")), // 최대 가격
+                eq(1L), // 스토어 ID
+                eq(ProductSortType.POPULAR), // 인기순 정렬
+                any(Pageable.class)
+        )).willReturn(productPage);
+
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
+
+        // when
+        ProductPageResponse result = productFilterService.filterProductList(
+                request, 0, 20, ProductSortType.POPULAR);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+
+        ProductListResponse productResponse = result.getContent().get(0);
+        assertThat(productResponse.getCategoryId()).isEqualTo(1L);
+        assertThat(productResponse.getStoreId()).isEqualTo(1L);
+        assertThat(productResponse.getPrice()).isEqualTo(new BigDecimal("149000"));
+
+        // 모든 필터 조건과 정렬 타입이 올바르게 전달되었는지 확인
+        verify(productRepository, times(1)).findProductsWithFilters(
+                eq(1L), eq(new BigDecimal("100000")), eq(new BigDecimal("200000")),
+                eq(1L), eq(ProductSortType.POPULAR), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("빈 필터링 + 정렬 - 필터 조건 없이 정렬만 적용")
+    void filterProducts_EmptyFiltersWithSort_Success() {
+        // given
+        ProductFilterRequest request = ProductFilterRequest.builder().build(); // 모든 필터 조건 null
+
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Product> products = List.of(testProduct);
+        Page<Product> productPage = new PageImpl<>(products, pageable, 1);
+
+        given(productRepository.findProductsWithFilters(
+                eq(null), eq(null), eq(null), eq(null),
+                eq(ProductSortType.LATEST), any(Pageable.class)
+        )).willReturn(productPage);
+
+        given(productMapper.toListResponse(any(Product.class)))
+                .willReturn(testProductResponse);
+
+        // when
+        ProductPageResponse result = productFilterService.filterProductList(
+                request, 0, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+
+        // 필터 조건은 모두 null이고 정렬만 적용되었는지 확인
+        verify(productRepository, times(1)).findProductsWithFilters(
+                eq(null), eq(null), eq(null), eq(null),
+                eq(ProductSortType.LATEST), any(Pageable.class));
     }
 }
