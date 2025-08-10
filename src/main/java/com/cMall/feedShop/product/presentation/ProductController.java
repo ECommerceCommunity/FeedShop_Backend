@@ -11,6 +11,7 @@ import com.cMall.feedShop.product.application.service.CategoryService;
 import com.cMall.feedShop.product.application.service.ProductFilterService;
 import com.cMall.feedShop.product.application.service.ProductReadService;
 import com.cMall.feedShop.product.application.validator.PriceValidator;
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.exception.ProductException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -32,15 +33,18 @@ public class ProductController {
      * /api/products?page=0&size=20
      * @param page 페이지 번호 (기본값: 0)
      * @param size 페이지 크기 (기본값: 20)
+     * @param sort 정렬 기준 (기본값: latest)
      * @return 상품 목록 응답
      */
     @GetMapping
     @ApiResponseFormat(message = "상품 목록을 성공적으로 조회했습니다.")
     public ApiResponse<ProductPageResponse> getProductList(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "latest") String sort
     ) {
-        ProductPageResponse data = productReadService.getProductList(page, size);
+        ProductSortType productSortType = ProductSortType.fromCode(sort);
+        ProductPageResponse data = productReadService.getProductList(page, size, productSortType);
         return ApiResponse.success(data);
     }
 
@@ -63,7 +67,8 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) Long storeId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "latest") String sort
     ) {
         // 1. 가격 범위 유효성을 검증한다.
         if (!PriceValidator.isValidPriceRange(minPrice, maxPrice)) {
@@ -78,8 +83,10 @@ public class ProductController {
                 .storeId(storeId)
                 .build();
 
+        ProductSortType productSortType = ProductSortType.fromCode(sort);
+
         // 3. 필터링된 상품 목록을 조회한다.
-        ProductPageResponse data = productFilterService.filterProductList(request, page, size);
+        ProductPageResponse data = productFilterService.filterProductList(request, page, size, productSortType);
         return ApiResponse.success(data);
     }
 

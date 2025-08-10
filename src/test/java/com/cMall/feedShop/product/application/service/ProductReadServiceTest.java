@@ -119,7 +119,7 @@ class ProductReadServiceTest {
                 .willReturn(new BigDecimal("30000"));
 
         // when
-        ProductPageResponse response = productReadService.getProductList(0, 20);
+        ProductPageResponse response = productReadService.getProductList(0, 20, null);
 
         // then
         assertThat(response).isNotNull();
@@ -139,7 +139,7 @@ class ProductReadServiceTest {
         given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class))).willReturn(productPage);
 
         // when
-        ProductPageResponse response = productReadService.getProductList(-5, 20);
+        ProductPageResponse response = productReadService.getProductList(-5, 20, null);
 
         // then
         assertThat(response.getNumber()).isEqualTo(0);
@@ -153,8 +153,8 @@ class ProductReadServiceTest {
         given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class))).willReturn(productPage);
 
         // when
-        ProductPageResponse response1 = productReadService.getProductList(0, 0);
-        ProductPageResponse response2 = productReadService.getProductList(0, 150);
+        ProductPageResponse response1 = productReadService.getProductList(0, 0, null);
+        ProductPageResponse response2 = productReadService.getProductList(0, 150, null);
 
         // then
         assertThat(response1.getSize()).isEqualTo(20);

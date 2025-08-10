@@ -118,6 +118,7 @@ class ProductFilterServiceTest {
                 eq(null), // 최소 가격 없음
                 eq(null), // 최대 가격 없음
                 eq(null), // 스토어 ID 없음
+                eq(null), // 정렬 기준 없음
                 any(Pageable.class)
         )).willReturn(productPage);
 
@@ -127,7 +128,7 @@ class ProductFilterServiceTest {
 
         // when (실행 단계)
         // 실제로 필터링 메서드 호출
-        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
+        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20, null);
 
         // then (검증 단계)
         // 결과가 올바른지 확인
@@ -161,6 +162,7 @@ class ProductFilterServiceTest {
                 eq(new BigDecimal("100000")), // 최소 가격 10만원
                 eq(new BigDecimal("200000")), // 최대 가격 20만원
                 eq(null), // 스토어 ID 없음
+                eq(null),
                 any(Pageable.class)
         )).willReturn(productPage);
 
@@ -169,7 +171,7 @@ class ProductFilterServiceTest {
                 .willReturn(testProductResponse);
 
         // when (실행 단계)
-        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
+        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20, null);
 
         // then (검증 단계)
         assertThat(result).isNotNull();
@@ -197,6 +199,7 @@ class ProductFilterServiceTest {
                 eq(null), // 최소 가격 없음
                 eq(null), // 최대 가격 없음
                 eq(1L), // 스토어 ID = 1
+                eq(null), // 정렬 기준 없음
                 any(Pageable.class)
         )).willReturn(productPage);
 
@@ -205,7 +208,7 @@ class ProductFilterServiceTest {
                 .willReturn(testProductResponse);
 
         // when (실행 단계)
-        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
+        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20, null);
 
         // then (검증 단계)
         assertThat(result).isNotNull();
@@ -238,6 +241,7 @@ class ProductFilterServiceTest {
                 eq(new BigDecimal("100000")), // 최소 가격 10만원
                 eq(new BigDecimal("200000")), // 최대 가격 20만원
                 eq(1L), // 스토어 ID = 1
+                eq(null), // 정렬 기준 없음
                 any(Pageable.class)
         )).willReturn(productPage);
 
@@ -246,7 +250,7 @@ class ProductFilterServiceTest {
                 .willReturn(testProductResponse);
 
         // when (실행 단계)
-        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20);
+        ProductPageResponse result = productFilterService.filterProductList(request, 0, 20, null);
 
         // then (검증 단계)
         assertThat(result).isNotNull();
@@ -268,12 +272,12 @@ class ProductFilterServiceTest {
         Pageable pageable = PageRequest.of(0, 20); // 음수가 0으로 변경됨
         Page<Product> productPage = new PageImpl<>(List.of(), pageable, 0);
 
-        given(productRepository.findProductsWithFilters(any(), any(), any(), any(), any()))
+        given(productRepository.findProductsWithFilters(any(), any(), any(), any(), any(), any()))
                 .willReturn(productPage);
 
         // when (실행 단계)
         // 페이지 번호를 음수(-1)로 전달
-        ProductPageResponse result = productFilterService.filterProductList(request, -1, 20);
+        ProductPageResponse result = productFilterService.filterProductList(request, -1, 20, null);
 
         // then (검증 단계)
         assertThat(result).isNotNull(); // 에러 없이 정상 처리됨
@@ -288,12 +292,12 @@ class ProductFilterServiceTest {
         Pageable pageable = PageRequest.of(0, 20); // 크기가 20으로 변경됨
         Page<Product> productPage = new PageImpl<>(List.of(), pageable, 0);
 
-        given(productRepository.findProductsWithFilters(any(), any(), any(), any(), any()))
+        given(productRepository.findProductsWithFilters(any(), any(), any(), any(), any(), any()))
                 .willReturn(productPage);
 
         // when (실행 단계)
         // 페이지 크기를 200으로 전달 (100 초과)
-        ProductPageResponse result = productFilterService.filterProductList(request, 0, 200);
+        ProductPageResponse result = productFilterService.filterProductList(request, 0, 200, null);
 
         // then (검증 단계)
         assertThat(result).isNotNull(); // 에러 없이 정상 처리됨
