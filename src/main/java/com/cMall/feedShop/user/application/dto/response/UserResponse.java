@@ -20,7 +20,6 @@ public class UserResponse {
     private LocalDateTime createdAt;
     private String message;
 
-    // User 엔티티를 UserResponse DTO로 변환하는 정적 팩토리 메서드
     public static UserResponse from(User user) {
         String profileName = null;
         String profilePhone = null;

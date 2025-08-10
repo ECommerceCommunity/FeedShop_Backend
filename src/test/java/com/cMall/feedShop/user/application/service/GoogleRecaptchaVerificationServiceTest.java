@@ -62,7 +62,7 @@ class GoogleRecaptchaVerificationServiceTest {
                 .thenReturn(mockResponse);
 
         // when & then
-        assertDoesNotThrow(() -> googleRecaptchaVerificationService.verify(testToken, testAction));
+        assertDoesNotThrow(() -> googleRecaptchaVerificationService.verifyRecaptcha(testToken, testAction));
     }
 
     @Test
@@ -70,7 +70,7 @@ class GoogleRecaptchaVerificationServiceTest {
     void verify_fail_noToken() {
         // when & then
         BusinessException exception = assertThrows(BusinessException.class, () -> {
-            googleRecaptchaVerificationService.verify(null, testAction);
+            googleRecaptchaVerificationService.verifyRecaptcha(null, testAction);
         });
         assertEquals(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, exception.getErrorCode());
     }
@@ -86,7 +86,7 @@ class GoogleRecaptchaVerificationServiceTest {
 
         // when & then
         BusinessException exception = assertThrows(BusinessException.class, () -> {
-            googleRecaptchaVerificationService.verify(testToken, testAction);
+            googleRecaptchaVerificationService.verifyRecaptcha(testToken, testAction);
         });
         assertEquals(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, exception.getErrorCode());
     }
@@ -102,7 +102,7 @@ class GoogleRecaptchaVerificationServiceTest {
 
         // when & then
         BusinessException exception = assertThrows(BusinessException.class, () -> {
-            googleRecaptchaVerificationService.verify(testToken, testAction);
+            googleRecaptchaVerificationService.verifyRecaptcha(testToken, testAction);
         });
         assertEquals(ErrorCode.RECAPTCHA_VERIFICATION_FAILED, exception.getErrorCode());
     }
@@ -118,7 +118,7 @@ class GoogleRecaptchaVerificationServiceTest {
 
         // when & then
         BusinessException exception = assertThrows(BusinessException.class, () -> {
-            googleRecaptchaVerificationService.verify(testToken, testAction);
+            googleRecaptchaVerificationService.verifyRecaptcha(testToken, testAction);
         });
         assertEquals(ErrorCode.RECAPTCHA_SCORE_TOO_LOW, exception.getErrorCode());
     }

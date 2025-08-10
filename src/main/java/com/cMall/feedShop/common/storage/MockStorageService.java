@@ -15,7 +15,7 @@ import java.util.List;
 public class MockStorageService implements StorageService {
 
     @Override
-    public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, String directory) {
+        public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, UploadDirectory directory) {
         log.info("📢 Mocking GCP Storage: 파일 업로드 로직 실행");
         // 실제 업로드 대신 가짜 결과를 반환합니다.
         UploadResult mockResult = UploadResult.builder()

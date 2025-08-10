@@ -23,7 +23,7 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 @Profile("prod")
-public class GcpStorageService implements  StorageService {
+public class GcpStorageService implements StorageService {
 
     @Value("${spring.cloud.gcp.project-id:}")
     private String projectId;
@@ -77,7 +77,7 @@ public class GcpStorageService implements  StorageService {
     /**
      * 여러 파일을 GCP Storage에 업로드
      */
-    public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, String directory) {
+    public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, UploadDirectory directory) {
         if (storage == null) {
             log.error("GCP Storage가 초기화되지 않았습니다.");
             throw new RuntimeException("GCP Storage가 초기화되지 않았습니다.");
@@ -88,7 +88,7 @@ public class GcpStorageService implements  StorageService {
 
         for (MultipartFile file : files) {
             try {
-                UploadResult result = uploadSingleFile(file, directory);
+                UploadResult result = uploadSingleFile(file, directory.getPath());
                 results.add(result);
                 log.info("✅ 업로드 성공: {} -> {}", file.getOriginalFilename(), result.getFilePath());
             } catch (Exception e) {
@@ -104,13 +104,13 @@ public class GcpStorageService implements  StorageService {
     /**
      * 단일 파일 업로드
      */
-    private UploadResult uploadSingleFile(MultipartFile file, String directory) throws IOException {
+    private UploadResult uploadSingleFile(MultipartFile file, String directoryPath) throws IOException {
         String originalFilename = file.getOriginalFilename();
         String extension = getFileExtension(originalFilename);
         String storedFilename = UUID.randomUUID().toString() + extension;
 
         // 🔥 경로 수정: images/{directory} 형태로 변경
-        String objectName = "images/" + directory + "/" + storedFilename;
+                        String objectName = "images/" + directoryPath + "/" + storedFilename;
 
         // GCP Storage에 업로드
         BlobId blobId = BlobId.of(bucketName, objectName);

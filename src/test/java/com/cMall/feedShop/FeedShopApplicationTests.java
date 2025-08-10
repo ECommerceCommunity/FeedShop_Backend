@@ -1,6 +1,7 @@
 package com.cMall.feedShop;
 
-import com.cMall.feedShop.common.captcha.GoogleRecaptchaVerificationService;
+import com.cMall.feedShop.common.captcha.RecaptchaVerificationService;
+import com.cMall.feedShop.common.storage.StorageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
@@ -12,10 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import com.cMall.feedShop.common.email.EmailService;
-import com.cMall.feedShop.common.email.EmailServiceImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -36,10 +37,10 @@ class FeedShopApplicationTests {
     private EmailService emailService;
 
     @MockBean
-    private EmailServiceImpl emailServiceImpl;
+    private StorageService storageService;
 
-    @MockBean
-    private GoogleRecaptchaVerificationService googleRecaptchaVerificationService;
+    @Autowired
+    private RecaptchaVerificationService recaptchaVerificationService;
 
     @Test
     void contextLoads() {
@@ -47,50 +48,15 @@ class FeedShopApplicationTests {
     }
 
     @Test
-    void testEmailServiceMocking() {
-        String recipient = "user@example.com";
-        String subject = "Welcome!";
-        String body = "Thank you for registering.";
-
-        // EmailService Mock 동작 정의
-        doNothing().when(emailService).sendHtmlEmail(recipient, subject, body);
-
-        // Mock 호출
-        emailService.sendHtmlEmail(recipient, subject, body);
-
-        // 호출되었는지 검증
-        verify(emailService, times(1)).sendHtmlEmail(recipient, subject, body);
-    }
-
-    @Test
-    void testEmailServiceImplMocking() {
-        String recipient = "test@example.com";
-        String subject = "Test Subject";
-        String body = "Test Body";
-
-        // EmailServiceImpl Mock 동작 정의 (sendEmail 메서드 사용)
-        doNothing().when(emailServiceImpl).sendHtmlEmail(recipient, subject, body);
-
-        // Mock 호출
-        emailServiceImpl.sendHtmlEmail(recipient, subject, body);
-
-        // 검증
-        verify(emailServiceImpl, times(1)).sendHtmlEmail(recipient, subject, body);
-    }
-
-    @Test
     void testRecaptchaServiceMocking() {
         String token = "test-token";
         String action = "test-action";
 
-        // RecaptchaService Mock 동작 정의
-        doNothing().when(googleRecaptchaVerificationService).verify(token, action);
-
-        // Mock 호출
-        googleRecaptchaVerificationService.verify(token, action);
-
-        // 검증
-        verify(googleRecaptchaVerificationService, times(1)).verify(token, action);
+        // MockRecaptchaVerificationService는 실제로는 아무것도 하지 않고 로그만 출력합니다.
+        // 예외가 발생하지 않으면 성공입니다.
+        assertThatCode(() -> {
+            recaptchaVerificationService.verifyRecaptcha(token, action);
+        }).doesNotThrowAnyException();
     }
 
     @Test
