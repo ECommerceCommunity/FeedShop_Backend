@@ -69,16 +69,12 @@ spring.cloud.gcp.project-id=${GCS_ID}
 # GCS 버킷 이름 (환경에 따라 dev/prod 버킷이 다를 수 있음)
 spring.cloud.gcp.storage.bucket=${GCS_BUCKET:your-gcs-bucket-name}
 spring.cloud.gcp.storage.auto-create-buckets=true
-# GCS 활성화 여부 (개발 시 false, 운영 시 true 권장)
-gcp.storage.enabled=true
 # 파일 업로드 기본 경로
 file.upload.base-path=./uploads
 # 파일 캐시 기간 (초 단위)
 file.upload.cache-period=3600
 
 # ReCAPTCHA 설정
-# ReCAPTCHA 활성화 여부 (개발 시 false, 운영 시 true 권장)
-recaptcha.enabled=true
 # ReCAPTCHA 비밀 키 (환경 변수 RECAPTCHA_SECRET_KEY 사용)
 recaptcha.secret-key=${RECAPTCHA_SECRET_KEY}
 # ReCAPTCHA 점수 임계값
