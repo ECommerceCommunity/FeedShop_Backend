@@ -1,6 +1,8 @@
 package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.user.domain.enums.FootArchType;
+import com.cMall.feedShop.user.domain.enums.FootWidth;
 import com.cMall.feedShop.user.domain.enums.Gender;
 import jakarta.persistence.*;
 import lombok.*;
@@ -49,13 +51,20 @@ public class UserProfile extends BaseTimeEntity {
     @Column(name="foot_size")
     private Integer footSize;
 
+    @Column(name="foot_width")
+    private FootWidth footWidth;
+
+    @Column(name="foot_arch_type")
+    private FootArchType footArchType;
+
     @Column(name="profile_image_url")
     private String profileImageUrl;
 
     @Builder
     public UserProfile(User user, String name, String nickname, String phone,
                        Gender gender, LocalDate birthDate,
-                       Integer height, Integer weight, Integer footSize, String profileImageUrl) {
+                       Integer height, Integer weight, Integer footSize,
+                       FootWidth footWidth, FootArchType footArchType, String profileImageUrl) {
         this.user = user;
         this.name = name;
         this.nickname = nickname;
@@ -65,6 +74,8 @@ public class UserProfile extends BaseTimeEntity {
         this.height = height;
         this.weight = weight;
         this.footSize = footSize;
+        this.footWidth = footWidth;
+        this.footArchType = footArchType;
         this.profileImageUrl = profileImageUrl;
     }
 
@@ -80,7 +91,10 @@ public class UserProfile extends BaseTimeEntity {
     }
 
 
-      public void updateProfile(String name, String nickname, String phone, Integer height, Integer footSize, Gender gender, LocalDate birthDate) {
+      public void updateProfile(String name, String nickname, String phone,
+                                Integer height, Integer weight, Integer footSize,
+                                FootWidth footWidth, FootArchType footArchType,
+                                Gender gender, LocalDate birthDate) {
         if (name != null) {
             this.name = name;
         }
@@ -103,8 +117,20 @@ public class UserProfile extends BaseTimeEntity {
             this.height = height;
         }
 
+        if (weight != null) {
+              this.weight = weight;
+        }
+
         if (footSize != null) {
             this.footSize = footSize;
+        }
+
+        if (footWidth != null) {
+            this.footWidth = footWidth;
+        }
+
+        if (footArchType != null) {
+            this.footArchType = footArchType;
         }
 
         if(gender != null) {
