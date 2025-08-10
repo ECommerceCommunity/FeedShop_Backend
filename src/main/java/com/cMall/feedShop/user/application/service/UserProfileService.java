@@ -2,6 +2,7 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.storage.StorageService;
+import com.cMall.feedShop.common.storage.UploadDirectory;
 import com.cMall.feedShop.user.application.dto.request.ProfileUpdateRequest;
 import com.cMall.feedShop.user.application.dto.response.UserProfileResponse;
 import com.cMall.feedShop.user.domain.model.User;
@@ -94,7 +95,7 @@ public class UserProfileService {
             storageService.deleteFile(userProfile.getProfileImageUrl());
         }
 
-        UploadResult uploadResult = storageService.uploadFilesWithDetails(Collections.singletonList(image), "profile-images").get(0);
+                UploadResult uploadResult = storageService.uploadFilesWithDetails(Collections.singletonList(image), UploadDirectory.PROFILES).get(0);
         userProfile.updateProfileImageUrl(uploadResult.getFilePath());
 
         userProfileRepository.save(userProfile);

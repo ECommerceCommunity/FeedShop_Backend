@@ -1,7 +1,7 @@
 package com.cMall.feedShop.user.application.service;
 
-import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.email.EmailService;
+import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -109,15 +109,16 @@ class UserServiceTest {
         given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
-            savedUser.setId(1L); // ID 설정
+            savedUser.setId(1L);
             UserProfile userProfile = UserProfile.builder()
                     .user(savedUser)
                     .name(signUpRequest.getName())
-                    .nickname(signUpRequest.getName()) // 또는 signUpRequest.getNickname()
+                    .nickname(signUpRequest.getNickname())
                     .phone(signUpRequest.getPhone())
                     .build();
 
             savedUser.setUserProfile(userProfile);
+
             return savedUser;
         });
 
@@ -219,6 +220,7 @@ class UserServiceTest {
         given(userRepository.save(any(User.class))).willAnswer(invocation -> {
             User savedUser = invocation.getArgument(0);
             savedUser.setId(2L);
+
             UserProfile userProfile = UserProfile.builder()
                     .user(savedUser)
                     .name("테스트사용자")
@@ -231,6 +233,7 @@ class UserServiceTest {
                     .profileImageUrl("https://test-image.com/profile.jpg")
                     .build();
             savedUser.setUserProfile(userProfile);
+
             assertThat(savedUser.getPassword()).isEqualTo(preEncryptedPassword); // 암호화되지 않고 그대로 저장됨을 검증
             return savedUser;
         });
@@ -476,7 +479,7 @@ class UserServiceTest {
         given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
 
         // When & Then
-        UserException thrown = assertThrows(UserException.class, () ->
+        UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
                 userService.adminWithdrawUserByEmail(email)
         );
         assertThat(thrown.getErrorCode()).isEqualTo(USER_ALREADY_DELETED); // ErrorCode 사용
@@ -615,15 +618,15 @@ class UserServiceTest {
     @DisplayName("유효한 사용자 이름과 전화번호로 계정을 성공적으로 찾아야 한다")
     void shouldFindAccountSuccessfullyWithValidUsernameAndPhoneNumber() {
         // Given
-        String username = "testuser";
+        String name = "테스트사용자";
         String phoneNumber = "010-1234-5678";
         User user = new User(1L, "login1", "password123", "testuser@example.com", UserRole.USER);
+
         UserProfile userProfile = UserProfile.builder()
                 .user(user)
-                .name("테스트사용자")
+                .name(name)
                 .nickname("테스트닉네임")
                 .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .height(175)
                 .footSize(270)
@@ -632,11 +635,11 @@ class UserServiceTest {
         user.setUserProfile(userProfile);
         UserResponse expectedResponse = UserResponse.from(user);
 
-        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber))
                 .thenReturn(List.of(user));
 
         // When
-        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(username, phoneNumber);
+        List<UserResponse> resultList = userService.findByUsernameAndPhoneNumber(name, phoneNumber);
 
         // Then
         assertThat(resultList).isNotNull();
@@ -648,7 +651,7 @@ class UserServiceTest {
         assertThat(result.getPhone()).isEqualTo(user.getUserProfile().getPhone());
 
         // Verify
-        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber);
     }
 
     @Test
@@ -656,21 +659,21 @@ class UserServiceTest {
     @DisplayName("유효하지 않은 사용자 이름으로 계정을 찾을 수 없을 때 UserNotFoundException이 발생해야 한다")
     void shouldThrowUserNotFoundExceptionWithInvalidUsername() {
         // Given
-        String username = "invaliduser";
+        String name = "invaliduser";
         String phoneNumber = "010-1234-5678";
 
-        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber))
+        when(userRepository.findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber))
                 .thenReturn(List.of());
 
         // When & Then
         // UserNotFoundException이 발생하는지 검증합니다.
-        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(username, phoneNumber))
+        assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(name, phoneNumber))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
 
         // Verify
         // userRepository가 한 번 호출되었는지 확인합니다.
-        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(username, phoneNumber);
+        verify(userRepository, times(1)).findByUserProfile_NameAndUserProfile_Phone(name, phoneNumber);
     }
 
 
@@ -708,11 +711,6 @@ class UserServiceTest {
                 .name("테스트사용자")
                 .nickname("테스트닉네임")
                 .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .height(175)
-                .footSize(270)
-                .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
         user1.setUserProfile(testUserProfile);
 
@@ -723,11 +721,6 @@ class UserServiceTest {
                 .name("테스트사용자")
                 .nickname("테스트닉네임")
                 .phone("010-1234-5678")
-                // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .height(175)
-                .footSize(270)
-                .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
         user2.setUserProfile(testUserProfile2);
 

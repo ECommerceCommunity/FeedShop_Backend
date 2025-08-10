@@ -24,6 +24,13 @@ public class UserController {
     private final UserProfileService userProfileService;
     private final UserService userService;
 
+    @GetMapping("/me/profile")
+    @PreAuthorize("isAuthenticated()")
+    public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = (User) userDetails;
+        return userProfileService.getUserProfile(currentUser.getId());
+    }
+
     // 사용자 프로필을 조회하는 예시 메서드
     @GetMapping("/{userId}/profile")
     public UserProfileResponse getUserProfile(@PathVariable Long userId, @AuthenticationPrincipal UserDetails userDetails) {
@@ -47,21 +54,7 @@ public class UserController {
         return response;
     }
 
-    // 현재 로그인한 사용자의 프로필 정보 조회
-    @GetMapping("/me/profile")
-    @PreAuthorize("isAuthenticated()")
-    public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
-        User currentUser = (User) userDetails;
-        return userProfileService.getUserProfile(currentUser.getId());
-    }
-
-    @PutMapping("/{userId}/profile")
-    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
-    public ResponseEntity<Void> updateUserProfile(@PathVariable Long userId, @RequestBody ProfileUpdateRequest request) {
-        userProfileService.updateUserProfile(userId, request);
-        return ResponseEntity.ok().build();
-    }
-
+    // 사용자 프로필 정보 수정
     @PutMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> updateMyProfile(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ProfileUpdateRequest request) {
@@ -70,20 +63,14 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{userId}/profile/image")
-    @PreAuthorize("#userId == authentication.principal.id or hasRole('ADMIN')")
-    public ResponseEntity<String> uploadProfileImage(@PathVariable Long userId, @RequestParam("image") MultipartFile image) throws IOException {
-        String imageUrl = userProfileService.updateProfileImage(userId, image);
-        return ResponseEntity.ok(imageUrl);
-    }
-
     @PostMapping("/me/profile/image")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<String> uploadMyProfileImage(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("image") MultipartFile image) throws IOException {
+    public ResponseEntity<String> updateMyProfileImage(@AuthenticationPrincipal UserDetails userDetails, @RequestParam("image") MultipartFile image) throws IOException {
         User currentUser = (User) userDetails;
         String imageUrl = userProfileService.updateProfileImage(currentUser.getId(), image);
         return ResponseEntity.ok(imageUrl);
     }
+
 
     // 관리자가 이메일로 사용자 탈퇴 처리
     // (관리자 권한 필요)
