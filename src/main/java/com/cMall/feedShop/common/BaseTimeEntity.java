@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class) // JPA: 엔티티의 영속성 이벤트(생성, 수정 등)를 감지하는 리스너를 지정합니다. 여기서는 Spring Data JPA의 Auditing 기능을 활성화합니다.
 public class BaseTimeEntity {
     @CreatedDate // Spring Data JPA Auditing: 엔티티가 생성될 때 현재 시간을 자동으로 주입합니다.
-    @Column(name = "created_at", nullable = false, updatable = false) // JPA: 데이터베이스 컬럼명, null 허용 안 함, 업데이트 불가능
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate // Spring Data JPA Auditing: 엔티티가 수정될 때마다 현재 시간을 자동으로 주입합니다.
-    @Column(name = "updated_at", nullable = false) // JPA: 데이터베이스 컬럼명, null 허용 안 함
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }

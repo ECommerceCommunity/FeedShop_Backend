@@ -21,6 +21,9 @@ logs/
 build/
 !gradle/wrapper/gradle-wrapper.jar # Keep gradle wrapper JAR
 
+# QueryDSL generated files
+src/main/generated/
+
 # Eclipse / Spring Tool Suite (STS)
 .apt_generated/
 .classpath
