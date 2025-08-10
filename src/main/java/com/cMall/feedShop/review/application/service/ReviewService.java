@@ -1,8 +1,10 @@
 package com.cMall.feedShop.review.application.service;
 
-import com.cMall.feedShop.common.service.GcpStorageService;
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
+import com.cMall.feedShop.common.storage.StorageService;
+import com.cMall.feedShop.common.storage.UploadDirectory;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
@@ -56,7 +58,7 @@ public class ReviewService {
 
     // 선택적 의존성 주입으로 변경 (GCP만)
     @Autowired(required = false)
-    private GcpStorageService gcpStorageService;
+    private StorageService gcpStorageService;
 
     // 수동 생성자 (필수 의존성만)
     public ReviewService(
@@ -176,7 +178,7 @@ public class ReviewService {
                 // GCP Storage 서비스만 사용
                 if (gcpStorageService != null) {
                     log.info("GCP Storage 서비스 사용");
-                    List<GcpStorageService.UploadResult> uploadResults = gcpStorageService.uploadFilesWithDetails(images, "reviews");
+                    List<UploadResult> uploadResults = gcpStorageService.uploadFilesWithDetails(images, UploadDirectory.REVIEWS);
 
                     if (!uploadResults.isEmpty()) {
                         // UploadResult를 ReviewImage로 저장
@@ -184,7 +186,7 @@ public class ReviewService {
 
                         // URL만 추출해서 응답용으로 사용
                         imageUrls = uploadResults.stream()
-                                .map(GcpStorageService.UploadResult::getFilePath)
+                                .map(UploadResult::getFilePath)
                                 .collect(Collectors.toList());
                     }
                 } else {
@@ -349,16 +351,16 @@ public class ReviewService {
                 log.info("GCP Storage로 새 이미지 업로드 시작: reviewId={}, 이미지 수={}",
                         review.getReviewId(), newImages.size());
 
-                List<GcpStorageService.UploadResult> uploadResults =
-                        gcpStorageService.uploadFilesWithDetails(newImages, "reviews");
+                List<UploadResult> uploadResults =
+                        gcpStorageService.uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS);
 
                 if (!uploadResults.isEmpty()) {
                     // UploadResult를 ReviewImage로 저장
                     saveReviewImagesFromUploadResults(review, uploadResults);
 
                     // URL 추출
-                    newImageUrls = uploadResults.stream()
-                            .map(GcpStorageService.UploadResult::getFilePath)
+                                        newImageUrls = uploadResults.stream()
+                            .map(UploadResult::getFilePath)
                             .collect(Collectors.toList());
                 }
             } else {
@@ -448,13 +450,13 @@ public class ReviewService {
     }
 
     // 업로드 결과를 기존 ReviewImage 엔티티로 저장
-    private void saveReviewImagesFromUploadResults(Review review, List<GcpStorageService.UploadResult> uploadResults) {
+    private void saveReviewImagesFromUploadResults(Review review, List<UploadResult> uploadResults) {
         log.info("업로드 결과를 ReviewImage 엔티티로 저장 시작: reviewId={}, resultCount={}",
                 review.getReviewId(), uploadResults.size());
 
         try {
             for (int i = 0; i < uploadResults.size(); i++) {
-                GcpStorageService.UploadResult result = uploadResults.get(i);
+                                UploadResult result = uploadResults.get(i);
 
                 ReviewImage reviewImage = ReviewImage.builder()
                         .review(review)
@@ -479,8 +481,8 @@ public class ReviewService {
             log.error("업로드 결과 저장 실패: reviewId={}", review.getReviewId(), e);
 
             // 이미 업로드된 GCP Storage 파일들 삭제 (롤백)
-            List<String> imageUrls = uploadResults.stream()
-                    .map(GcpStorageService.UploadResult::getFilePath)
+                        List<String> imageUrls = uploadResults.stream()
+                                                        .map(UploadResult::getFilePath)
                     .collect(Collectors.toList());
             rollbackUploadedImages(imageUrls);
 
