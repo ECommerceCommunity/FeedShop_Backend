@@ -1,7 +1,9 @@
 package com.cMall.feedShop.review.application.service;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;
+import com.cMall.feedShop.common.storage.GcpStorageService;
+import com.cMall.feedShop.common.storage.UploadDirectory;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
@@ -357,7 +359,7 @@ class ReviewServiceTest {
         MultipartFile imageFile = mock(MultipartFile.class);
         List<MultipartFile> imageFiles = List.of(imageFile);
 
-        GcpStorageService.UploadResult mockResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult mockResult = mock(UploadResult.class);
         given(mockResult.getOriginalFilename()).willReturn("image.jpg");
         given(mockResult.getStoredFilename()).willReturn("uuid-image.jpg");
         given(mockResult.getFilePath()).willReturn("reviews/uuid-image.jpg");
@@ -370,7 +372,7 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
-            given(gcpStorageService.uploadFilesWithDetails(any(List.class), eq("reviews")))
+            given(gcpStorageService.uploadFilesWithDetails(any(List.class), eq(UploadDirectory.REVIEWS)))
                     .willReturn(List.of(mockResult));
 
             // when
@@ -380,7 +382,7 @@ class ReviewServiceTest {
             assertThat(response.getReviewId()).isEqualTo(1L);
             assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");
             verify(reviewRepository, times(1)).save(any(Review.class));
-            verify(gcpStorageService, times(1)).uploadFilesWithDetails(any(List.class), eq("reviews"));
+            verify(gcpStorageService, times(1)).uploadFilesWithDetails(any(List.class), eq(UploadDirectory.REVIEWS));
         }
     }
 

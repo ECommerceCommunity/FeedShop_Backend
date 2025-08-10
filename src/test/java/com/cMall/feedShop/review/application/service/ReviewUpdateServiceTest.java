@@ -1,7 +1,9 @@
 package com.cMall.feedShop.review.application.service;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.service.GcpStorageService;
+import com.cMall.feedShop.common.storage.GcpStorageService;
+import com.cMall.feedShop.common.storage.UploadDirectory;
 import com.cMall.feedShop.review.application.dto.request.ReviewUpdateRequest;
 import com.cMall.feedShop.review.application.dto.response.ReviewUpdateResponse;
 import com.cMall.feedShop.review.domain.Review;
@@ -177,14 +179,14 @@ class ReviewUpdateServiceTest {
                 .willReturn(List.of(1L, 2L));
 
         // GCP Storage 응답 모킹 - 완전한 Mock 설정
-        GcpStorageService.UploadResult uploadResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult uploadResult = mock(UploadResult.class);
         given(uploadResult.getFilePath()).willReturn("reviews/new-image.jpg");
         given(uploadResult.getOriginalFilename()).willReturn("new-image.jpg");
         given(uploadResult.getStoredFilename()).willReturn("uuid-new-image.jpg");
         given(uploadResult.getFileSize()).willReturn(1024L);
         given(uploadResult.getContentType()).willReturn("image/jpeg");
 
-        given(gcpStorageService.uploadFilesWithDetails(newImages, "reviews"))
+        given(gcpStorageService.uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS))
                 .willReturn(List.of(uploadResult));
 
         // ReviewImageRepository.save() Mock - 실제 ReviewImage 타입 반환
@@ -205,7 +207,7 @@ class ReviewUpdateServiceTest {
         assertThat(response.getTotalImageCount()).isEqualTo(4);
 
         // Mock 호출 검증
-        verify(gcpStorageService).uploadFilesWithDetails(newImages, "reviews");
+        verify(gcpStorageService).uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS);
         verify(reviewImageRepository).save(any());
         verify(reviewImageService).deleteSelectedImages(1L, List.of(1L, 2L));
         verify(reviewImageService).getActiveImageCount(1L);
@@ -323,7 +325,7 @@ class ReviewUpdateServiceTest {
         given(reviewImageService.getActiveImageCount(1L)).willReturn(0);
 
         // 이미지 업로드 실패 시뮬레이션
-        given(gcpStorageService.uploadFilesWithDetails(newImages, "reviews"))
+        given(gcpStorageService.uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS))
                 .willThrow(new RuntimeException("이미지 업로드 실패"));
 
         // when
@@ -520,14 +522,14 @@ class ReviewUpdateServiceTest {
         given(reviewImageService.getActiveImageCount(1L)).willReturn(4);
 
         // GCP Storage 응답 모킹
-        GcpStorageService.UploadResult uploadResult = mock(GcpStorageService.UploadResult.class);
+        UploadResult uploadResult = mock(UploadResult.class);
         given(uploadResult.getFilePath()).willReturn("reviews/new-image.jpg");
         given(uploadResult.getOriginalFilename()).willReturn("new-image.jpg");
         given(uploadResult.getStoredFilename()).willReturn("uuid-new-image.jpg");
         given(uploadResult.getFileSize()).willReturn(1024L);
         given(uploadResult.getContentType()).willReturn("image/jpeg");
 
-        given(gcpStorageService.uploadFilesWithDetails(newImages, "reviews"))
+        given(gcpStorageService.uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS))
                 .willReturn(List.of(uploadResult));
         given(reviewImageRepository.save(any())).willReturn(mock());
 
@@ -555,7 +557,7 @@ class ReviewUpdateServiceTest {
         verify(reviewImageService, times(1)).getActiveImageCount(1L);
 
         // 새 이미지 업로드는 호출됨
-        verify(gcpStorageService).uploadFilesWithDetails(newImages, "reviews");
+        verify(gcpStorageService).uploadFilesWithDetails(newImages, UploadDirectory.REVIEWS);
         verify(reviewImageRepository).save(any());
     }
 
