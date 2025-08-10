@@ -1,5 +1,6 @@
 package com.cMall.feedShop.user.presentation;
 
+import com.cMall.feedShop.user.application.dto.request.ProfileUpdateRequest;
 import com.cMall.feedShop.user.application.dto.request.UserWithdrawRequest;
 import com.cMall.feedShop.user.application.dto.response.UserProfileResponse;
 import com.cMall.feedShop.user.application.service.UserProfileService;
@@ -50,6 +51,14 @@ public class UserController {
         // userProfileService를 사용하여 실제 비즈니스 로직 호출
         UserProfileResponse response = userProfileService.getUserProfile(userId);
         return response;
+    }
+
+    @PutMapping("/me/profile")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> updateMyProfile(@AuthenticationPrincipal UserDetails userDetails, @RequestBody ProfileUpdateRequest request) {
+        User currentUser = (User) userDetails;
+        userProfileService.updateUserProfile(currentUser.getId(), request);
+        return ResponseEntity.ok().build();
     }
 
     // 관리자가 이메일로 사용자 탈퇴 처리
