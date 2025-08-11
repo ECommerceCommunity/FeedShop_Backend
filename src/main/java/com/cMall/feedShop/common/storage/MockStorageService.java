@@ -28,10 +28,11 @@ public class MockStorageService implements StorageService {
         }
 
         // 실제 업로드 대신 가짜 결과를 반환합니다.
+        String directoryPath = directory == UploadDirectory.REVIEWS ? "reviews" : "profiles";
         UploadResult mockResult = UploadResult.builder()
                 .originalFilename("mock-file.jpg")
                 .storedFilename("mock-" + files.get(0).getOriginalFilename())
-                .filePath(cdnBaseUrl + "/images/profiles/" + files.get(0).getOriginalFilename())
+                .filePath(cdnBaseUrl + "/images/" + directoryPath + "/" + files.get(0).getOriginalFilename())
                 .fileSize(1000L)
                 .contentType("image/jpeg")
                 .build();
