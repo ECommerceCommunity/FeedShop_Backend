@@ -359,7 +359,7 @@ public class ReviewService {
                     saveReviewImagesFromUploadResults(review, uploadResults);
 
                     // URL 추출
-                                        newImageUrls = uploadResults.stream()
+                    newImageUrls = uploadResults.stream()
                             .map(UploadResult::getFilePath)
                             .collect(Collectors.toList());
                 }
@@ -456,7 +456,7 @@ public class ReviewService {
 
         try {
             for (int i = 0; i < uploadResults.size(); i++) {
-                                UploadResult result = uploadResults.get(i);
+                UploadResult result = uploadResults.get(i);
 
                 ReviewImage reviewImage = ReviewImage.builder()
                         .review(review)
@@ -481,8 +481,8 @@ public class ReviewService {
             log.error("업로드 결과 저장 실패: reviewId={}", review.getReviewId(), e);
 
             // 이미 업로드된 GCP Storage 파일들 삭제 (롤백)
-                        List<String> imageUrls = uploadResults.stream()
-                                                        .map(UploadResult::getFilePath)
+            List<String> imageUrls = uploadResults.stream()
+                    .map(UploadResult::getFilePath)
                     .collect(Collectors.toList());
             rollbackUploadedImages(imageUrls);
 
