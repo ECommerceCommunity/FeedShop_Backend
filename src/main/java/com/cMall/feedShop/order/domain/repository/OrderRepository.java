@@ -21,7 +21,12 @@ public interface OrderRepository extends JpaRepository<Order, Long>, OrderQueryR
         return findByUserAndStatusOrderByCreatedAtDesc(user.getId(), status, pageable);
     }
 
-    // 특정 주문 ID에 해당하는 주문 + 내가 주문한 주문 을 찾는다. 단일 조회.
+    // 판매자 ID와 주문 ID로 주문을 찾는다.
+    default Optional<Order> findByOrderIdAndSeller(Long orderId, User seller) {
+        return findByOrderIdAndSellerId(orderId, seller.getId());
+    }
+
+    // 유저 ID로 주문 ID로 주문을 찾는다.
     default Optional<Order> findByOrderIdAndUser(Long orderId, User user) {
         return findByOrderIdAndUserId(orderId, user.getId());
     }

@@ -3,10 +3,8 @@ package com.cMall.feedShop.order.presentation;
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.order.application.dto.request.OrderCreateRequest;
-import com.cMall.feedShop.order.application.dto.response.OrderCreateResponse;
-import com.cMall.feedShop.order.application.dto.response.OrderDetailResponse;
-import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
-import com.cMall.feedShop.order.application.dto.response.PurchasedItemListResponse;
+import com.cMall.feedShop.order.application.dto.request.OrderStatusUpdateRequest;
+import com.cMall.feedShop.order.application.dto.response.*;
 import com.cMall.feedShop.order.application.service.OrderService;
 import com.cMall.feedShop.order.application.service.PurchasedItemService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -111,5 +109,27 @@ public class OrderUserController {
     ) {
         PurchasedItemListResponse response = purchasedItemService.getPurchasedItems(userDetails);
         return ApiResponse.success(response);
+    }
+
+    /**
+     * 사용자 주문 상태 업데이트 API
+     * POST /api/users/orders/{orderId}/status
+     * 사용자가 자신의 상품 주문 상태를 변경 (취소, 반품)
+     * @param orderId
+     * @param request
+     * @param userDetails
+     * @return
+     */
+    @PostMapping("/orders/{orderId}/status")
+    @ApiResponseFormat(message = "주문 상태가 변경되었습니다.")
+    public ApiResponse<OrderStatusUpdateResponse> updateUserOrderStatus(
+            @PathVariable
+            @Min(value = 1, message = "주문 ID는 1 이상이어야 합니다.")
+            Long orderId,
+            @Valid @RequestBody OrderStatusUpdateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
+        ) {
+        OrderStatusUpdateResponse data = orderService.updateUserOrderStatus(orderId, request, userDetails);
+        return ApiResponse.success(data);
     }
 }
