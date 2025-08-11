@@ -31,6 +31,9 @@ public class GcpStorageService implements StorageService {
     @Value("${spring.cloud.gcp.storage.bucket:}")
     private String bucketName;
 
+    @Value("${app.cdn.base-url}")
+    private String cdnBaseUrl;
+
     private Storage storage;
 
     /**
@@ -120,7 +123,7 @@ public class GcpStorageService implements StorageService {
 
         storage.create(blobInfo, file.getBytes());
 
-        String filePath = String.format("gs://%s/%s", bucketName, objectName);
+        String filePath = cdnBaseUrl + "/" + objectName;
 
         return UploadResult.builder()
                 .originalFilename(originalFilename)
