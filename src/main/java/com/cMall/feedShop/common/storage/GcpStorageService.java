@@ -110,7 +110,7 @@ public class GcpStorageService implements StorageService {
         String storedFilename = UUID.randomUUID().toString() + extension;
 
         // 🔥 경로 수정: images/{directory} 형태로 변경
-                        String objectName = "images/" + directoryPath + "/" + storedFilename;
+        String objectName = "images/" + directoryPath + "/" + storedFilename;
 
         // GCP Storage에 업로드
         BlobId blobId = BlobId.of(bucketName, objectName);
@@ -177,7 +177,6 @@ public class GcpStorageService implements StorageService {
         if (filePath.startsWith(prefix)) {
             return filePath.substring(prefix.length());
         }
-
         return null;
     }
 
@@ -190,6 +189,4 @@ public class GcpStorageService implements StorageService {
         }
         return filename.substring(filename.lastIndexOf("."));
     }
-
-
 }
