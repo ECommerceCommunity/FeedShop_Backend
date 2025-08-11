@@ -1,5 +1,6 @@
 package com.cMall.feedShop.review.application.service;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.common.storage.UploadDirectory;
