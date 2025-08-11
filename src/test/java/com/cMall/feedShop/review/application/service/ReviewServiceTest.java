@@ -1,6 +1,5 @@
 package com.cMall.feedShop.review.application.service;
 
-import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.common.storage.UploadDirectory;
@@ -9,7 +8,6 @@ import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
-import com.cMall.feedShop.review.domain.ReviewImage;
 import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
@@ -115,7 +113,6 @@ class ReviewServiceTest {
                 .footSize(270)
                 .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
-
         testUser.setUserProfile(testUserProfile);
 
         // Store와 Category 모킹

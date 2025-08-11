@@ -70,14 +70,14 @@ jacoco {
 	toolVersion = "0.8.11" // 최신 Jacoco 버전 확인 후 적용
 }
 
-// QueryDSL Q클래스 생성 위치 설정
-def generated = 'src/main/generated'
+// QueryDSL Q클래스 생성 위치 설정 (Gradle 8.x 권장 방식)
+def querydslDir = layout.buildDirectory.dir("generated/querydsl")
 
 // 소스셋에 Q클래스 생성 경로 추가
 sourceSets {
 	main {
 		java {
-			srcDirs += [ generated ]
+			srcDirs += [querydslDir.get().asFile]
 		}
 	}
 }
@@ -87,7 +87,7 @@ tasks.register('cleanQuerydsl', Delete) {
 }
 
 clean {
-	delete file(generated)
+	delete querydslDir
 }
 
 jacocoTestReport {
