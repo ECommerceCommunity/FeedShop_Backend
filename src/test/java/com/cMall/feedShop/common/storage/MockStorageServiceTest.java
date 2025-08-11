@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
@@ -21,6 +22,8 @@ class MockStorageServiceTest {
     @BeforeEach
     void setUp() {
         mockStorageService = new MockStorageService();
+        // 테스트용 CDN URL 설정
+        ReflectionTestUtils.setField(mockStorageService, "cdnBaseUrl", "https://mock-cdn.example.com");
     }
 
     @Test
@@ -43,7 +46,7 @@ class MockStorageServiceTest {
         UploadResult result = results.get(0);
         assertThat(result.getOriginalFilename()).isEqualTo("mock-file.jpg");
         assertThat(result.getStoredFilename()).isEqualTo("mock-test-image.jpg");
-        assertThat(result.getFilePath()).isEqualTo("https://mock-gcp-bucket/mock-path/test-image.jpg");
+        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/reviews/test-image.jpg");
         assertThat(result.getFileSize()).isEqualTo(1000L);
         assertThat(result.getContentType()).isEqualTo("image/jpeg");
     }
@@ -74,7 +77,7 @@ class MockStorageServiceTest {
         UploadResult result = results.get(0);
         assertThat(result.getOriginalFilename()).isEqualTo("mock-file.jpg");
         assertThat(result.getStoredFilename()).isEqualTo("mock-test1.jpg");
-        assertThat(result.getFilePath()).isEqualTo("https://mock-gcp-bucket/mock-path/test1.jpg");
+        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/profiles/test1.jpg");
     }
 
     @Test
@@ -128,7 +131,7 @@ class MockStorageServiceTest {
         // then
         assertThat(results).hasSize(1);
         UploadResult result = results.get(0);
-        assertThat(result.getFilePath()).contains("mock-gcp-bucket/mock-path/review-image.jpg");
+        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/reviews/review-image.jpg");
     }
 
     @Test
@@ -149,6 +152,6 @@ class MockStorageServiceTest {
         // then
         assertThat(results).hasSize(1);
         UploadResult result = results.get(0);
-        assertThat(result.getFilePath()).contains("mock-gcp-bucket/mock-path/profile-image.jpg");
+        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/profiles/profile-image.jpg");
     }
 }
