@@ -2,6 +2,7 @@ package com.cMall.feedShop.common.storage;
 
 import com.cMall.feedShop.common.dto.UploadResult;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +14,9 @@ import java.util.List;
 @Slf4j
 @Profile("dev")
 public class MockStorageService implements StorageService {
+
+    @Value("${app.cdn.base-url}")
+    private String cdnBaseUrl;
 
     @Override
         public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, UploadDirectory directory) {
@@ -27,7 +31,7 @@ public class MockStorageService implements StorageService {
         UploadResult mockResult = UploadResult.builder()
                 .originalFilename("mock-file.jpg")
                 .storedFilename("mock-" + files.get(0).getOriginalFilename())
-                .filePath("https://mock-gcp-bucket/mock-path/" + files.get(0).getOriginalFilename())
+                .filePath(cdnBaseUrl + "/images/profiles/" + files.get(0).getOriginalFilename())
                 .fileSize(1000L)
                 .contentType("image/jpeg")
                 .build();
