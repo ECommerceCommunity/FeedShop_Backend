@@ -5,8 +5,10 @@ import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.feed.domain.repository.FeedLikeRepository;
 import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -30,6 +33,12 @@ class FeedDetailServiceTest {
 
     @Mock
     private FeedMapper feedMapper;
+
+    @Mock
+    private FeedLikeRepository feedLikeRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private FeedDetailService feedDetailService;
@@ -72,15 +81,15 @@ class FeedDetailServiceTest {
     }
 
     @Test
-    @DisplayName("피드 상세 조회 성공")
-    void getFeedDetail_Success() {
+    @DisplayName("피드 상세 조회 성공 - 로그인하지 않은 사용자")
+    void getFeedDetail_Success_WithoutUser() {
         // given
         Long feedId = 1L;
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
 
         // when
-        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId);
+        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, null);
 
         // then
         assertThat(result).isNotNull();
@@ -91,6 +100,55 @@ class FeedDetailServiceTest {
         assertThat(result.getLikeCount()).isEqualTo(10);
         assertThat(result.getCommentCount()).isEqualTo(5);
         assertThat(result.getParticipantVoteCount()).isEqualTo(3);
+        assertThat(result.getIsLiked()).isFalse(); // 로그인하지 않은 사용자는 false
+    }
+
+    @Test
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요하지 않은 상태)")
+    void getFeedDetail_Success_WithUser_NotLiked() {
+        // given
+        Long feedId = 1L;
+        UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
+        User mockUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
+        
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
+        when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
+        when(userDetails.getUsername()).thenReturn("testuser");
+        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(mockUser));
+        when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, mockUser.getId())).thenReturn(false);
+
+        // when
+        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getFeedId()).isEqualTo(feedId);
+        assertThat(result.getTitle()).isEqualTo("테스트 피드");
+        assertThat(result.getIsLiked()).isFalse(); // 좋아요하지 않은 상태
+    }
+
+    @Test
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요한 상태)")
+    void getFeedDetail_Success_WithUser_Liked() {
+        // given
+        Long feedId = 1L;
+        UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
+        User mockUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
+        
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
+        when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
+        when(userDetails.getUsername()).thenReturn("testuser");
+        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(mockUser));
+        when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, mockUser.getId())).thenReturn(true);
+
+        // when
+        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getFeedId()).isEqualTo(feedId);
+        assertThat(result.getTitle()).isEqualTo("테스트 피드");
+        assertThat(result.getIsLiked()).isTrue(); // 좋아요한 상태
     }
 
     @Test
@@ -101,7 +159,7 @@ class FeedDetailServiceTest {
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> feedDetailService.getFeedDetail(feedId))
+        assertThatThrownBy(() -> feedDetailService.getFeedDetail(feedId, null))
                 .isInstanceOf(FeedNotFoundException.class)
                 .hasMessageContaining("피드를 찾을 수 없습니다");
     }
@@ -117,7 +175,7 @@ class FeedDetailServiceTest {
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> feedDetailService.getFeedDetail(feedId))
+        assertThatThrownBy(() -> feedDetailService.getFeedDetail(feedId, null))
                 .isInstanceOf(FeedNotFoundException.class)
                 .hasMessageContaining("피드를 찾을 수 없습니다");
     }
