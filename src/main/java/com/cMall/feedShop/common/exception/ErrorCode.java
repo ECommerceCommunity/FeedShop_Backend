@@ -25,7 +25,8 @@ public enum ErrorCode {
     ACCOUNT_ALREADY_VERIFIED(409, "U006", "이미 인증이 완료된 계정입니다."),
     VERIFICATION_TOKEN_EXPIRED(400, "U007", "인증 토큰이 만료되었습니다. 다시 회원가입을 시도하거나 인증 메일을 재발송해주세요."),
     OUT_OF_POINT(409, "U008", "사용 가능한 포인트가 부족합니다."),
-    ACCOUNT_NOT_VERIFIED(403, "U008", "이메일 인증이 완료되지 않은 계정입니다."),
+    INVALID_POINT_AMOUNT(400, "U009", "유효하지 않은 포인트 금액입니다."),
+    ACCOUNT_NOT_VERIFIED(403, "U010", "이메일 인증이 완료되지 않은 계정입니다."),
     DUPLICATE_LOGIN_ID(409, "U009", "이미 존재하는 로그인 ID입니다."),
     USER_ACCOUNT_NOT_ACTIVE(403, "U010", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."),
 
@@ -67,6 +68,8 @@ public enum ErrorCode {
     ORDER_CART_EMPTY(400, "O004", "장바구니가 비어 있습니다. 주문할 상품이 없습니다."),
     INVALID_POINT(400, "O005", "유효하지 않은 포인트입니다."),
     ORDER_CANCEL_FORBIDDEN(403, "O006", "취소할 수 없는 주문 상태입니다."),
+    INVALID_ORDER_QUANTITY(400, "O007", "주문 수량이 유효하지 않습니다."),
+    INVALID_OPTION_ID(400, "O008", "유효하지 않은 옵션 ID 입니다."),
 
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),
