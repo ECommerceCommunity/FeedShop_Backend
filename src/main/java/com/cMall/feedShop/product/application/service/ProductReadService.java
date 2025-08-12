@@ -4,6 +4,7 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.product.application.dto.response.info.ProductImageInfo;
 import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.application.dto.response.*;
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.exception.ProductException;
 import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.model.Product;
@@ -27,20 +28,12 @@ public class ProductReadService {
     private final DiscountCalculator discountCalculator;
 
     // 상품 목록 조회 (페이징)
-    public ProductPageResponse getProductList(int page, int size) {
-        if (page < 0) {
-            page = 0;
-        }
+    public ProductPageResponse getProductList(int page, int size, ProductSortType productSortType) {
+        // 페이지 정보 생성
+        Pageable pageable = createPageable(page, size);
 
-        // 기본값 20, 최대 100
-        if (size < 1 || size > 100) {
-            size = 20;
-        }
-
-        Pageable pageable = PageRequest.of(page, size);
-
-        // 삭제되지 않은 상품들을 Store, 이미지와 함께 조회. (모든 상품을 페이지별로)
-        Page<Product> productPage = productRepository.findAllByOrderByCreatedAtDesc(pageable);
+        // 정렬 기준에 따라 상품 목록 조회
+        Page<Product> productPage = getProductsBySortType(productSortType, pageable);
 
         // 각각의 상품(Product 엔티티)을 ProductListResponse(응답값)로 변환한다.
         Page<ProductListResponse> responsePage = productPage.map(this::convertToProductListResponse);
@@ -59,6 +52,20 @@ public class ProductReadService {
 
         // 상품(Product 엔티티)을 ProductDetailResponse(응답값)로 변환한다.
         return convertToProductDetailResponse(product);
+    }
+
+    // 페이지 정보 생성
+    private Pageable createPageable(int page, int size) {
+        page = Math.max(page, 0); // 페이지 번호는 0 이상
+        size = (size < 1 || size > 100) ? 20 : size; // 기본값 20, 최대 100
+        return PageRequest.of(page, size);
+    }
+
+    // 정렬 기준에 따라 상품 목록을 조회한다.
+    private Page<Product> getProductsBySortType(ProductSortType productSortType, Pageable pageable) {
+        return productSortType == ProductSortType.POPULAR
+                ? productRepository.findAllByOrderByWishNumberDesc(pageable)
+                : productRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
 
     // 각각의 상품들을 ProductListResponse로 변환한다.
