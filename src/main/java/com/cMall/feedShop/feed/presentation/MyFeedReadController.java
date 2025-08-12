@@ -89,9 +89,9 @@ public class MyFeedReadController {
         // 서비스 호출
         Page<MyFeedListResponseDto> feedPage;
         if (type != null) {
-            feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable);
+            feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable, userDetails);
         } else {
-            feedPage = myFeedReadService.getMyFeeds(userId, pageable);
+            feedPage = myFeedReadService.getMyFeeds(userId, pageable, userDetails);
         }
 
         // 응답 생성
@@ -155,7 +155,7 @@ public class MyFeedReadController {
             Pageable pageable = PageRequest.of(page, size, sortConfig);
 
             // 서비스 호출
-            Page<MyFeedListResponseDto> feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable);
+            Page<MyFeedListResponseDto> feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable, userDetails);
 
             // 응답 생성
             PaginatedResponse<MyFeedListResponseDto> response = PaginatedResponse.<MyFeedListResponseDto>builder()
