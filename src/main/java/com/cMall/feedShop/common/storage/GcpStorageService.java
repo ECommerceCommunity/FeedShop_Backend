@@ -31,6 +31,9 @@ public class GcpStorageService implements StorageService {
     @Value("${spring.cloud.gcp.storage.bucket:}")
     private String bucketName;
 
+    @Value("${app.cdn.base-url}")
+    private String cdnBaseUrl;
+
     private Storage storage;
 
     /**
@@ -110,7 +113,7 @@ public class GcpStorageService implements StorageService {
         String storedFilename = UUID.randomUUID().toString() + extension;
 
         // 🔥 경로 수정: images/{directory} 형태로 변경
-                        String objectName = "images/" + directoryPath + "/" + storedFilename;
+        String objectName = "images/" + directoryPath + "/" + storedFilename;
 
         // GCP Storage에 업로드
         BlobId blobId = BlobId.of(bucketName, objectName);
@@ -120,7 +123,7 @@ public class GcpStorageService implements StorageService {
 
         storage.create(blobInfo, file.getBytes());
 
-        String filePath = String.format("gs://%s/%s", bucketName, objectName);
+        String filePath = cdnBaseUrl + "/" + objectName;
 
         return UploadResult.builder()
                 .originalFilename(originalFilename)
@@ -177,7 +180,6 @@ public class GcpStorageService implements StorageService {
         if (filePath.startsWith(prefix)) {
             return filePath.substring(prefix.length());
         }
-
         return null;
     }
 

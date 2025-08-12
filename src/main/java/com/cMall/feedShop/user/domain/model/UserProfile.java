@@ -36,7 +36,7 @@ public class UserProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private String phone;
 
-    @Column(nullable = false, length = 20)
+    @Column(name="gender", nullable = true)
     private Gender gender;
 
     @Column(name="birth_date")

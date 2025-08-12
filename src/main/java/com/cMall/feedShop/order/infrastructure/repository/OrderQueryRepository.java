@@ -20,9 +20,9 @@ public interface OrderQueryRepository {
     // 사용자별 + 상태별 주문 목록 조회 (EntityGraph 대체)
     Page<Order> findByUserAndStatusOrderByCreatedAtDesc(Long userId, OrderStatus status, Pageable pageable);
 
-    // 사용자별 특정 주문 조회 (EntityGraph 대체)
+    // 주문 ID와 유저 ID로 주문 조회
     Optional<Order> findByOrderIdAndUserId(Long orderId, Long userId);
 
-    // 주문 ID와 판매자 ID로 주문 조회 (판매자 권한 검증용)
+    // 주문 ID와 판매자 ID로 주문 조회
     Optional<Order> findByOrderIdAndSellerId(Long orderId, Long sellerId);
 }
