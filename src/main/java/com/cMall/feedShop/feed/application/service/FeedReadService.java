@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,19 @@ public class FeedReadService {
     
     private final FeedRepository feedRepository;
     private final FeedMapper feedMapper;
+    private final FeedLikeService feedLikeService;
     
     /**
      * 피드 목록 조회 (필터링, 페이징, 정렬)
      * 
      * @param feedType 피드 타입 (DAILY, EVENT, RANKING, null=전체)
      * @param pageable 페이징 및 정렬 정보
+     * @param userDetails 사용자 정보 (선택적)
      * @return 피드 목록 페이지
      */
-    public Page<FeedListResponseDto> getFeeds(FeedType feedType, Pageable pageable) {
-        log.info("피드 목록 조회 - feedType: {}, page: {}, size: {}", 
-                feedType, pageable.getPageNumber(), pageable.getPageSize());
+    public Page<FeedListResponseDto> getFeeds(FeedType feedType, Pageable pageable, UserDetails userDetails) {
+        log.info("피드 목록 조회 - feedType: {}, page: {}, size: {}, userDetails: {}", 
+                feedType, pageable.getPageNumber(), pageable.getPageSize(), userDetails != null ? "있음" : "없음");
         
         Page<Feed> feedPage;
         
@@ -48,6 +51,35 @@ public class FeedReadService {
         // Feed 엔티티를 DTO로 변환
         Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
         
+        // 사용자별 좋아요 상태 설정
+        responsePage = responsePage.map(dto -> {
+            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            return FeedListResponseDto.builder()
+                    .feedId(dto.getFeedId())
+                    .title(dto.getTitle())
+                    .content(dto.getContent())
+                    .feedType(dto.getFeedType())
+                    .instagramId(dto.getInstagramId())
+                    .createdAt(dto.getCreatedAt())
+                    .likeCount(dto.getLikeCount())
+                    .commentCount(dto.getCommentCount())
+                    .participantVoteCount(dto.getParticipantVoteCount())
+                    .userId(dto.getUserId())
+                    .userNickname(dto.getUserNickname())
+                    .userProfileImg(dto.getUserProfileImg())
+                    .userLevel(dto.getUserLevel())
+                    .orderItemId(dto.getOrderItemId())
+                    .productName(dto.getProductName())
+                    .productSize(dto.getProductSize())
+                    .eventId(dto.getEventId())
+                    .eventTitle(dto.getEventTitle())
+                    .hashtags(dto.getHashtags())
+                    .imageUrls(dto.getImageUrls())
+                    .isLiked(isLiked)
+                    .isVoted(dto.getIsVoted())
+                    .build();
+        });
+        
         log.info("피드 목록 조회 완료 - 총 {}개, 현재 페이지 {}개", 
                 responsePage.getTotalElements(), responsePage.getNumberOfElements());
         
@@ -59,14 +91,44 @@ public class FeedReadService {
      * 
      * @param feedType 피드 타입
      * @param pageable 페이징 및 정렬 정보
+     * @param userDetails 사용자 정보 (선택적)
      * @return 피드 목록 페이지
      */
-    public Page<FeedListResponseDto> getFeedsByType(FeedType feedType, Pageable pageable) {
-        log.info("피드 타입별 조회 - feedType: {}, page: {}, size: {}", 
-                feedType, pageable.getPageNumber(), pageable.getPageSize());
+    public Page<FeedListResponseDto> getFeedsByType(FeedType feedType, Pageable pageable, UserDetails userDetails) {
+        log.info("피드 타입별 조회 - feedType: {}, page: {}, size: {}, userDetails: {}", 
+                feedType, pageable.getPageNumber(), pageable.getPageSize(), userDetails != null ? "있음" : "없음");
         
         Page<Feed> feedPage = feedRepository.findByFeedType(feedType.name(), pageable);
         Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
+        
+        // 사용자별 좋아요 상태 설정
+        responsePage = responsePage.map(dto -> {
+            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            return FeedListResponseDto.builder()
+                    .feedId(dto.getFeedId())
+                    .title(dto.getTitle())
+                    .content(dto.getContent())
+                    .feedType(dto.getFeedType())
+                    .instagramId(dto.getInstagramId())
+                    .createdAt(dto.getCreatedAt())
+                    .likeCount(dto.getLikeCount())
+                    .commentCount(dto.getCommentCount())
+                    .participantVoteCount(dto.getParticipantVoteCount())
+                    .userId(dto.getUserId())
+                    .userNickname(dto.getUserNickname())
+                    .userProfileImg(dto.getUserProfileImg())
+                    .userLevel(dto.getUserLevel())
+                    .orderItemId(dto.getOrderItemId())
+                    .productName(dto.getProductName())
+                    .productSize(dto.getProductSize())
+                    .eventId(dto.getEventId())
+                    .eventTitle(dto.getEventTitle())
+                    .hashtags(dto.getHashtags())
+                    .imageUrls(dto.getImageUrls())
+                    .isLiked(isLiked)
+                    .isVoted(dto.getIsVoted())
+                    .build();
+        });
         
         log.info("피드 타입별 조회 완료 - feedType: {}, 총 {}개, 현재 페이지 {}개", 
                 feedType, responsePage.getTotalElements(), responsePage.getNumberOfElements());
