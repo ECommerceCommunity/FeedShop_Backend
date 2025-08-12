@@ -1,7 +1,9 @@
 package com.cMall.feedShop.product.infrastructure.repository;
 
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,10 +29,12 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             BigDecimal minPrice,
             BigDecimal maxPrice,
             Long storeId,
+            ProductSortType productSortType,
             Pageable pageable
     ) {
         // 1. 동적 조건 생성
         BooleanBuilder whereClause = createWhereClause(categoryId, minPrice, maxPrice, storeId);
+        OrderSpecifier<?> orderBy = getOrderSpecifier(productSortType);
 
         // 2. 상품 목록 조회
         List<Product> products = jpaQueryFactory
@@ -39,7 +43,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .leftJoin(product.category, category).fetchJoin()  // 카테고리 정보 즉시 로딩
                 .leftJoin(product.productImages).fetchJoin()  // 이미지 정보 즉시 로딩
                 .where(whereClause)  // 동적 조건 적용
-                .orderBy(product.createdAt.desc())  // 최신순 정렬
+                .orderBy(orderBy)  // 최신순 정렬
                 .offset(pageable.getOffset())  // 페이징 시작점
                 .limit(pageable.getPageSize())  // 페이지 크기
                 .fetch();
@@ -84,5 +88,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
 
         return builder;
+    }
+
+    private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
+        return sortType == ProductSortType.POPULAR
+                ? product.wishNumber.desc()
+                : product.createdAt.desc();
     }
 }

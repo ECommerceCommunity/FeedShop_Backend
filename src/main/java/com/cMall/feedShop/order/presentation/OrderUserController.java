@@ -2,9 +2,15 @@ package com.cMall.feedShop.order.presentation;
 
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.order.application.dto.request.DirectOrderCreateRequest;
 import com.cMall.feedShop.order.application.dto.request.OrderCreateRequest;
 import com.cMall.feedShop.order.application.dto.request.OrderStatusUpdateRequest;
 import com.cMall.feedShop.order.application.dto.response.*;
+import com.cMall.feedShop.order.application.dto.response.OrderCreateResponse;
+import com.cMall.feedShop.order.application.dto.response.OrderDetailResponse;
+import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
+import com.cMall.feedShop.order.application.dto.response.PurchasedItemListResponse;
+import com.cMall.feedShop.order.application.service.DirectOrderService;
 import com.cMall.feedShop.order.application.service.OrderService;
 import com.cMall.feedShop.order.application.service.PurchasedItemService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 public class OrderUserController {
 
     private final OrderService orderService;
+    private final DirectOrderService directOrderService;
     private final PurchasedItemService purchasedItemService;
 
     /**
@@ -40,6 +47,22 @@ public class OrderUserController {
             @Valid @RequestBody OrderCreateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         OrderCreateResponse data = orderService.createOrder(request, userDetails);
+        return ApiResponse.success(data);
+    }
+
+    /**
+     * 직접 주문 생성 API
+     * POST /api/users/direct-orders
+     * USER 권한이 있는 로그인된 사용자만 주문 가능
+     */
+    @PostMapping("/direct-orders")
+    @PreAuthorize("hasRole('USER')")
+    @ApiResponseFormat(message = "주문이 성공적으로 생성되었습니다.")
+    public ApiResponse<OrderCreateResponse> createDirectOrder(
+            @Valid @RequestBody DirectOrderCreateRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        OrderCreateResponse data = directOrderService.createDirectOrder(request, userDetails);
         return ApiResponse.success(data);
     }
 

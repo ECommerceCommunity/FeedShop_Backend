@@ -67,6 +67,8 @@ public enum ErrorCode {
     ORDER_CART_EMPTY(400, "O004", "장바구니가 비어 있습니다. 주문할 상품이 없습니다."),
     INVALID_POINT(400, "O005", "유효하지 않은 포인트입니다."),
     ORDER_CANCEL_FORBIDDEN(403, "O006", "취소할 수 없는 주문 상태입니다."),
+    INVALID_ORDER_QUANTITY(400, "O007", "주문 수량이 유효하지 않습니다."),
+    INVALID_OPTION_ID(400, "O008", "유효하지 않은 옵션 ID 입니다."),
 
     // 리뷰 관련
     REVIEW_NOT_FOUND(404, "R001", "리뷰를 찾을 수 없습니다."),

@@ -1,5 +1,6 @@
 package com.cMall.feedShop.product.infrastructure.repository;
 
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,7 @@ public interface ProductQueryRepository {
             BigDecimal minPrice,
             BigDecimal maxPrice,
             Long storeId,
+            ProductSortType productSortType,
             Pageable pageable
     );
 }
