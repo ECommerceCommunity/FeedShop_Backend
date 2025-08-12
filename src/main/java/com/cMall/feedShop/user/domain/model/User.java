@@ -49,6 +49,9 @@ public class User extends BaseTimeEntity implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAddress> addresses = new java.util.ArrayList<>();
+
     @Column(name = "login_id", unique = true, nullable = false, length = 100)
     private String loginId;
 
