@@ -119,6 +119,36 @@ public class FeedLikeService {
                 .hasPrevious(feedLikes.hasPrevious())
                 .build();
     }
+
+    /**
+     * 사용자가 좋아요한 피드 ID 목록 조회
+     * - 로그인한 사용자가 좋아요를 누른 모든 피드 ID 반환
+     * - 프론트엔드에서 좋아요 상태 복원용
+     */
+    @Transactional(readOnly = true)
+    public List<Long> getMyLikedFeedIds(UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null) {
+            log.warn("인증 정보가 없어서 좋아요 피드 목록을 조회할 수 없습니다.");
+            return List.of();
+        }
+        
+        String loginId = userDetails.getUsername();
+        User user = userRepository.findByLoginId(loginId)
+                .orElse(null);
+        
+        if (user == null) {
+            log.warn("사용자를 찾을 수 없어서 좋아요 피드 목록을 조회할 수 없습니다. - loginId: {}", loginId);
+            return List.of();
+        }
+        
+        log.info("사용자별 좋아요 피드 목록 조회 - userId: {}", user.getId());
+        
+        List<Long> likedFeedIds = feedLikeRepository.findFeedIdsByUserId(user.getId());
+        
+        log.info("사용자별 좋아요 피드 목록 조회 완료 - userId: {}, 좋아요한 피드 수: {}", user.getId(), likedFeedIds.size());
+        
+        return likedFeedIds;
+    }
     
     /**
      * FeedLike 엔티티를 LikeUserResponseDto로 변환
@@ -158,5 +188,28 @@ public class FeedLikeService {
     private Integer getUserLevel(User user) {
         // TODO: 추후 UserProfile에 level 필드 추가 시 구현
         return null;
+    }
+    
+    /**
+     * 사용자별 좋아요 상태 확인
+     * - 공통으로 사용되는 좋아요 상태 확인 로직
+     * - 다른 서비스에서 호출하여 사용
+     */
+    public boolean isLikedByUser(Long feedId, UserDetails userDetails) {
+        if (userDetails == null || userDetails.getUsername() == null) {
+            return false;
+        }
+        
+        try {
+            User user = userRepository.findByLoginId(userDetails.getUsername()).orElse(null);
+            if (user == null) {
+                return false;
+            }
+            
+            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, user.getId());
+        } catch (Exception e) {
+            log.warn("사용자별 좋아요 상태 확인 실패 - feedId: {}, error: {}", feedId, e.getMessage());
+            return false;
+        }
     }
 }
