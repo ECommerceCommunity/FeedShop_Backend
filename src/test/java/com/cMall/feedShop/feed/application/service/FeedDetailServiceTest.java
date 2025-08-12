@@ -35,10 +35,7 @@ class FeedDetailServiceTest {
     private FeedMapper feedMapper;
 
     @Mock
-    private FeedLikeRepository feedLikeRepository;
-
-    @Mock
-    private UserRepository userRepository;
+    private FeedLikeService feedLikeService;
 
     @InjectMocks
     private FeedDetailService feedDetailService;
@@ -109,13 +106,10 @@ class FeedDetailServiceTest {
         // given
         Long feedId = 1L;
         UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
-        User mockUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
         
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
-        when(userDetails.getUsername()).thenReturn("testuser");
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(mockUser));
-        when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, mockUser.getId())).thenReturn(false);
+        when(feedLikeService.isLikedByUser(feedId, userDetails)).thenReturn(false);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
@@ -133,13 +127,10 @@ class FeedDetailServiceTest {
         // given
         Long feedId = 1L;
         UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
-        User mockUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
         
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
-        when(userDetails.getUsername()).thenReturn("testuser");
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(mockUser));
-        when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, mockUser.getId())).thenReturn(true);
+        when(feedLikeService.isLikedByUser(feedId, userDetails)).thenReturn(true);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
