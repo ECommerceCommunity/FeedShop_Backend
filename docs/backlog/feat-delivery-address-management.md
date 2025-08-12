@@ -1,8 +1,5 @@
-# feat/delivery - 배송지 관리 기능 구현
 
-## 기능요구사항 ID - 기능사항명
-
-**FEAT-001** - 사용자 배송지 관리 기능
+사용자 배송지 관리 기능
 
 ## User Story
 
@@ -101,7 +98,6 @@
 - [x] Mock 프레임워크를 활용한 완전한 테스트 격리
 - [x] Given-When-Then 패턴 적용
 
-
 ## 테스트 결과
 
 ### 단위 테스트 커버리지
@@ -190,9 +186,3 @@ Request: (새 배송지 등록과 동일한 형식)
 DELETE /api/users/addresses/{addressId}
 Authorization: Bearer {JWT_TOKEN}
 ```
-
-
----
-
-**마지막 업데이트**: 2024년 12월 19일  
-**상태**: 백엔드 API 구현 완료, 단위 테스트 완료 ✅
