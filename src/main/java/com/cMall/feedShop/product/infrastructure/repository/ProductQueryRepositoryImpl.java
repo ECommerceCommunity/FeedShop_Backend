@@ -1,5 +1,6 @@
 package com.cMall.feedShop.product.infrastructure.repository;
 
+import com.cMall.feedShop.product.application.dto.request.ProductSearchRequest;
 import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.querydsl.core.BooleanBuilder;
@@ -12,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static com.cMall.feedShop.product.domain.model.QCategory.category;
@@ -25,12 +25,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public long countByKeyword(String keyword) {
-        BooleanBuilder whereClause = new BooleanBuilder();
-
-        if (StringUtils.hasText(keyword)) {
-            whereClause.and(product.name.containsIgnoreCase(keyword.trim()));
-        }
+    public long countWithAllConditions(ProductSearchRequest request) {
+        BooleanBuilder whereClause = createAllConditionsWhereClause(request);
 
         Long count = jpaQueryFactory
                 .select(product.count())
@@ -42,121 +38,59 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public long countWithFilters(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, Long storeId) {
-        BooleanBuilder whereClause = createWhereClause(categoryId, minPrice, maxPrice, storeId);
+    public Page<Product> findWithAllConditions(ProductSearchRequest request, ProductSortType sortType, Pageable pageable) {
+        BooleanBuilder whereClause = createAllConditionsWhereClause(request);
+        OrderSpecifier<?> orderBy = getOrderSpecifier(sortType);
 
-        Long count = jpaQueryFactory
+        List<Product> products = jpaQueryFactory
+                .selectFrom(product)
+                .leftJoin(product.store, store).fetchJoin()
+                .leftJoin(product.category, category).fetchJoin()
+                .leftJoin(product.productImages).fetchJoin()
+                .where(whereClause)
+                .orderBy(orderBy)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long totalCount = jpaQueryFactory
                 .select(product.count())
                 .from(product)
                 .where(whereClause)
                 .fetchOne();
 
-        return count != null ? count : 0;
-    }
-
-    @Override
-    public long countAll() {
-        Long count = jpaQueryFactory
-                .select(product.count())
-                .from(product)
-                .fetchOne();
-
-        return count != null ? count : 0;
-    }
-
-    @Override
-    public Page<Product> searchProductsByName(String keyword, Pageable pageable) {
-        BooleanBuilder whereClause = new BooleanBuilder();
-
-        // 키워드가 있으면 상품명 검색 조건을 추가한다. (부분 일치, 대소문자 구분 없음)
-        // 키워드가 없으면 검색 조건을 추가하지 않는다. => 모든 상품을 조회한다.
-        if (StringUtils.hasText(keyword)) {
-            whereClause.and(product.name.containsIgnoreCase(keyword.trim()));
-        }
-
-        List<Product> products = jpaQueryFactory
-                .selectFrom(product)
-                .leftJoin(product.store, store).fetchJoin()  // 스토어 정보 즉시 로딩
-                .leftJoin(product.category, category).fetchJoin()  // 카테고리 정보 즉시 로딩
-                .leftJoin(product.productImages).fetchJoin()  // 이미지 정보 즉시 로딩
-                .where(whereClause)  // 동적 조건 적용
-                .orderBy(product.createdAt.desc())  // 최신순 정렬
-                .offset(pageable.getOffset())  // 페이징 시작점
-                .limit(pageable.getPageSize())  // 페이지 크기
-                .fetch();
-
-        // 전체 개수 조회
-        Long totalCount = jpaQueryFactory
-                .select(product.count())
-                .from(product)
-                .where(whereClause)  // 같은 조건 적용
-                .fetchOne();
-
         return new PageImpl<>(products, pageable, totalCount != null ? totalCount : 0);
     }
 
-    @Override
-    public Page<Product> findProductsWithFilters(
-            Long categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Long storeId,
-            ProductSortType productSortType,
-            Pageable pageable
-    ) {
-        // 1. 동적 조건 생성
-        BooleanBuilder whereClause = createWhereClause(categoryId, minPrice, maxPrice, storeId);
-        OrderSpecifier<?> orderBy = getOrderSpecifier(productSortType);
-
-        // 2. 상품 목록 조회
-        List<Product> products = jpaQueryFactory
-                .selectFrom(product)
-                .leftJoin(product.store, store).fetchJoin()  // 스토어 정보 즉시 로딩
-                .leftJoin(product.category, category).fetchJoin()  // 카테고리 정보 즉시 로딩
-                .leftJoin(product.productImages).fetchJoin()  // 이미지 정보 즉시 로딩
-                .where(whereClause)  // 동적 조건 적용
-                .orderBy(orderBy)  // 최신순 정렬
-                .offset(pageable.getOffset())  // 페이징 시작점
-                .limit(pageable.getPageSize())  // 페이지 크기
-                .fetch();
-
-        // 3. 전체 개수 조회
-        Long totalCount = jpaQueryFactory
-                .select(product.count())
-                .from(product)
-                .where(whereClause)  // 같은 조건 적용
-                .fetchOne();
-
-        // 4. Page 객체 생성 및 반환
-        return new PageImpl<>(products, pageable, totalCount != null ? totalCount : 0);
-    }
-
-    private BooleanBuilder createWhereClause(
-            Long categoryId,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Long storeId
-    ) {
+    /**
+     * 모든 조건을 포함한 WHERE 절 생성
+     */
+    private BooleanBuilder createAllConditionsWhereClause(ProductSearchRequest request) {
         BooleanBuilder builder = new BooleanBuilder();
 
-        // 1. 카테고리 필터링 (선택)
-        if (categoryId != null) {
-            builder.and(product.category.categoryId.eq(categoryId));
+        // 1. 키워드 검색 조건
+        if (StringUtils.hasText(request.getKeyword())) {
+            builder.and(product.name.containsIgnoreCase(request.getKeyword().trim()));
         }
 
-        // 2. 최소 가격 필터링 (선택)
-        if (minPrice != null) {
-            builder.and(product.price.goe(minPrice));
+        // 2. 카테고리 필터링
+        if (request.getCategoryId() != null) {
+            builder.and(product.category.categoryId.eq(request.getCategoryId()));
         }
 
-        // 3. 최대 가격 필터링 (선택)
-        if (maxPrice != null) {
-            builder.and(product.price.loe(maxPrice));
+        // 3. 최소 가격 필터링
+        if (request.getMinPrice() != null) {
+            builder.and(product.price.goe(request.getMinPrice()));
         }
 
-        // 4. 스토어 필터링 (선택)
-        if (storeId != null) {
-            builder.and(product.store.storeId.eq(storeId));
+        // 4. 최대 가격 필터링
+        if (request.getMaxPrice() != null) {
+            builder.and(product.price.loe(request.getMaxPrice()));
+        }
+
+        // 5. 스토어 필터링
+        if (request.getStoreId() != null) {
+            builder.and(product.store.storeId.eq(request.getStoreId()));
         }
 
         return builder;
