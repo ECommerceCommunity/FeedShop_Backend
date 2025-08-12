@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +23,77 @@ import static com.cMall.feedShop.store.domain.model.QStore.store;
 @RequiredArgsConstructor
 public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
+
+    @Override
+    public long countByKeyword(String keyword) {
+        BooleanBuilder whereClause = new BooleanBuilder();
+
+        if (StringUtils.hasText(keyword)) {
+            whereClause.and(product.name.containsIgnoreCase(keyword.trim()));
+        }
+
+        Long count = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .where(whereClause)
+                .fetchOne();
+
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public long countWithFilters(Long categoryId, BigDecimal minPrice, BigDecimal maxPrice, Long storeId) {
+        BooleanBuilder whereClause = createWhereClause(categoryId, minPrice, maxPrice, storeId);
+
+        Long count = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .where(whereClause)
+                .fetchOne();
+
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public long countAll() {
+        Long count = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .fetchOne();
+
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public Page<Product> searchProductsByName(String keyword, Pageable pageable) {
+        BooleanBuilder whereClause = new BooleanBuilder();
+
+        // 키워드가 있으면 상품명 검색 조건을 추가한다. (부분 일치, 대소문자 구분 없음)
+        // 키워드가 없으면 검색 조건을 추가하지 않는다. => 모든 상품을 조회한다.
+        if (StringUtils.hasText(keyword)) {
+            whereClause.and(product.name.containsIgnoreCase(keyword.trim()));
+        }
+
+        List<Product> products = jpaQueryFactory
+                .selectFrom(product)
+                .leftJoin(product.store, store).fetchJoin()  // 스토어 정보 즉시 로딩
+                .leftJoin(product.category, category).fetchJoin()  // 카테고리 정보 즉시 로딩
+                .leftJoin(product.productImages).fetchJoin()  // 이미지 정보 즉시 로딩
+                .where(whereClause)  // 동적 조건 적용
+                .orderBy(product.createdAt.desc())  // 최신순 정렬
+                .offset(pageable.getOffset())  // 페이징 시작점
+                .limit(pageable.getPageSize())  // 페이지 크기
+                .fetch();
+
+        // 전체 개수 조회
+        Long totalCount = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .where(whereClause)  // 같은 조건 적용
+                .fetchOne();
+
+        return new PageImpl<>(products, pageable, totalCount != null ? totalCount : 0);
+    }
 
     @Override
     public Page<Product> findProductsWithFilters(
