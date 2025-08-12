@@ -47,6 +47,7 @@ class GcpStorageServiceTest {
         ReflectionTestUtils.setField(gcpStorageService, "projectId", PROJECT_ID);
         ReflectionTestUtils.setField(gcpStorageService, "bucketName", BUCKET_NAME);
         ReflectionTestUtils.setField(gcpStorageService, "storage", storage);
+        ReflectionTestUtils.setField(gcpStorageService, "cdnBaseUrl", "https://mock-cdn.example.com");
     }
 
     @Test
@@ -71,7 +72,7 @@ class GcpStorageServiceTest {
         UploadResult result = results.get(0);
         assertThat(result.getOriginalFilename()).isEqualTo("test-image.jpg");
         assertThat(result.getStoredFilename()).matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.jpg");
-        assertThat(result.getFilePath()).isEqualTo("gs://test-bucket/images/reviews/" + result.getStoredFilename());
+        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/reviews/" + result.getStoredFilename());
         assertThat(result.getFileSize()).isEqualTo(12L);
         assertThat(result.getContentType()).isEqualTo("image/jpeg");
 
