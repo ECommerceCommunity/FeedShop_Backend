@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/feeds")
@@ -43,6 +45,14 @@ public class FeedLikeController {
             @RequestParam(defaultValue = "20") int size) {
         log.info("좋아요 사용자 목록 조회 요청 - feedId: {}, page: {}, size: {}", feedId, page, size);
         PaginatedResponse<LikeUserResponseDto> result = feedLikeService.getLikedUsers(feedId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/my-likes")
+    @ApiResponseFormat(message = "내가 좋아요한 피드 목록입니다.", status = 200)
+    public ResponseEntity<ApiResponse<List<Long>>> getMyLikedFeeds(@AuthenticationPrincipal UserDetails userDetails) {
+        log.info("내 좋아요 피드 목록 조회 요청");
+        List<Long> result = feedLikeService.getMyLikedFeedIds(userDetails);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 }
