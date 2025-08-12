@@ -10,7 +10,7 @@ import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
-import com.cMall.feedShop.user.application.service.RecaptchaService;
+import com.cMall.feedShop.common.captcha.GoogleRecaptchaVerificationService;
 import com.cMall.feedShop.user.application.service.UserAuthService;
 import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
