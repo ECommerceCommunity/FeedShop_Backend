@@ -1,13 +1,12 @@
-package com.cMall.feedShop.common.service;
+package com.cMall.feedShop.common.storage;
 
+import com.cMall.feedShop.common.dto.UploadResult;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.*;
-import lombok.Builder;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,14 +22,17 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "gcp.storage.enabled", havingValue = "true", matchIfMissing = false)
-public class GcpStorageService {
+@Profile("prod")
+public class GcpStorageService implements StorageService {
 
     @Value("${spring.cloud.gcp.project-id:}")
     private String projectId;
 
     @Value("${spring.cloud.gcp.storage.bucket:}")
     private String bucketName;
+
+    @Value("${app.cdn.base-url}")
+    private String cdnBaseUrl;
 
     private Storage storage;
 
@@ -78,7 +80,7 @@ public class GcpStorageService {
     /**
      * 여러 파일을 GCP Storage에 업로드
      */
-    public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, String directory) {
+    public List<UploadResult> uploadFilesWithDetails(List<MultipartFile> files, UploadDirectory directory) {
         if (storage == null) {
             log.error("GCP Storage가 초기화되지 않았습니다.");
             throw new RuntimeException("GCP Storage가 초기화되지 않았습니다.");
@@ -89,7 +91,7 @@ public class GcpStorageService {
 
         for (MultipartFile file : files) {
             try {
-                UploadResult result = uploadSingleFile(file, directory);
+                UploadResult result = uploadSingleFile(file, directory.getPath());
                 results.add(result);
                 log.info("✅ 업로드 성공: {} -> {}", file.getOriginalFilename(), result.getFilePath());
             } catch (Exception e) {
@@ -105,13 +107,13 @@ public class GcpStorageService {
     /**
      * 단일 파일 업로드
      */
-    private UploadResult uploadSingleFile(MultipartFile file, String directory) throws IOException {
+    private UploadResult uploadSingleFile(MultipartFile file, String directoryPath) throws IOException {
         String originalFilename = file.getOriginalFilename();
         String extension = getFileExtension(originalFilename);
         String storedFilename = UUID.randomUUID().toString() + extension;
 
         // 🔥 경로 수정: images/{directory} 형태로 변경
-        String objectName = "images/" + directory + "/" + storedFilename;
+        String objectName = "images/" + directoryPath + "/" + storedFilename;
 
         // GCP Storage에 업로드
         BlobId blobId = BlobId.of(bucketName, objectName);
@@ -121,7 +123,7 @@ public class GcpStorageService {
 
         storage.create(blobInfo, file.getBytes());
 
-        String filePath = String.format("gs://%s/%s", bucketName, objectName);
+        String filePath = cdnBaseUrl + "/" + objectName;
 
         return UploadResult.builder()
                 .originalFilename(originalFilename)
@@ -178,7 +180,6 @@ public class GcpStorageService {
         if (filePath.startsWith(prefix)) {
             return filePath.substring(prefix.length());
         }
-
         return null;
     }
 
@@ -190,18 +191,5 @@ public class GcpStorageService {
             return "";
         }
         return filename.substring(filename.lastIndexOf("."));
-    }
-
-    /**
-     * 파일 업로드 결과 DTO
-     */
-    @Builder
-    @Getter
-    public static class UploadResult {
-        private String originalFilename;
-        private String storedFilename;
-        private String filePath;
-        private Long fileSize;
-        private String contentType;
     }
 }
