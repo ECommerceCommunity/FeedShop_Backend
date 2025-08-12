@@ -91,7 +91,14 @@ public enum ErrorCode {
     FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
     FEED_ACCESS_DENIED(403, "F002", "해당 피드에 대한 권한이 없습니다."),
     DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
-    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다.");
+    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다."),
+
+    // 리워드
+    REWARD_POLICY_NOT_FOUND(404, "RW001", "리워드 정책을 찾을 수 없습니다."),
+    DAILY_REWARD_LIMIT_EXCEEDED(409, "RW002", "일일 리워드 획득 한도를 초과했습니다."),
+    MONTHLY_REWARD_LIMIT_EXCEEDED(409, "RW003", "월간 리워드 획득 한도를 초과했습니다."),
+    REWARD_ALREADY_GRANTED(409, "RW004", "이미 지급된 리워드입니다."),
+    ACCESS_DENIED(403, "RW005", "접근 권한이 없습니다.");
 
     private final int status;
     private final String code;
