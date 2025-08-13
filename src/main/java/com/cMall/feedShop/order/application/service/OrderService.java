@@ -73,7 +73,7 @@ public class OrderService {
         Order order = orderCommonService.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
 
         // 7. 주문 후 처리
-        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation);
+        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
 
         // 8. 장바구니 아이템 삭제
         cartItemRepository.deleteAll(selectedCartItems);

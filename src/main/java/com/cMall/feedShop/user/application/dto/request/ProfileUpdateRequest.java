@@ -1,5 +1,6 @@
 package com.cMall.feedShop.user.application.dto.request;
-
+import com.cMall.feedShop.user.domain.enums.FootArchType;
+import com.cMall.feedShop.user.domain.enums.FootWidth;
 import com.cMall.feedShop.user.domain.enums.Gender; // Import the correct Gender enum
 
 import jakarta.validation.constraints.Size;
@@ -12,7 +13,6 @@ import java.time.LocalDate;
 @Setter
 @Builder
 public class ProfileUpdateRequest {
-
     @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하로 입력해주세요.")
     private String name;
 
@@ -26,7 +26,13 @@ public class ProfileUpdateRequest {
 
     private Integer height;
 
+    private Integer weight;
+
     private Integer footSize;
+
+    private FootWidth footWidth;
+
+    private FootArchType footArchType;
 
     private String profileImageUrl;
 
