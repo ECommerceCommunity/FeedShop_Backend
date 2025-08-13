@@ -30,8 +30,6 @@ public class ProfileUpdateRequest {
 
     private Integer weight;
 
-    private Integer footSize;
-
     private FootWidth footWidth;
 
     private FootArchType footArchType;
