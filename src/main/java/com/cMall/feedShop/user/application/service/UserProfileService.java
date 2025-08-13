@@ -48,28 +48,30 @@ public class UserProfileService {
         UserProfile userProfile = user.getUserProfile();
 
         if (userProfile == null) {
-            // 2. 프로필이 없으면 새로 생성합니다.
-            // builder를 사용하여 필요한 초기값을 모두 채웁니다.
             userProfile = UserProfile.builder()
-                    .user(user) // 양방향 관계 설정을 생성자에서 처리하도록 합니다.
+                    .user(user)
                     .name(request.getName())
                     .nickname(request.getNickname())
                     .phone(request.getPhone())
                     .height(request.getHeight())
+                    .weight(request.getWeight())
                     .footSize(request.getFootSize())
+                    .footWidth(request.getFootWidth())
+                    .footArchType(request.getFootArchType())
                     .gender(request.getGender())
                     .birthDate(request.getBirthDate())
                     .profileImageUrl(null)
                     .build();
         } else {
-            // 3. 프로필이 이미 있으면 업데이트합니다.
-            // 객체 내부의 update 메서드를 사용하여 캡슐화를 유지합니다.
             userProfile.updateProfile(
                     request.getName(),
                     request.getNickname(),
                     request.getPhone(),
                     request.getHeight(),
+                    request.getWeight(),
                     request.getFootSize(),
+                    request.getFootWidth(),
+                    request.getFootArchType(),
                     request.getGender(),
                     request.getBirthDate()
             );
