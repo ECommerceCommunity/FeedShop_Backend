@@ -51,4 +51,13 @@ public interface ReviewImageRepository {
      * @return 조건에 맞는 활성 이미지 목록
      */
     List<ReviewImage> findActiveImagesByReviewIdAndImageIds(Long reviewId, List<Long> imageIds);
+
+
+    /**
+     * 리뷰 ID로 활성 이미지들을 조회
+     * @param reviewId 리뷰 ID
+     * @return 활성 상태인 이미지 목록
+     */
+    List<ReviewImage> findByReviewReviewIdAndDeletedFalse(Long reviewId);
+
 }
