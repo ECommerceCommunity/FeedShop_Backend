@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -77,5 +79,30 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     @Override
     public boolean existsActiveReviewByUserIdAndProductId(Long userId, Long productId) {
         return reviewQueryRepository.existsActiveReviewByUserIdAndProductId(userId, productId);
+    }
+
+    @Override
+    public List<Review> findDeletedReviewsByUserId(Long userId) {
+        return reviewQueryRepository.findDeletedReviewsByUserId(userId);
+    }
+
+    @Override
+    public List<Review> findDeletedReviewsBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        return reviewQueryRepository.findDeletedReviewsBetween(startDate, endDate);
+    }
+
+    @Override
+    public Long countDeletedReviewsByProductId(Long productId) {
+        return reviewQueryRepository.countDeletedReviewsByProductId(productId);
+    }
+
+    @Override
+    public Long countAllReviewsByProductId(Long productId) {
+        return reviewQueryRepository.countAllReviewsByProductId(productId);
+    }
+
+    @Override
+    public Long countDeletedReviewsByUserId(Long userId) {
+        return reviewQueryRepository.countDeletedReviewsByUserId(userId);
     }
 }
