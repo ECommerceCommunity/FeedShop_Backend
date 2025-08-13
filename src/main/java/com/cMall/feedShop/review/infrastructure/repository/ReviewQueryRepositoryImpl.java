@@ -14,7 +14,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -196,5 +197,68 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
                 .fetchOne();
 
         return count != null && count > 0;
+    }
+
+    @Override
+    public List<Review> findDeletedReviewsByUserId(Long userId) {
+        return queryFactory
+                .selectFrom(review)
+                .where(
+                        review.user.id.eq(userId),
+                        review.status.eq(ReviewStatus.DELETED)
+                )
+                .orderBy(review.updatedAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<Review> findDeletedReviewsBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        return queryFactory
+                .selectFrom(review)
+                .where(
+                        review.status.eq(ReviewStatus.DELETED),
+                        review.updatedAt.between(startDate, endDate)
+                )
+                .orderBy(review.updatedAt.desc())
+                .fetch();
+    }
+
+    @Override
+    public Long countDeletedReviewsByProductId(Long productId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(
+                        review.product.productId.eq(productId),
+                        review.status.eq(ReviewStatus.DELETED)
+                )
+                .fetchOne();
+        
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public Long countAllReviewsByProductId(Long productId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(review.product.productId.eq(productId))
+                .fetchOne();
+        
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public Long countDeletedReviewsByUserId(Long userId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(
+                        review.user.id.eq(userId),
+                        review.status.eq(ReviewStatus.DELETED)
+                )
+                .fetchOne();
+        
+        return count != null ? count : 0L;
     }
 }
