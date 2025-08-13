@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
 @Table(name = "reviews")
 @Getter
 @NoArgsConstructor
+@Slf4j
 public class Review extends BaseTimeEntity {
 
     @Id
@@ -291,5 +293,13 @@ public class Review extends BaseTimeEntity {
      */
     public boolean hasCompleteReviewElements() {
         return this.sizeFit != null && this.cushion != null && this.stability != null;
+    }
+
+    /**
+     * 리뷰를 삭제 상태로 변경 (소프트 삭제)
+     */
+    public void markAsDeleted() {
+        this.status = ReviewStatus.DELETED;
+        log.info("리뷰가 삭제 상태로 변경됨: reviewId={}", this.reviewId);
     }
 }
