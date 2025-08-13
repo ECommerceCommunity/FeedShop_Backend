@@ -34,14 +34,13 @@ public interface UserCouponRepository extends JpaRepository<UserCoupon,Integer> 
     // 사용자 이메일로 쿠폰 페이징 조회
     Page<UserCoupon> findByUserEmail(String email, Pageable pageable);
 
-    // 사용자 이메일과 쿠폰 상태로 쿠폰 페이징 조회
-    Page<UserCoupon> findByUserEmailAndCouponStatus(String email, UserCouponStatus couponStatus, Pageable pageable);
-
     // 사용자 이메일과 쿠폰 코드로 쿠폰 조회
     Optional<UserCoupon> findByUserEmailAndCouponCode(String email, String couponCode);
 
     // 사용자 이메일과 상태, 만료 날짜로 쿠폰 조회 (만료되지 않은 쿠폰)
     List<UserCoupon> findByUserEmailAndCouponStatusAndExpiresAtAfter(String email, UserCouponStatus couponStatus, LocalDateTime now);
+
+    Page<UserCoupon> findByUserEmailAndCouponStatusAndExpiresAtAfter(String email, UserCouponStatus status, LocalDateTime now, Pageable pageable);
 
 
     // 쿠폰 코드로 쿠폰 존재 여부 확인
