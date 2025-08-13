@@ -1,5 +1,7 @@
 package com.cMall.feedShop.user.application.dto.request;
 
+import com.cMall.feedShop.user.domain.enums.FootArchType;
+import com.cMall.feedShop.user.domain.enums.FootWidth;
 import com.cMall.feedShop.user.domain.enums.Gender; // Import the correct Gender enum
 
 import jakarta.validation.constraints.Size;
@@ -26,7 +28,13 @@ public class ProfileUpdateRequest {
 
     private Integer height;
 
+    private Integer weight;
+
     private Integer footSize;
+
+    private FootWidth footWidth;
+
+    private FootArchType footArchType;
 
     private String profileImageUrl;
 
