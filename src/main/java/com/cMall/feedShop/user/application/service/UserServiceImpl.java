@@ -7,6 +7,7 @@ import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.exception.AccountNotVerifiedException;
+import com.cMall.feedShop.user.domain.exception.DuplicateEmailException;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
@@ -57,7 +58,7 @@ public class UserServiceImpl implements UserService{
 
             if (existingUser.getStatus() == UserStatus.ACTIVE) {
                 // 이미 활성(ACTIVE) 상태의 사용자가 해당 이메일로 가입되어 있다면
-                throw new UserException(DUPLICATE_EMAIL);
+                throw new DuplicateEmailException();
             } else if (existingUser.getStatus() == UserStatus.PENDING) {
                 // PENDING 상태의 사용자가 존재한다면 (이메일 인증 미완료)
                 updateVerificationToken(existingUser);
@@ -160,7 +161,7 @@ public class UserServiceImpl implements UserService{
         user.setStatus(UserStatus.ACTIVE);
         user.setVerificationToken(null);
         user.setVerificationTokenExpiry(null);
-        userRepository.save(user); // 최종 상태 변경 및 토큰 초기화 저장
+        userRepository.save(user);
     }
 
     public void deleteUser(User user) {
@@ -240,7 +241,7 @@ public class UserServiceImpl implements UserService{
         List<User> users = userRepository.findByUserProfile_NameAndUserProfile_Phone(username.trim(), phoneNumber.trim());
 
         if (users.isEmpty()) {
-            throw new UserNotFoundException("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
 
         List<UserResponse> userResponses = new ArrayList<>();
@@ -272,7 +273,7 @@ public class UserServiceImpl implements UserService{
         }
 
         if (userResponses.isEmpty()) {
-            throw new UserNotFoundException("입력하신 정보와 일치하는 활성화된 계정을 찾을 수 없습니다.");
+            throw new UserNotFoundException();
         }
         return userResponses;
     }
