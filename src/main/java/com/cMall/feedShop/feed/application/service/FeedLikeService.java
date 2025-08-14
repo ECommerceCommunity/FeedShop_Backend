@@ -40,6 +40,10 @@ public class FeedLikeService {
      */
     @Transactional
     public LikeToggleResponseDto toggleLike(Long feedId, Long userId) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, "인증이 필요합니다.");
+        }
+        
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
 

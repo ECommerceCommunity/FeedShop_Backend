@@ -37,6 +37,9 @@ class FeedDetailServiceTest {
     @Mock
     private FeedLikeService feedLikeService;
 
+    @Mock
+    private FeedServiceUtils feedServiceUtils;
+
     @InjectMocks
     private FeedDetailService feedDetailService;
 
@@ -109,7 +112,8 @@ class FeedDetailServiceTest {
         
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
-        when(feedLikeService.isLikedByUser(feedId, userDetails)).thenReturn(false);
+        when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
+        when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(false);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
@@ -130,7 +134,8 @@ class FeedDetailServiceTest {
         
         when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
-        when(feedLikeService.isLikedByUser(feedId, userDetails)).thenReturn(true);
+        when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
+        when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(true);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);

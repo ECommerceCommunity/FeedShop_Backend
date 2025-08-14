@@ -1,6 +1,7 @@
 package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
@@ -32,6 +33,7 @@ public class MyFeedReadService {
     private final UserRepository userRepository;
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
+    private final FeedServiceUtils feedServiceUtils;
 
     /**
      * 사용자의 마이피드 목록 조회 (페이징)
@@ -58,7 +60,7 @@ public class MyFeedReadService {
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
-                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -117,7 +119,7 @@ public class MyFeedReadService {
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
-                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -188,24 +190,39 @@ public class MyFeedReadService {
 
         return count;
     }
-    
+
     /**
-     * UserDetails에서 userId 추출
+     * 사용자의 모든 피드 타입별 개수 조회
+     *
+     * @param userId 사용자 ID
+     * @return 모든 피드 타입별 개수
      */
-    private Long getUserIdFromUserDetails(UserDetails userDetails) {
-        if (userDetails == null) {
-            log.warn("UserDetails가 null입니다.");
-            return null;
-        }
-        String loginId = userDetails.getUsername();
-        log.debug("UserDetails에서 사용자 정보 추출 완료");
-        Optional<User> userOptional = userRepository.findByLoginId(loginId);
-        if (userOptional.isEmpty()) {
-            log.warn("login_id로 사용자를 찾을 수 없습니다");
-            return null;
-        }
-        User user = userOptional.get();
-        log.debug("사용자 ID 추출 완료: {}", user.getId());
-        return user.getId();
+    public MyFeedCountResponse getMyFeedCounts(Long userId) {
+        log.info("마이피드 전체 개수 조회 - userId: {}", userId);
+
+        // 사용자 존재 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new FeedAccessDeniedException(userId, "존재하지 않는 사용자입니다."));
+
+        // 전체 개수
+        long totalCount = feedRepository.countByUserId(userId);
+        
+        // 타입별 개수
+        long dailyCount = feedRepository.countByUserIdAndFeedType(userId, FeedType.DAILY.name());
+        long eventCount = feedRepository.countByUserIdAndFeedType(userId, FeedType.EVENT.name());
+        long rankingCount = feedRepository.countByUserIdAndFeedType(userId, FeedType.RANKING.name());
+
+        MyFeedCountResponse response = MyFeedCountResponse.builder()
+                .totalCount(totalCount)
+                .dailyCount(dailyCount)
+                .eventCount(eventCount)
+                .rankingCount(rankingCount)
+                .build();
+
+        log.info("마이피드 전체 개수 조회 완료 - userId: {}, total: {}, daily: {}, event: {}, ranking: {}", 
+                userId, totalCount, dailyCount, eventCount, rankingCount);
+
+        return response;
     }
+    
 } 

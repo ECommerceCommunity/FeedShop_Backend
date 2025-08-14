@@ -3,6 +3,7 @@ package com.cMall.feedShop.feed.presentation;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.service.MyFeedReadService;
 import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.user.domain.model.User;
@@ -181,16 +182,14 @@ public class MyFeedReadController {
     }
 
     /**
-     * 마이피드 개수 조회
+     * 마이피드 개수 조회 (전체 타입별 개수)
      *
      * @param userDetails JWT 토큰에서 추출된 사용자 정보
-     * @param feedType 피드 타입 (선택사항)
-     * @return 마이피드 개수
+     * @return 마이피드 타입별 개수
      */
     @GetMapping("/count")
-    public ResponseEntity<ApiResponse<Long>> getMyFeedCount(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(required = false) String feedType) {
+    public ResponseEntity<ApiResponse<MyFeedCountResponse>> getMyFeedCounts(
+            @AuthenticationPrincipal UserDetails userDetails) {
 
         // JWT 토큰에서 사용자 ID 추출
         Long userId = getUserIdFromUserDetails(userDetails);
@@ -199,25 +198,49 @@ public class MyFeedReadController {
                     .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
         }
 
-        log.info("마이피드 개수 조회 요청 - 사용자: {}, feedType: {}", userId, feedType);
+        log.info("마이피드 전체 개수 조회 요청 - 사용자: {}", userId);
 
-        long count;
-        if (feedType != null && !feedType.isEmpty()) {
-            try {
-                FeedType type = FeedType.valueOf(feedType.toUpperCase());
-                count = myFeedReadService.getMyFeedCountByType(userId, type);
-            } catch (IllegalArgumentException e) {
-                log.warn("잘못된 피드 타입: {}", feedType);
-                return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("잘못된 피드 타입입니다. (DAILY, EVENT, RANKING)"));
-            }
-        } else {
-            count = myFeedReadService.getMyFeedCount(userId);
+        MyFeedCountResponse counts = myFeedReadService.getMyFeedCounts(userId);
+
+        log.info("마이피드 전체 개수 조회 완료 - 사용자: {}, total: {}, daily: {}, event: {}, ranking: {}", 
+                userId, counts.getTotalCount(), counts.getDailyCount(), counts.getEventCount(), counts.getRankingCount());
+
+        return ResponseEntity.ok(ApiResponse.success(counts));
+    }
+
+    /**
+     * 마이피드 개수 조회 (특정 타입)
+     *
+     * @param userDetails JWT 토큰에서 추출된 사용자 정보
+     * @param feedType 피드 타입
+     * @return 마이피드 개수
+     */
+    @GetMapping("/count/type/{feedType}")
+    public ResponseEntity<ApiResponse<Long>> getMyFeedCountByType(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String feedType) {
+
+        // JWT 토큰에서 사용자 ID 추출
+        Long userId = getUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
         }
 
-        log.info("마이피드 개수 조회 완료 - 사용자: {}, feedType: {}, 개수: {}", userId, feedType, count);
+        log.info("마이피드 타입별 개수 조회 요청 - 사용자: {}, feedType: {}", userId, feedType);
 
-        return ResponseEntity.ok(ApiResponse.success(count));
+        try {
+            FeedType type = FeedType.valueOf(feedType.toUpperCase());
+            long count = myFeedReadService.getMyFeedCountByType(userId, type);
+
+            log.info("마이피드 타입별 개수 조회 완료 - 사용자: {}, feedType: {}, 개수: {}", userId, feedType, count);
+
+            return ResponseEntity.ok(ApiResponse.success(count));
+        } catch (IllegalArgumentException e) {
+            log.warn("잘못된 피드 타입: {}", feedType);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("잘못된 피드 타입입니다. (DAILY, EVENT, RANKING)"));
+        }
     }
 
     /**
