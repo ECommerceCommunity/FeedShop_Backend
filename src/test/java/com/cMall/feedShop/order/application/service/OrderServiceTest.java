@@ -31,7 +31,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -63,8 +62,6 @@ class OrderServiceTest {
     private OrderRepository orderRepository; // 주문 저장소
     @Mock
     private OrderCommonService orderCommonService; // 공통 주문 서비스
-    @Mock
-    private UserDetails userDetails; // 로그인 사용자 정보
 
     // 테스트에서 공통으로 사용할 데이터들
     private User testUser; // 테스트용 사용자
@@ -108,7 +105,7 @@ class OrderServiceTest {
         // Given: 테스트 준비 단계
 
         // 사용자 검증이 성공한다고 설정
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
 
         // 선택된 장바구니 아이템 조회가 성공한다고 설정
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(testCartItems);
@@ -137,7 +134,7 @@ class OrderServiceTest {
         willDoNothing().given(cartItemRepository).deleteAll(testCartItems);
 
         // When: 실제 테스트 실행
-        OrderCreateResponse response = orderService.createOrder(testRequest, userDetails);
+        OrderCreateResponse response = orderService.createOrder(testRequest, "testUser");
 
         // Then: 결과 검증
 
@@ -151,7 +148,7 @@ class OrderServiceTest {
         assertThat(response.getStatus()).isEqualTo(OrderStatus.ORDERED);
 
         // 모든 메서드가 올바른 순서로 호출되었는지 검증
-        verify(orderCommonService).validateUser(userDetails); // 1. 사용자 검증
+        verify(orderCommonService).validateUser("testUser"); // 1. 사용자 검증
         verify(cartItemRepository).findByUserIdWithCart(1L); // 2. 장바구니 조회
         verify(orderCommonService).getValidProductOptions(any()); // 3. 상품 옵션 조회
         verify(orderCommonService).getProductImages(any()); // 4. 상품 이미지 조회
@@ -169,16 +166,16 @@ class OrderServiceTest {
     @DisplayName("빈 장바구니로 주문 시 예외 발생")
     void createOrder_EmptyCart_ThrowsException() {
         // Given: 빈 장바구니 설정
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(Collections.emptyList()); // 빈 장바구니
 
         // When & Then: 예외가 발생하는지 확인
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class) // OrderException이 발생해야 함
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_CART_EMPTY); // 에러 코드 확인
 
         // 사용자 검증과 장바구니 조회만 호출되었는지 확인
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
         verify(cartItemRepository).findByUserIdWithCart(1L);
         verify(orderCommonService, never()).getValidProductOptions(any()); // 이후 메서드들은 호출되지 않아야 함
     }
@@ -193,11 +190,11 @@ class OrderServiceTest {
         List<Order> mockOrders = createMockOrders(); // 2개의 주문
         Page<Order> orderPage = new PageImpl<>(mockOrders, PageRequest.of(0, 10), 2);
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class))).willReturn(orderPage);
 
         // When: 주문 목록 조회 실행
-        OrderPageResponse response = orderService.getOrderListForUser(0, 10, null, userDetails);
+        OrderPageResponse response = orderService.getOrderListForUser(0, 10, null, "testUser");
 
         // Then: 결과 검증
         assertThat(response).isNotNull(); // 응답이 null이 아님
@@ -205,7 +202,7 @@ class OrderServiceTest {
         assertThat(response.getTotalElement()).isEqualTo(2); // 총 2개 요소
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
         verify(orderRepository).findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class));
     }
 
@@ -219,11 +216,11 @@ class OrderServiceTest {
         Long orderId = 1L;
         Order detailOrder = createDetailOrder(); // 상세 정보가 포함된 주문
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByOrderIdAndUser(orderId, testUser)).willReturn(Optional.of(detailOrder));
 
         // When: 주문 상세 조회 실행
-        OrderDetailResponse response = orderService.getOrderDetail(orderId, userDetails);
+        OrderDetailResponse response = orderService.getOrderDetail(orderId, "testUser");
 
         // Then: 결과 검증
         assertThat(response).isNotNull(); // 응답이 null이 아님
@@ -232,7 +229,7 @@ class OrderServiceTest {
         assertThat(response.getTotalPrice()).isEqualTo(BigDecimal.valueOf(100000)); // 총 가격 확인
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
         verify(orderRepository).findByOrderIdAndUser(orderId, testUser);
     }
 
@@ -245,16 +242,16 @@ class OrderServiceTest {
         // Given: 존재하지 않는 주문 ID
         Long orderId = 999L;
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByOrderIdAndUser(orderId, testUser)).willReturn(Optional.empty()); // 주문이 없음
 
         // When & Then: 예외가 발생하는지 확인
-        assertThatThrownBy(() -> orderService.getOrderDetail(orderId, userDetails))
+        assertThatThrownBy(() -> orderService.getOrderDetail(orderId, "testUser"))
                 .isInstanceOf(OrderException.class) // OrderException이 발생해야 함
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_NOT_FOUND); // 에러 코드 확인
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
         verify(orderRepository).findByOrderIdAndUser(orderId, testUser);
     }
 
@@ -267,15 +264,15 @@ class OrderServiceTest {
         // Given: 모든 장바구니 아이템이 선택되지 않음
         List<CartItem> unselectedItems = createUnselectedCartItems();
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(unselectedItems);
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_CART_EMPTY);
 
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
         verify(cartItemRepository).findByUserIdWithCart(1L);
     }
 
@@ -288,11 +285,11 @@ class OrderServiceTest {
         // Given: 최대 수량을 초과하는 장바구니 아이템
         List<CartItem> excessiveQuantityItems = createExcessiveQuantityCartItems();
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(excessiveQuantityItems);
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_ORDER_QUANTITY);
     }
@@ -304,15 +301,15 @@ class OrderServiceTest {
     @DisplayName("사용자 검증 실패 시 예외 발생")
     void createOrder_InvalidUser_ThrowsException() {
         // Given: 유효하지 않은 사용자
-        given(orderCommonService.validateUser(userDetails))
+        given(orderCommonService.validateUser("testUser"))
                 .willThrow(new OrderException(ErrorCode.USER_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
-        verify(orderCommonService).validateUser(userDetails);
+        verify(orderCommonService).validateUser("testUser");
     }
 
     /**
@@ -325,7 +322,7 @@ class OrderServiceTest {
         List<CartItem> cartItems = createTestCartItems();
         OrderCalculation calculation = createTestOrderCalculation();
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
         given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
         given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
@@ -336,7 +333,7 @@ class OrderServiceTest {
                 .given(orderCommonService).validatePointUsage(any(), anyInt());
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_POINT);
     }
@@ -350,13 +347,13 @@ class OrderServiceTest {
         // Given: 존재하지 않는 상품 옵션
         List<CartItem> cartItems = createTestCartItems();
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
         given(orderCommonService.getValidProductOptions(any()))
                 .willThrow(new OrderException(ErrorCode.PRODUCT_OPTION_NOT_FOUND));
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_OPTION_NOT_FOUND);
     }
@@ -370,7 +367,7 @@ class OrderServiceTest {
         // Given: 재고 부족 상황
         List<CartItem> cartItems = createTestCartItems();
 
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
         given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
         given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
@@ -383,7 +380,7 @@ class OrderServiceTest {
                 .given(orderCommonService).processPostOrder(any(), any(), any(), any());
 
         // When & Then
-        assertThatThrownBy(() -> orderService.createOrder(testRequest, userDetails))
+        assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.OUT_OF_STOCK);
     }
@@ -400,12 +397,12 @@ class OrderServiceTest {
     void getOrderListForUser_NegativePage_CorrectedToZero() {
         // Given: 음수 페이지
         Page<Order> emptyPage = new PageImpl<>(Collections.emptyList());
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class)))
                 .willReturn(emptyPage);
 
         // When
-        OrderPageResponse response = orderService.getOrderListForUser(-5, 10, null, userDetails);
+        OrderPageResponse response = orderService.getOrderListForUser(-5, 10, null, "testUser");
 
         // Then: 페이지가 0으로 보정되었는지 확인
         assertThat(response).isNotNull();
@@ -420,12 +417,12 @@ class OrderServiceTest {
     void getOrderListForUser_InvalidSize_CorrectedToDefault() {
         // Given: 잘못된 페이지 크기
         Page<Order> emptyPage = new PageImpl<>(Collections.emptyList());
-        given(orderCommonService.validateUser(userDetails)).willReturn(testUser);
+        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class)))
                 .willReturn(emptyPage);
 
         // When: 크기가 101 (최대 100 초과)
-        OrderPageResponse response = orderService.getOrderListForUser(0, 101, null, userDetails);
+        OrderPageResponse response = orderService.getOrderListForUser(0, 101, null, "testUser");
 
         // Then: 크기가 10으로 보정되었는지 확인
         assertThat(response).isNotNull();

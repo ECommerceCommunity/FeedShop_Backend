@@ -50,9 +50,9 @@ public class OrderService {
      * @return 주문 생성 응답 정보
      */
     @Transactional
-    public OrderCreateResponse createOrder(OrderCreateRequest request, UserDetails userDetails) {
+    public OrderCreateResponse createOrder(OrderCreateRequest request, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 선택된 장바구니 아이템 조회 (selected = true 인 아이템들만)
         List<CartItem> selectedCartItems = getSelectedCartItems(currentUser.getId());
@@ -91,9 +91,9 @@ public class OrderService {
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderPageResponse getOrderListForUser(int page, int size, String status, UserDetails userDetails) {
+    public OrderPageResponse getOrderListForUser(int page, int size, String status, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 페이지 파라미터 검증
         if (page < 0) {
@@ -123,9 +123,9 @@ public class OrderService {
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderPageResponse getOrderListForSeller(int page, int size, String status, UserDetails userDetails) {
+    public OrderPageResponse getOrderListForSeller(int page, int size, String status, String loginId) {
         // 1. 현재 사용자 조회를 하고 판매자 권한을 검증
-        User currentUser = validateSeller(userDetails);
+        User currentUser = validateSeller(loginId);
 
         // 2. 페이지 파라미터 검증
         if (page < 0) {
@@ -184,9 +184,9 @@ public class OrderService {
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderDetail(Long orderId, UserDetails userDetails) {
+    public OrderDetailResponse getOrderDetail(Long orderId, String loginId) {
         // 1. 현재 사용자 조회 및 권한 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndUser(orderId, currentUser)
@@ -204,9 +204,9 @@ public class OrderService {
      * @return
      */
     @Transactional
-    public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, UserDetails userDetails) {
+    public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
         // 1. 판매자 권한 검증
-        User seller = validateSeller(userDetails);
+        User seller = validateSeller(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndSeller(orderId, seller)
@@ -230,9 +230,9 @@ public class OrderService {
      * @return
      */
     @Transactional
-    public OrderStatusUpdateResponse updateUserOrderStatus(Long orderId, OrderStatusUpdateRequest request, UserDetails userDetails) {
+    public OrderStatusUpdateResponse updateUserOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
         // 1. 현재 사용자 조회 및 권한 검증
-        User user = validateUser(userDetails);
+        User user = validateUser(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndUser(orderId, user)
@@ -267,8 +267,8 @@ public class OrderService {
      * @param userDetails 현재 로그인된 사용자 정보
      * @return 검증된 사용자 정보
      */
-    private User validateUser(UserDetails userDetails) {
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+    private User validateUser(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.USER) {
@@ -283,8 +283,8 @@ public class OrderService {
      * @param userDetails 현재 로그인된 사용자 정보
      * @return 검증된 사용자 정보
      */
-    private User validateSeller(UserDetails userDetails) {
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+    private User validateSeller(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.SELLER) {
