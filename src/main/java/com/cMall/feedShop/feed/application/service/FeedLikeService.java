@@ -39,12 +39,8 @@ public class FeedLikeService {
      * - Feed.likeCount 증감
      */
     @Transactional
-    public LikeToggleResponseDto toggleLike(Long feedId, UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "인증 정보가 없습니다.");
-        }
-        String loginId = userDetails.getUsername();
-        User user = userRepository.findByLoginId(loginId)
+    public LikeToggleResponseDto toggleLike(Long feedId, Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         Feed feed = feedRepository.findById(feedId)
@@ -126,18 +122,12 @@ public class FeedLikeService {
      * - 프론트엔드에서 좋아요 상태 복원용
      */
     @Transactional(readOnly = true)
-    public List<Long> getMyLikedFeedIds(UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            log.warn("인증 정보가 없어서 좋아요 피드 목록을 조회할 수 없습니다.");
-            return List.of();
-        }
-        
-        String loginId = userDetails.getUsername();
-        User user = userRepository.findByLoginId(loginId)
+    public List<Long> getMyLikedFeedIds(Long userId) {
+        User user = userRepository.findById(userId)
                 .orElse(null);
         
         if (user == null) {
-            log.warn("사용자를 찾을 수 없어서 좋아요 피드 목록을 조회할 수 없습니다. - loginId: {}", loginId);
+            log.warn("사용자를 찾을 수 없어서 좋아요 피드 목록을 조회할 수 없습니다. - userId: {}", userId);
             return List.of();
         }
         
@@ -195,20 +185,11 @@ public class FeedLikeService {
      * - 공통으로 사용되는 좋아요 상태 확인 로직
      * - 다른 서비스에서 호출하여 사용
      */
-    public boolean isLikedByUser(Long feedId, UserDetails userDetails) {
-        if (userDetails == null || userDetails.getUsername() == null) {
-            return false;
-        }
-        
+    public boolean isLikedByUser(Long feedId, Long userId) {
         try {
-            User user = userRepository.findByLoginId(userDetails.getUsername()).orElse(null);
-            if (user == null) {
-                return false;
-            }
-            
-            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, user.getId());
+            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, userId);
         } catch (Exception e) {
-            log.warn("사용자별 좋아요 상태 확인 실패 - feedId: {}, error: {}", feedId, e.getMessage());
+            log.warn("사용자별 좋아요 상태 확인 실패 - feedId: {}, userId: {}, error: {}", feedId, userId, e.getMessage());
             return false;
         }
     }

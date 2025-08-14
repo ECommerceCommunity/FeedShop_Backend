@@ -4,9 +4,6 @@ import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
-import com.cMall.feedShop.feed.domain.repository.FeedLikeRepository;
-import com.cMall.feedShop.user.domain.model.User;
-import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +22,7 @@ public class FeedDetailService {
     private final FeedRepository feedRepository;
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
+    private final FeedServiceUtils feedServiceUtils;
     
     /**
      * 피드 상세 조회
@@ -51,7 +49,8 @@ public class FeedDetailService {
         FeedDetailResponseDto dto = feedMapper.toFeedDetailResponseDto(feed);
         
         // 사용자별 좋아요 상태 설정
-        boolean isLiked = feedLikeService.isLikedByUser(feedId, userDetails);
+        boolean isLiked = userDetails != null ? 
+                feedLikeService.isLikedByUser(feedId, feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
         dto = dto.toBuilder().isLiked(isLiked).build();
         
         log.info("사용자별 좋아요 상태 설정 - feedId: {}, isLiked: {}", feedId, isLiked);
@@ -60,4 +59,6 @@ public class FeedDetailService {
         
         return dto;
     }
+    
+
 }

@@ -4,6 +4,8 @@ import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 /**
  * 피드 조회 서비스
@@ -25,6 +29,7 @@ public class FeedReadService {
     private final FeedRepository feedRepository;
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
+    private final UserRepository userRepository;
     
     /**
      * 피드 목록 조회 (필터링, 페이징, 정렬)
@@ -53,7 +58,8 @@ public class FeedReadService {
         
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
-            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
             return FeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -103,7 +109,8 @@ public class FeedReadService {
         
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
-            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
             return FeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -134,5 +141,25 @@ public class FeedReadService {
                 feedType, responsePage.getTotalElements(), responsePage.getNumberOfElements());
         
         return responsePage;
+    }
+    
+    /**
+     * UserDetails에서 userId 추출
+     */
+    private Long getUserIdFromUserDetails(UserDetails userDetails) {
+        if (userDetails == null) {
+            log.warn("UserDetails가 null입니다.");
+            return null;
+        }
+        String loginId = userDetails.getUsername();
+        log.debug("UserDetails에서 사용자 정보 추출 완료");
+        Optional<User> userOptional = userRepository.findByLoginId(loginId);
+        if (userOptional.isEmpty()) {
+            log.warn("login_id로 사용자를 찾을 수 없습니다");
+            return null;
+        }
+        User user = userOptional.get();
+        log.debug("사용자 ID 추출 완료: {}", user.getId());
+        return user.getId();
     }
 } 

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 마이피드 조회 서비스
@@ -56,7 +57,8 @@ public class MyFeedReadService {
 
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
-            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -114,7 +116,8 @@ public class MyFeedReadService {
 
         // 사용자별 좋아요 상태 설정
         responsePage = responsePage.map(dto -> {
-            boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userDetails);
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -184,5 +187,25 @@ public class MyFeedReadService {
         log.info("마이피드 타입별 개수 조회 완료 - userId: {}, feedType: {}, 개수: {}", userId, feedType, count);
 
         return count;
+    }
+    
+    /**
+     * UserDetails에서 userId 추출
+     */
+    private Long getUserIdFromUserDetails(UserDetails userDetails) {
+        if (userDetails == null) {
+            log.warn("UserDetails가 null입니다.");
+            return null;
+        }
+        String loginId = userDetails.getUsername();
+        log.debug("UserDetails에서 사용자 정보 추출 완료");
+        Optional<User> userOptional = userRepository.findByLoginId(loginId);
+        if (userOptional.isEmpty()) {
+            log.warn("login_id로 사용자를 찾을 수 없습니다");
+            return null;
+        }
+        User user = userOptional.get();
+        log.debug("사용자 ID 추출 완료: {}", user.getId());
+        return user.getId();
     }
 } 

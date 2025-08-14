@@ -69,12 +69,11 @@ class FeedLikeServiceTest {
     @DisplayName("좋아요 추가 - 존재하지 않으면 생성하고 likeCount 증가")
     void toggleLike_add() {
         Long feedId = 10L;
-        when(userDetails.getUsername()).thenReturn("login");
-        when(userRepository.findByLoginId("login")).thenReturn(Optional.of(user));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, user.getId())).thenReturn(false);
 
-        LikeToggleResponseDto res = feedLikeService.toggleLike(feedId, userDetails);
+        LikeToggleResponseDto res = feedLikeService.toggleLike(feedId, user.getId());
 
         assertThat(res.isLiked()).isTrue();
         assertThat(res.getLikeCount()).isEqualTo(feed.getLikeCount());
@@ -87,12 +86,11 @@ class FeedLikeServiceTest {
         Long feedId = 11L;
         // 초기 likeCount를 1로 만들어서 감소 확인
         feed.incrementLikeCount();
-        when(userDetails.getUsername()).thenReturn("login");
-        when(userRepository.findByLoginId("login")).thenReturn(Optional.of(user));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, user.getId())).thenReturn(true);
 
-        LikeToggleResponseDto res = feedLikeService.toggleLike(feedId, userDetails);
+        LikeToggleResponseDto res = feedLikeService.toggleLike(feedId, user.getId());
 
         assertThat(res.isLiked()).isFalse();
         assertThat(res.getLikeCount()).isEqualTo(feed.getLikeCount());
@@ -112,9 +110,9 @@ class FeedLikeServiceTest {
     @DisplayName("사용자 없음 USER_NOT_FOUND")
     void toggleLike_userNotFound() {
         Long feedId = 13L;
-        when(userDetails.getUsername()).thenReturn("unknown");
-        when(userRepository.findByLoginId("unknown")).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, userDetails))
+        Long nonExistentUserId = 999L;
+        when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, nonExistentUserId))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND));
     }
@@ -123,10 +121,9 @@ class FeedLikeServiceTest {
     @DisplayName("피드 없음 404")
     void toggleLike_feedNotFound() {
         Long feedId = 14L;
-        when(userDetails.getUsername()).thenReturn("login");
-        when(userRepository.findByLoginId("login")).thenReturn(Optional.of(user));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, userDetails))
+        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, user.getId()))
                 .isInstanceOf(FeedNotFoundException.class);
     }
 
@@ -134,11 +131,10 @@ class FeedLikeServiceTest {
     @DisplayName("삭제된 피드 404")
     void toggleLike_deletedFeed() {
         Long feedId = 15L;
-        when(userDetails.getUsername()).thenReturn("login");
-        when(userRepository.findByLoginId("login")).thenReturn(Optional.of(user));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         feed.softDelete();
-        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, userDetails))
+        assertThatThrownBy(() -> feedLikeService.toggleLike(feedId, user.getId()))
                 .isInstanceOf(FeedNotFoundException.class);
     }
 
@@ -226,5 +222,57 @@ class FeedLikeServiceTest {
         
         verify(feedRepository, times(1)).findById(feedId);
         verify(feedLikeRepository, never()).findByFeedIdWithUser(any(), any());
+    }
+    
+    // ========== 내가 좋아요한 피드 목록 조회 테스트 ==========
+    
+    @Test
+    @DisplayName("내가 좋아요한 피드 목록 조회 성공")
+    void getMyLikedFeedIds_success() {
+        // given
+        List<Long> likedFeedIds = List.of(1L, 2L, 3L);
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(feedLikeRepository.findFeedIdsByUserId(user.getId())).thenReturn(likedFeedIds);
+        
+        // when
+        List<Long> result = feedLikeService.getMyLikedFeedIds(user.getId());
+        
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result).containsExactly(1L, 2L, 3L);
+        verify(userRepository, times(1)).findById(user.getId());
+        verify(feedLikeRepository, times(1)).findFeedIdsByUserId(user.getId());
+    }
+    
+    @Test
+    @DisplayName("내가 좋아요한 피드 목록 조회 - 사용자 없음")
+    void getMyLikedFeedIds_userNotFound() {
+        // given
+        Long nonExistentUserId = 999L;
+        when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
+        
+        // when
+        List<Long> result = feedLikeService.getMyLikedFeedIds(nonExistentUserId);
+        
+        // then
+        assertThat(result).isEmpty();
+        verify(userRepository, times(1)).findById(nonExistentUserId);
+        verify(feedLikeRepository, never()).findFeedIdsByUserId(any());
+    }
+    
+    @Test
+    @DisplayName("내가 좋아요한 피드 목록 조회 - 좋아요한 피드 없음")
+    void getMyLikedFeedIds_noLikedFeeds() {
+        // given
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(feedLikeRepository.findFeedIdsByUserId(user.getId())).thenReturn(List.of());
+        
+        // when
+        List<Long> result = feedLikeService.getMyLikedFeedIds(user.getId());
+        
+        // then
+        assertThat(result).isEmpty();
+        verify(userRepository, times(1)).findById(user.getId());
+        verify(feedLikeRepository, times(1)).findFeedIdsByUserId(user.getId());
     }
 }
