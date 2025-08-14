@@ -39,12 +39,20 @@ public class PointService {
     public PointBalanceResponse getPointBalance(UserDetails userDetails) {
         User user = validateUser(userDetails);
         UserPoint userPoint = getUserPoint(user);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         // 통계 정보 조회
         Integer totalEarned = pointTransactionRepository.sumValidEarnedPointsByUser(user, LocalDateTime.now());
         Integer totalUsed = pointTransactionRepository.sumUsedPointsByUser(user);
         Integer totalExpired = pointTransactionRepository.sumExpiredPointsByUser(user);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         return PointBalanceResponse.from(userPoint, totalEarned, totalUsed, totalExpired);
     }
 
@@ -53,10 +61,17 @@ public class PointService {
      */
     public PointTransactionPageResponse getPointTransactions(UserDetails userDetails, int page, int size) {
         User user = validateUser(userDetails);
+<<<<<<< HEAD
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         Page<PointTransaction> transactions = pointTransactionRepository.findByUserOrderByCreatedAtDesc(user, pageable);
 
+=======
+        
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Page<PointTransaction> transactions = pointTransactionRepository.findByUserOrderByCreatedAtDesc(user, pageable);
+        
+>>>>>>> rewardChange
         Page<PointTransactionResponse> responsePage = transactions.map(PointTransactionResponse::from);
         return PointTransactionPageResponse.from(responsePage);
     }
@@ -66,10 +81,17 @@ public class PointService {
      */
     public PointTransactionPageResponse getPointTransactionsByType(UserDetails userDetails, PointTransactionType type, int page, int size) {
         User user = validateUser(userDetails);
+<<<<<<< HEAD
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         Page<PointTransaction> transactions = pointTransactionRepository.findByUserAndTransactionTypeOrderByCreatedAtDesc(user, type, pageable);
 
+=======
+        
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Page<PointTransaction> transactions = pointTransactionRepository.findByUserAndTransactionTypeOrderByCreatedAtDesc(user, type, pageable);
+        
+>>>>>>> rewardChange
         Page<PointTransactionResponse> responsePage = transactions.map(PointTransactionResponse::from);
         return PointTransactionPageResponse.from(responsePage);
     }
@@ -79,10 +101,17 @@ public class PointService {
      */
     public PointTransactionPageResponse getPointTransactionsByPeriod(UserDetails userDetails, LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
         User user = validateUser(userDetails);
+<<<<<<< HEAD
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         Page<PointTransaction> transactions = pointTransactionRepository.findByUserAndCreatedAtBetweenOrderByCreatedAtDesc(user, startDate, endDate, pageable);
 
+=======
+        
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        Page<PointTransaction> transactions = pointTransactionRepository.findByUserAndCreatedAtBetweenOrderByCreatedAtDesc(user, startDate, endDate, pageable);
+        
+>>>>>>> rewardChange
         Page<PointTransactionResponse> responsePage = transactions.map(PointTransactionResponse::from);
         return PointTransactionPageResponse.from(responsePage);
     }
@@ -92,12 +121,21 @@ public class PointService {
      */
     public ExpiringPointResponse getExpiringPoints(UserDetails userDetails) {
         User user = validateUser(userDetails);
+<<<<<<< HEAD
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryDate = now.plusDays(30);
 
         List<PointTransaction> expiringPoints = pointTransactionRepository.findExpiringPointsByUser(user, now, expiryDate);
 
+=======
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryDate = now.plusDays(30);
+        
+        List<PointTransaction> expiringPoints = pointTransactionRepository.findExpiringPointsByUser(user, now, expiryDate);
+        
+>>>>>>> rewardChange
         return ExpiringPointResponse.from(expiringPoints);
     }
 
@@ -106,9 +144,15 @@ public class PointService {
      */
     public List<PointTransactionResponse> getPointTransactionsByOrder(UserDetails userDetails, Long orderId) {
         User user = validateUser(userDetails);
+<<<<<<< HEAD
 
         List<PointTransaction> transactions = pointTransactionRepository.findByUserAndRelatedOrderIdOrderByCreatedAtDesc(user, orderId);
 
+=======
+        
+        List<PointTransaction> transactions = pointTransactionRepository.findByUserAndRelatedOrderIdOrderByCreatedAtDesc(user, orderId);
+        
+>>>>>>> rewardChange
         return transactions.stream()
                 .map(PointTransactionResponse::from)
                 .toList();
@@ -133,7 +177,11 @@ public class PointService {
         PointTransaction savedTransaction = pointTransactionRepository.save(transaction);
 
         log.info("포인트 적립 완료: 사용자 ID={}, 적립 포인트={}, 설명={}", user.getId(), points, description);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         return PointTransactionResponse.from(savedTransaction);
     }
 
@@ -147,7 +195,11 @@ public class PointService {
         }
 
         UserPoint userPoint = getUserPoint(user);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         // 포인트 사용 가능 여부 확인
         if (!userPoint.canUsePoints(points)) {
             throw new UserException(ErrorCode.OUT_OF_POINT);
@@ -162,7 +214,11 @@ public class PointService {
         PointTransaction savedTransaction = pointTransactionRepository.save(transaction);
 
         log.info("포인트 사용 완료: 사용자 ID={}, 사용 포인트={}, 설명={}", user.getId(), points, description);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         return PointTransactionResponse.from(savedTransaction);
     }
 
@@ -185,16 +241,25 @@ public class PointService {
         PointTransaction savedTransaction = pointTransactionRepository.save(transaction);
 
         log.info("포인트 취소 완료: 사용자 ID={}, 취소 포인트={}, 설명={}", user.getId(), points, description);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         return PointTransactionResponse.from(savedTransaction);
     }
 
     /**
+<<<<<<< HEAD
      * 만료된 포인트 처리 (PointScheduler에서 매일 자정에 호출)
+=======
+     * 만료된 포인트 처리 (스케줄러에서 호출)
+>>>>>>> rewardChange
      */
     @Transactional
     public void processExpiredPoints() {
         LocalDateTime now = LocalDateTime.now();
+<<<<<<< HEAD
 
         List<User> users = userRepository.findAll();
 
@@ -221,6 +286,26 @@ public class PointService {
                     });
                     pointTransactionRepository.saveAll(expiredTransactions);
 
+=======
+        
+        // 모든 사용자에 대해 만료된 포인트 처리
+        List<User> users = userRepository.findAll();
+        
+        for (User user : users) {
+            try {
+                List<PointTransaction> expiredPoints = pointTransactionRepository.findExpiredPointsByUser(user, now);
+                
+                if (!expiredPoints.isEmpty()) {
+                    UserPoint userPoint = getUserPoint(user);
+                    int totalExpiredPoints = expiredPoints.stream().mapToInt(PointTransaction::getPoints).sum();
+                    
+                    // 만료 거래 내역 생성
+                    PointTransaction expireTransaction = PointTransaction.createExpireTransaction(
+                            user, totalExpiredPoints, userPoint.getCurrentPoints(), 
+                            "포인트 만료 처리");
+                    pointTransactionRepository.save(expireTransaction);
+                    
+>>>>>>> rewardChange
                     log.info("포인트 만료 처리 완료: 사용자 ID={}, 만료 포인트={}", user.getId(), totalExpiredPoints);
                 }
             } catch (Exception e) {
@@ -245,7 +330,11 @@ public class PointService {
      */
     private UserPoint getUserPoint(User user) {
         Optional<UserPoint> userPointOpt = userPointRepository.findByUser(user);
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> rewardChange
         if (userPointOpt.isPresent()) {
             return userPointOpt.get();
         } else {

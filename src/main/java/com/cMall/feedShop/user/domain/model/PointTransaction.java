@@ -1,7 +1,10 @@
 package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+<<<<<<< HEAD
 import com.cMall.feedShop.user.domain.enums.PointTransactionStatus;
+=======
+>>>>>>> rewardChange
 import com.cMall.feedShop.user.domain.enums.PointTransactionType;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -44,6 +47,7 @@ public class PointTransaction extends BaseTimeEntity {
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
+<<<<<<< HEAD
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false) // ⭐ 새로운 필드: 트랜잭션 상태
     private PointTransactionStatus status;
@@ -51,6 +55,11 @@ public class PointTransaction extends BaseTimeEntity {
     @Builder
     public PointTransaction(User user, PointTransactionType transactionType, Integer points,
                           Integer balanceAfter, String description, Long relatedOrderId, LocalDateTime expiryDate, PointTransactionStatus status) {
+=======
+    @Builder
+    public PointTransaction(User user, PointTransactionType transactionType, Integer points, 
+                          Integer balanceAfter, String description, Long relatedOrderId, LocalDateTime expiryDate) {
+>>>>>>> rewardChange
         this.user = user;
         this.transactionType = transactionType;
         this.points = points;
@@ -58,11 +67,18 @@ public class PointTransaction extends BaseTimeEntity {
         this.description = description;
         this.relatedOrderId = relatedOrderId;
         this.expiryDate = expiryDate;
+<<<<<<< HEAD
         this.status = status;
     }
 
     // 포인트 적립 거래 생성
     public static PointTransaction createEarnTransaction(User user, Integer points, Integer balanceAfter,
+=======
+    }
+
+    // 포인트 적립 거래 생성
+    public static PointTransaction createEarnTransaction(User user, Integer points, Integer balanceAfter, 
+>>>>>>> rewardChange
                                                         String description, Long relatedOrderId) {
         return PointTransaction.builder()
                 .user(user)
@@ -72,12 +88,19 @@ public class PointTransaction extends BaseTimeEntity {
                 .description(description)
                 .relatedOrderId(relatedOrderId)
                 .expiryDate(LocalDateTime.now().plusYears(1)) // 1년 후 만료
+<<<<<<< HEAD
                 .status(PointTransactionStatus.ACTIVE)
+=======
+>>>>>>> rewardChange
                 .build();
     }
 
     // 포인트 사용 거래 생성
+<<<<<<< HEAD
     public static PointTransaction createUseTransaction(User user, Integer points, Integer balanceAfter,
+=======
+    public static PointTransaction createUseTransaction(User user, Integer points, Integer balanceAfter, 
+>>>>>>> rewardChange
                                                        String description, Long relatedOrderId) {
         return PointTransaction.builder()
                 .user(user)
@@ -86,12 +109,19 @@ public class PointTransaction extends BaseTimeEntity {
                 .balanceAfter(balanceAfter)
                 .description(description)
                 .relatedOrderId(relatedOrderId)
+<<<<<<< HEAD
                 .status(PointTransactionStatus.USED)
+=======
+>>>>>>> rewardChange
                 .build();
     }
 
     // 포인트 만료 거래 생성
+<<<<<<< HEAD
     public static PointTransaction createExpireTransaction(User user, Integer points, Integer balanceAfter,
+=======
+    public static PointTransaction createExpireTransaction(User user, Integer points, Integer balanceAfter, 
+>>>>>>> rewardChange
                                                           String description) {
         return PointTransaction.builder()
                 .user(user)
@@ -99,12 +129,19 @@ public class PointTransaction extends BaseTimeEntity {
                 .points(points)
                 .balanceAfter(balanceAfter)
                 .description(description)
+<<<<<<< HEAD
                 .status(PointTransactionStatus.EXPIRED)
+=======
+>>>>>>> rewardChange
                 .build();
     }
 
     // 포인트 취소 거래 생성
+<<<<<<< HEAD
     public static PointTransaction createCancelTransaction(User user, Integer points, Integer balanceAfter,
+=======
+    public static PointTransaction createCancelTransaction(User user, Integer points, Integer balanceAfter, 
+>>>>>>> rewardChange
                                                           String description, Long relatedOrderId) {
         return PointTransaction.builder()
                 .user(user)
@@ -113,6 +150,7 @@ public class PointTransaction extends BaseTimeEntity {
                 .balanceAfter(balanceAfter)
                 .description(description)
                 .relatedOrderId(relatedOrderId)
+<<<<<<< HEAD
                 .status(PointTransactionStatus.CANCELLED)
                 .build();
     }
@@ -133,6 +171,12 @@ public class PointTransaction extends BaseTimeEntity {
     }
 
         // 만료 여부 확인
+=======
+                .build();
+    }
+
+    // 만료 여부 확인
+>>>>>>> rewardChange
     public boolean isExpired() {
         return expiryDate != null && LocalDateTime.now().isAfter(expiryDate);
     }
