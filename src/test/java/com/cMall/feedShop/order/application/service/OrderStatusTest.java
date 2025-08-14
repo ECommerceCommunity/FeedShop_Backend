@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -46,8 +45,6 @@ class OrderStatusTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private UserDetails userDetails;
 
     @InjectMocks
     private OrderService orderService;
@@ -82,8 +79,7 @@ class OrderStatusTest {
                 .build();
         ReflectionTestUtils.setField(testOrder, "orderId", 100L);
 
-        // UserDetails mock 설정 (로그인한 사용자 정보)
-        given(userDetails.getUsername()).willReturn("testuser");
+        // UserDetails를 String으로 변경했으므로 더 이상 mock 설정이 필요하지 않음
     }
 
     /**
@@ -102,13 +98,13 @@ class OrderStatusTest {
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.SHIPPED);
 
             // Mock 설정: 판매자 조회 성공
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             // Mock 설정: 주문 조회 성공 (판매자의 상품 주문)
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When: 주문 상태 변경 실행
-            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails);
+            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123");
 
             // Then: 결과 검증
             assertThat(response).isNotNull();                                    // 응답이 있는지 확인
@@ -117,7 +113,7 @@ class OrderStatusTest {
             assertThat(testOrder.getStatus()).isEqualTo(OrderStatus.SHIPPED);   // 실제 주문 객체도 변경되었는지 확인
 
             // Mock 메서드가 올바르게 호출되었는지 검증
-            verify(userRepository).findByLoginId("testuser");
+            verify(userRepository).findByLoginId("seller123");
             verify(orderRepository).findByOrderIdAndSeller(orderId, sellerUser);
         }
 
@@ -128,12 +124,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.CANCELLED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When: 주문 상태 변경 실행
-            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails);
+            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123");
 
             // Then: 결과 검증
             assertThat(response.getStatus()).isEqualTo(OrderStatus.CANCELLED);
@@ -148,12 +144,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.DELIVERED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When
-            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails);
+            OrderStatusUpdateResponse response = orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123");
 
             // Then
             assertThat(response.getStatus()).isEqualTo(OrderStatus.DELIVERED);
@@ -168,14 +164,14 @@ class OrderStatusTest {
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.SHIPPED);
 
             // 일반 사용자로 로그인
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
 
             // When & Then: 권한 오류가 발생해야 함
-            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.ORDER_FORBIDDEN.getMessage());
 
-            verify(userRepository).findByLoginId("testuser");
+            verify(userRepository).findByLoginId("user123");
         }
 
         @Test
@@ -185,13 +181,13 @@ class OrderStatusTest {
             Long orderId = 999L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.SHIPPED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             // 주문을 찾지 못하는 상황
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.empty());
 
             // When & Then: 주문 없음 오류가 발생해야 함
-            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
         }
@@ -203,12 +199,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.DELIVERED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 잘못된 상태 변경 오류가 발생해야 함
-            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }
@@ -221,12 +217,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.SHIPPED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(sellerUser));
+            given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(sellerUser));
             given(orderRepository.findByOrderIdAndSeller(orderId, sellerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 완료된 주문은 변경할 수 없음
-            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateOrderStatus(orderId, statusUpdateRequest, "seller123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }
@@ -247,12 +243,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.CANCELLED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When: 주문 취소 실행
-            OrderStatusUpdateResponse response = orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails);
+            OrderStatusUpdateResponse response = orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123");
 
             // Then: 취소 성공 검증
             assertThat(response).isNotNull();
@@ -260,7 +256,7 @@ class OrderStatusTest {
             assertThat(response.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(testOrder.getStatus()).isEqualTo(OrderStatus.CANCELLED);
 
-            verify(userRepository).findByLoginId("testuser");
+            verify(userRepository).findByLoginId("user123");
             verify(orderRepository).findByOrderIdAndUser(orderId, buyerUser);
         }
 
@@ -272,12 +268,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.RETURNED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When: 반품 신청 실행
-            OrderStatusUpdateResponse response = orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails);
+            OrderStatusUpdateResponse response = orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123");
 
             // Then: 반품 신청 성공 검증
             assertThat(response.getStatus()).isEqualTo(OrderStatus.RETURNED);
@@ -294,13 +290,13 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.CANCELLED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(anotherUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(anotherUser));
             // 다른 사용자로는 주문을 찾을 수 없음
             given(orderRepository.findByOrderIdAndUser(orderId, anotherUser))
                     .willReturn(Optional.empty());
 
             // When & Then: 주문 없음 오류 발생
-            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.ORDER_NOT_FOUND.getMessage());
         }
@@ -313,12 +309,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.CANCELLED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 배송중인 상품은 취소할 수 없음
-            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }
@@ -330,12 +326,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.RETURNED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 배송완료되지 않은 상품은 반품할 수 없음
-            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }
@@ -347,12 +343,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.SHIPPED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 사용자는 배송 상태를 변경할 수 없음
-            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }
@@ -365,12 +361,12 @@ class OrderStatusTest {
             Long orderId = 100L;
             statusUpdateRequest = createStatusUpdateRequest(OrderStatus.RETURNED);
 
-            given(userRepository.findByLoginId("testuser")).willReturn(Optional.of(buyerUser));
+            given(userRepository.findByLoginId("user123")).willReturn(Optional.of(buyerUser));
             given(orderRepository.findByOrderIdAndUser(orderId, buyerUser))
                     .willReturn(Optional.of(testOrder));
 
             // When & Then: 취소된 주문은 더 이상 변경할 수 없음
-            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, userDetails))
+            assertThatThrownBy(() -> orderService.updateUserOrderStatus(orderId, statusUpdateRequest, "user123"))
                     .isInstanceOf(OrderException.class)
                     .hasMessage(ErrorCode.INVALID_ORDER_STATUS.getMessage());
         }

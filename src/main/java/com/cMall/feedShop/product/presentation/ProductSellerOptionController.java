@@ -7,6 +7,7 @@ import com.cMall.feedShop.product.application.dto.request.ProductOptionUpdateReq
 import com.cMall.feedShop.product.application.dto.response.ProductOptionCreateResponse;
 import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
 import com.cMall.feedShop.product.application.service.ProductOptionService;
+import com.cMall.feedShop.user.domain.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,8 +38,10 @@ public class ProductSellerOptionController {
             @PathVariable Long productId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
+        User currentUser = (User) userDetails;
+
         // 상품 ID로 상품 옵션 정보를 조회
-        List<ProductOptionInfo> options = productOptionService.getProductOptions(productId, userDetails);
+        List<ProductOptionInfo> options = productOptionService.getProductOptions(productId, currentUser.getLoginId());
 
         // 조회된 옵션 정보를 ApiResponse로 감싸서 반환
         return ApiResponse.success(options);
@@ -61,7 +64,9 @@ public class ProductSellerOptionController {
             @Valid @RequestBody ProductOptionCreateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        ProductOptionCreateResponse option = productOptionService.addProductOption(productId, request, userDetails);
+        User currentUser = (User) userDetails;
+
+        ProductOptionCreateResponse option = productOptionService.addProductOption(productId, request, currentUser.getLoginId());
         return ApiResponse.success(option);
     }
 
@@ -82,7 +87,9 @@ public class ProductSellerOptionController {
             @Valid @RequestBody ProductOptionUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        productOptionService.updateProductOption(optionId, request, userDetails);
+        User currentUser = (User) userDetails;
+
+        productOptionService.updateProductOption(optionId, request, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 
@@ -97,7 +104,9 @@ public class ProductSellerOptionController {
             @PathVariable Long optionId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        productOptionService.deleteProductOption(optionId, userDetails);
+        User currentUser = (User) userDetails;
+
+        productOptionService.deleteProductOption(optionId, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 }

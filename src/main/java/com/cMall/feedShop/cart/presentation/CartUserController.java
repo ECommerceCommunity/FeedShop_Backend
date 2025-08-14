@@ -7,6 +7,7 @@ import com.cMall.feedShop.cart.application.dto.response.CartItemResponse;
 import com.cMall.feedShop.cart.application.service.CartService;
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.user.domain.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,7 +30,8 @@ public class CartUserController {
     public ApiResponse<CartItemResponse> addCartItem(
             @Valid @RequestBody CartItemCreateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        CartItemResponse data = cartService.addCartItem(request, userDetails);
+        User currentUser = (User) userDetails;
+        CartItemResponse data = cartService.addCartItem(request, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -42,7 +44,8 @@ public class CartUserController {
     public ApiResponse<CartItemListResponse> getCartItems(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        CartItemListResponse data = cartService.getCartItems(userDetails);
+        User currentUser = (User) userDetails;
+        CartItemListResponse data = cartService.getCartItems(currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -57,7 +60,8 @@ public class CartUserController {
             @Valid @RequestBody CartItemUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        cartService.updateCartItem(cartItemId, request, userDetails);
+        User currentUser = (User) userDetails;
+        cartService.updateCartItem(cartItemId, request, currentUser.getUsername());
         return ApiResponse.success(null);
     }
   
@@ -71,7 +75,8 @@ public class CartUserController {
             @PathVariable Long cartItemId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        cartService.deleteCartItem(cartItemId, userDetails);
+        User currentUser = (User) userDetails;
+        cartService.deleteCartItem(cartItemId, currentUser.getUsername());
         return ApiResponse.success(null);
     }
 }

@@ -30,7 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -56,7 +55,6 @@ class CartServiceTest {
     @Mock private CartRepository cartRepository;
     @Mock private CartItemRepository cartItemRepository;
     @Mock private DiscountCalculator discountCalculator;
-    @Mock private UserDetails userDetails;
 
     @InjectMocks
     private CartService cartService;
@@ -78,13 +76,8 @@ class CartServiceTest {
 
     private void setupTestData() {
         // User 설정
-        user = new User("testUser", "password", "test@test.com", UserRole.USER);
+        user = new User("test@test.com", "password", "test@test.com", UserRole.USER);
         ReflectionTestUtils.setField(user, "id", 1L);
-
-        // Cart 설정
-        cart = Cart.builder().user(user).build();
-        ReflectionTestUtils.setField(cart, "cartId", 1L);
-        user.setCart(cart);
 
         // Store 설정
         store = Store.builder()
@@ -131,6 +124,11 @@ class CartServiceTest {
         productImage2 = new ProductImage("http://image2.jpg", ImageType.MAIN, product2);
         ReflectionTestUtils.setField(productImage2, "imageId", 2L);
 
+        // Cart 설정
+        cart = Cart.builder().user(user).build();
+        ReflectionTestUtils.setField(cart, "cartId", 1L);
+        user.setCart(cart);
+
         // Request 설정
         createRequest = new CartItemCreateRequest();
         ReflectionTestUtils.setField(createRequest, "optionId", 1L);
@@ -144,22 +142,10 @@ class CartServiceTest {
     @DisplayName("장바구니에 새 상품 추가 성공")
     void addCartItem_Success_NewItem() {
         // given
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-//        given(userRepository.findById(1L)).willReturn(Optional.of(user)); // 추가
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
         given(cartItemRepository.findByCartAndOptionIdAndImageId(cart, 1L, 1L)).willReturn(Optional.empty());
-
-        CartItem savedCartItem = CartItem.builder()
-                .cart(cart)
-                .optionId(1L)
-                .imageId(1L)
-                .quantity(2)
-                .build();
-        ReflectionTestUtils.setField(savedCartItem, "cartItemId", 1L);
-        ReflectionTestUtils.setField(savedCartItem, "createdAt", LocalDateTime.now());
-        ReflectionTestUtils.setField(savedCartItem, "updatedAt", LocalDateTime.now());
 
         given(cartItemRepository.save(any(CartItem.class))).willAnswer(invocation -> {
             CartItem cartItem = invocation.getArgument(0);
@@ -170,7 +156,7 @@ class CartServiceTest {
         });
 
         // when
-        CartItemResponse response = cartService.addCartItem(createRequest, userDetails);
+        CartItemResponse response = cartService.addCartItem(createRequest, "test@test.com");
 
         // then
         assertThat(response).isNotNull();
@@ -181,38 +167,19 @@ class CartServiceTest {
         assertThat(response.getQuantity()).isEqualTo(2);
 
         verify(cartItemRepository, times(1)).save(any(CartItem.class));
-        verify(userRepository, times(1)).findByLoginId("test@test.com");
-        verify(productOptionRepository, times(1)).findByOptionId(1L);
-        verify(productImageRepository, times(1)).findByImageId(1L);
-    }
-
-    @Test
-    @DisplayName("장바구니 추가 실패 - 사용자 없음")
-    void addCartItem_Fail_UserNotFound() {
-        // given
-        given(userDetails.getUsername()).willReturn("test@test.com");
-        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.empty());
-
-        // when & then
-        BusinessException thrown = assertThrows(BusinessException.class, () ->
-                cartService.addCartItem(createRequest, userDetails));
-
-        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
-        verify(cartItemRepository, never()).save(any(CartItem.class));
-        verify(productOptionRepository, never()).findByOptionId(any());
     }
 
     @Test
     @DisplayName("장바구니 추가 실패 - 상품 옵션 없음")
     void addCartItem_Fail_ProductOptionNotFound() {
-        given(userDetails.getUsername()).willReturn("test@test.com");
+        // given
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        // 불필요한 stubbing 제거
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.empty());
 
+        // when & then
         ProductException thrown = assertThrows(
                 ProductException.class, () ->
-                        cartService.addCartItem(createRequest, userDetails));
+                        cartService.addCartItem(createRequest, "test@test.com"));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
         verify(cartItemRepository, never()).save(any(CartItem.class));
@@ -221,15 +188,15 @@ class CartServiceTest {
     @Test
     @DisplayName("장바구니 추가 실패 - 상품 이미지 없음")
     void addCartItem_Fail_ProductImageNotFound() {
-        given(userDetails.getUsername()).willReturn("test@test.com");
+        // given
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        // 불필요한 stubbing 제거
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.empty());
 
+        // when & then
         ProductException thrown = assertThrows(
                 ProductException.class, () ->
-                        cartService.addCartItem(createRequest, userDetails));
+                        cartService.addCartItem(createRequest, "test@test.com"));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_IMAGE_NOT_FOUND);
         verify(cartItemRepository, never()).save(any(CartItem.class));
@@ -238,18 +205,18 @@ class CartServiceTest {
     @Test
     @DisplayName("장바구니 추가 실패 - 재고 부족")
     void addCartItem_Fail_OutOfStock() {
+        // given - 재고가 1개뿐인 옵션 생성
         ProductOption lowStockOption = new ProductOption(Gender.UNISEX, Size.SIZE_250, Color.WHITE, 1, product1);
         ReflectionTestUtils.setField(lowStockOption, "optionId", 1L);
 
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        // 불필요한 stubbing 제거
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(lowStockOption));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
 
+        // when & then
         ProductException thrown = assertThrows(
                 ProductException.class, () ->
-                        cartService.addCartItem(createRequest, userDetails));
+                        cartService.addCartItem(createRequest, "test@test.com"));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
         verify(cartItemRepository, never()).save(any(CartItem.class));
@@ -258,18 +225,18 @@ class CartServiceTest {
     @Test
     @DisplayName("장바구니 추가 실패 - 재고 없음")
     void addCartItem_Fail_NoStock() {
+        // given
         ProductOption noStockOption = new ProductOption(Gender.UNISEX, Size.SIZE_250, Color.WHITE, 0, product1);
         ReflectionTestUtils.setField(noStockOption, "optionId", 1L);
 
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        // 불필요한 stubbing 제거
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(noStockOption));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
 
+        // when & then
         ProductException thrown = assertThrows(
                 ProductException.class, () ->
-                        cartService.addCartItem(createRequest, userDetails));
+                        cartService.addCartItem(createRequest, "test@test.com"));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
         verify(cartItemRepository, never()).save(any(CartItem.class));
@@ -281,33 +248,31 @@ class CartServiceTest {
         // given
         User userWithoutCart = new User("testUser", "password", "test@test.com", UserRole.USER);
         ReflectionTestUtils.setField(userWithoutCart, "id", 1L);
-        userWithoutCart.setCart(null);
 
-        Cart newCart = Cart.builder()
-                .user(userWithoutCart)
-                .build();
-        ReflectionTestUtils.setField(newCart, "cartId", 2L);
-
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(userWithoutCart));
-//        given(userRepository.findById(1L)).willReturn(Optional.of(userWithoutCart)); // 추가
         given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
         given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
-        given(cartRepository.save(any(Cart.class))).willReturn(newCart);
+
+        given(cartRepository.save(any(Cart.class))).willAnswer(invocation -> {
+            Cart savedCart = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedCart, "cartId", 2L);
+            userWithoutCart.setCart(savedCart);
+            return savedCart;
+        });
+
         given(cartItemRepository.findByCartAndOptionIdAndImageId(any(Cart.class), eq(1L), eq(1L)))
                 .willReturn(Optional.empty());
 
-        CartItem savedCartItem = CartItem.builder()
-                .cart(newCart)
-                .optionId(1L)
-                .imageId(1L)
-                .quantity(2)
-                .build();
-        ReflectionTestUtils.setField(savedCartItem, "cartItemId", 1L);
-        given(cartItemRepository.save(any(CartItem.class))).willReturn(savedCartItem);
+        given(cartItemRepository.save(any(CartItem.class))).willAnswer(invocation -> {
+            CartItem cartItem = invocation.getArgument(0);
+            ReflectionTestUtils.setField(cartItem, "cartItemId", 1L);
+            ReflectionTestUtils.setField(cartItem, "createdAt", LocalDateTime.now());
+            ReflectionTestUtils.setField(cartItem, "updatedAt", LocalDateTime.now());
+            return cartItem;
+        });
 
         // when
-        CartItemResponse response = cartService.addCartItem(createRequest, userDetails);
+        CartItemResponse response = cartService.addCartItem(createRequest, "test@test.com");
 
         // then
         assertThat(response).isNotNull();
@@ -315,6 +280,33 @@ class CartServiceTest {
         assertThat(response.getQuantity()).isEqualTo(2);
         verify(cartRepository, times(1)).save(any(Cart.class));
         verify(cartItemRepository, times(1)).save(any(CartItem.class));
+    }
+
+    @Test
+    @DisplayName("기존 아이템 수량 증가 시 재고 확인 - 실패")
+    void addCartItem_Fail_ExistingItem_InsufficientStock() {
+        // given
+        CartItem existingCartItem = CartItem.builder()
+                .cart(cart)
+                .optionId(1L)
+                .imageId(1L)
+                .quantity(99)
+                .build();
+        ReflectionTestUtils.setField(existingCartItem, "cartItemId", 1L);
+
+        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
+        given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
+        given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
+        given(cartItemRepository.findByCartAndOptionIdAndImageId(cart, 1L, 1L))
+                .willReturn(Optional.of(existingCartItem));
+
+        // when & then
+        ProductException thrown = assertThrows(
+                ProductException.class, () ->
+                        cartService.addCartItem(createRequest, "test@test.com"));
+
+        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
+        verify(cartItemRepository, never()).save(any(CartItem.class));
     }
 
     // ==================== getCartItems 테스트 ====================
@@ -326,48 +318,39 @@ class CartServiceTest {
         CartItem cartItem1 = createCartItem(1L, 1L, 1L, 2, true);
         CartItem cartItem2 = createCartItem(2L, 2L, 2L, 1, true);
 
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(Arrays.asList(cartItem1, cartItem2));
         given(productOptionRepository.findAllByOptionIdIn(any())).willReturn(Arrays.asList(productOption1, productOption2));
         given(productImageRepository.findAllById(any())).willReturn(Arrays.asList(productImage1, productImage2));
 
-        // 할인가 계산 모킹
         given(discountCalculator.calculateDiscountPrice(new BigDecimal("50000"), DiscountType.RATE_DISCOUNT, new BigDecimal("10")))
                 .willReturn(new BigDecimal("45000"));
         given(discountCalculator.calculateDiscountPrice(new BigDecimal("30000"), DiscountType.NONE, null))
                 .willReturn(new BigDecimal("30000"));
 
         // when
-        CartItemListResponse response = cartService.getCartItems(userDetails);
+        CartItemListResponse response = cartService.getCartItems("test@test.com");
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.getItems()).hasSize(2);
         assertThat(response.getTotalItemCount()).isEqualTo(2);
-
-        // 총 금액 계산 확인 (상품1: 50000*2 + 상품2: 30000*1 = 130000)
         assertThat(response.getTotalOriginalPrice()).isEqualTo(new BigDecimal("130000"));
-        // 할인 적용 금액 (상품1: 45000*2 + 상품2: 30000*1 = 120000)
         assertThat(response.getTotalDiscountPrice()).isEqualTo(new BigDecimal("120000"));
-        // 절약 금액 (130000 - 120000 = 10000)
         assertThat(response.getTotalSavings()).isEqualTo(new BigDecimal("10000"));
 
         verify(cartItemRepository, times(1)).findByUserIdWithCart(1L);
-        verify(productOptionRepository, times(1)).findAllByOptionIdIn(any());
-        verify(productImageRepository, times(1)).findAllById(any());
     }
 
     @Test
     @DisplayName("장바구니 목록 조회 성공 - 빈 장바구니")
     void getCartItems_Success_EmptyCart() {
         // given
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(List.of());
 
         // when
-        CartItemListResponse response = cartService.getCartItems(userDetails);
+        CartItemListResponse response = cartService.getCartItems("test@test.com");
 
         // then
         assertThat(response).isNotNull();
@@ -386,12 +369,11 @@ class CartServiceTest {
     @DisplayName("장바구니 목록 조회 실패 - 사용자 없음")
     void getCartItems_Fail_UserNotFound() {
         // given
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.empty());
 
         // when & then
         BusinessException thrown = assertThrows(BusinessException.class, () ->
-                cartService.getCartItems(userDetails));
+                cartService.getCartItems("test@test.com"));
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
         verify(cartItemRepository, never()).findByUserIdWithCart(any());
@@ -404,7 +386,6 @@ class CartServiceTest {
         CartItem selectedItem = createCartItem(1L, 1L, 1L, 2, true);
         CartItem unselectedItem = createCartItem(2L, 2L, 2L, 1, false);
 
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(Arrays.asList(selectedItem, unselectedItem));
         given(productOptionRepository.findAllByOptionIdIn(any())).willReturn(Arrays.asList(productOption1, productOption2));
@@ -416,47 +397,87 @@ class CartServiceTest {
                 .willReturn(new BigDecimal("30000"));
 
         // when
-        CartItemListResponse response = cartService.getCartItems(userDetails);
+        CartItemListResponse response = cartService.getCartItems("test@test.com");
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.getItems()).hasSize(2);
-
-        // 선택된 아이템만 계산 (selectedItem만 선택됨)
-        assertThat(response.getTotalOriginalPrice()).isEqualTo(new BigDecimal("100000")); // 50000 * 2
-        assertThat(response.getTotalDiscountPrice()).isEqualTo(new BigDecimal("90000")); // 45000 * 2
-        assertThat(response.getTotalSavings()).isEqualTo(new BigDecimal("10000")); // 100000 - 90000
+        assertThat(response.getTotalOriginalPrice()).isEqualTo(new BigDecimal("100000"));
+        assertThat(response.getTotalDiscountPrice()).isEqualTo(new BigDecimal("90000"));
+        assertThat(response.getTotalSavings()).isEqualTo(new BigDecimal("10000"));
     }
 
-    // ==================== 기존 수량 증가 시 재고 확인 테스트 ====================
+    // ==================== deleteCartItem 테스트 ====================
 
     @Test
-    @DisplayName("기존 아이템 수량 증가 시 재고 확인 - 실패")
-    void addCartItem_Fail_ExistingItem_InsufficientStock() {
+    @DisplayName("장바구니 상품 삭제 성공")
+    void deleteCartItem_Success() {
         // given
-        CartItem existingCartItem = CartItem.builder()
-                .cart(cart)
-                .optionId(1L)
-                .imageId(1L)
-                .quantity(99) // 기존 수량
-                .build();
-        ReflectionTestUtils.setField(existingCartItem, "cartItemId", 1L);
+        Long cartItemId = 1L;
+        CartItem cartItem = createCartItem(cartItemId, 1L, 1L, 2, true);
 
-        // 재고가 100개인 옵션에 99개가 이미 있고, 2개를 더 추가하려고 함 (총 101개 > 100개)
-        given(userDetails.getUsername()).willReturn("test@test.com");
         given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-//        given(userRepository.findById(1L)).willReturn(Optional.of(user)); // 추가
-        given(productOptionRepository.findByOptionId(1L)).willReturn(Optional.of(productOption1));
-        given(productImageRepository.findByImageId(1L)).willReturn(Optional.of(productImage1));
-        given(cartItemRepository.findByCartAndOptionIdAndImageId(cart, 1L, 1L))
-                .willReturn(Optional.of(existingCartItem));
+        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
+                .willReturn(Optional.of(cartItem));
+
+        // when
+        cartService.deleteCartItem(cartItemId, "test@test.com");
+
+        // then
+        verify(cartItemRepository, times(1)).delete(cartItem);
+        verify(cartItemRepository, times(1)).findByCartItemIdAndUserId(cartItemId, 1L);
+    }
+
+    @Test
+    @DisplayName("장바구니 상품 삭제 실패 - 사용자 없음")
+    void deleteCartItem_Fail_UserNotFound() {
+        // given
+        Long cartItemId = 1L;
+        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.empty());
 
         // when & then
-        ProductException thrown = assertThrows(
-                ProductException.class, () ->
-                        cartService.addCartItem(createRequest, userDetails));
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                cartService.deleteCartItem(cartItemId, "test@test.com"));
 
-        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_STOCK);
+        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
+        verify(cartItemRepository, never()).findByCartItemIdAndUserId(any(), any());
+        verify(cartItemRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("장바구니 상품 삭제 실패 - 장바구니 아이템 없음")
+    void deleteCartItem_Fail_CartItemNotFound() {
+        // given
+        Long cartItemId = 999L;
+
+        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
+        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
+                .willReturn(Optional.empty());
+
+        // when & then
+        CartException thrown = assertThrows(CartException.class, () ->
+                cartService.deleteCartItem(cartItemId, "test@test.com"));
+
+        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
+        verify(cartItemRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("장바구니 상품 삭제 실패 - 다른 사용자 아이템")
+    void deleteCartItem_Fail_NotOwnerItem() {
+        // given
+        Long cartItemId = 1L;
+
+        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
+        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
+                .willReturn(Optional.empty());
+
+        // when & then
+        CartException thrown = assertThrows(CartException.class, () ->
+                cartService.deleteCartItem(cartItemId, "test@test.com"));
+
+        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
+        verify(cartItemRepository, never()).delete(any());
     }
 
     // ==================== 헬퍼 메서드 ====================
@@ -473,79 +494,5 @@ class CartServiceTest {
         ReflectionTestUtils.setField(cartItem, "createdAt", LocalDateTime.now());
         ReflectionTestUtils.setField(cartItem, "updatedAt", LocalDateTime.now());
         return cartItem;
-    }
-
-    @Test
-    @DisplayName("장바구니 상품 삭제 성공")
-    void deleteCartItem_Success() {
-        // given
-        Long cartItemId = 1L;
-        CartItem cartItem = createCartItem(cartItemId, 1L, 1L, 2, true);
-
-        given(userDetails.getUsername()).willReturn("test@test.com");
-        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
-                .willReturn(Optional.of(cartItem));
-
-        // when
-        cartService.deleteCartItem(cartItemId, userDetails);
-
-        // then
-        verify(cartItemRepository, times(1)).delete(cartItem);
-        verify(cartItemRepository, times(1)).findByCartItemIdAndUserId(cartItemId, 1L);
-    }
-
-    @Test
-    @DisplayName("장바구니 상품 삭제 실패 - 사용자 없음")
-    void deleteCartItem_Fail_UserNotFound() {
-        // given
-        Long cartItemId = 1L;
-
-        given(userDetails.getUsername()).willReturn("test@test.com");
-        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.empty());
-
-        // when & then
-        BusinessException thrown = assertThrows(BusinessException.class, () ->
-                cartService.deleteCartItem(cartItemId, userDetails));
-
-        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
-        verify(cartItemRepository, never()).findByCartItemIdAndUserId(any(), any());
-        verify(cartItemRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("장바구니 상품 삭제 실패 - 장바구니 아이템 없음")
-    void deleteCartItem_Fail_CartItemNotFound() {
-        // given
-        Long cartItemId = 999L;
-
-        given(userDetails.getUsername()).willReturn("test@test.com");
-        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
-                .willReturn(Optional.empty());
-
-        // when & then
-        CartException thrown = assertThrows(CartException.class, () -> cartService.deleteCartItem(cartItemId, userDetails));
-
-        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
-        verify(cartItemRepository, never()).delete(any());
-    }
-
-    @Test
-    @DisplayName("장바구니 상품 삭제 실패 - 다른 사용자 아이템")
-    void deleteCartItem_Fail_NotOwnerItem() {
-        // given
-        Long cartItemId = 1L;
-
-        given(userDetails.getUsername()).willReturn("test@test.com");
-        given(userRepository.findByLoginId("test@test.com")).willReturn(Optional.of(user));
-        given(cartItemRepository.findByCartItemIdAndUserId(cartItemId, 1L))
-                .willReturn(Optional.empty()); // 다른 사용자의 아이템이므로 조회되지 않음
-
-        // when & then
-        CartException thrown = assertThrows(CartException.class, () -> cartService.deleteCartItem(cartItemId, userDetails));
-
-        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
-        verify(cartItemRepository, never()).delete(any());
     }
 }

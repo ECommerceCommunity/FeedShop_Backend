@@ -13,6 +13,7 @@ import com.cMall.feedShop.order.application.dto.response.PurchasedItemListRespon
 import com.cMall.feedShop.order.application.service.DirectOrderService;
 import com.cMall.feedShop.order.application.service.OrderService;
 import com.cMall.feedShop.order.application.service.PurchasedItemService;
+import com.cMall.feedShop.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -46,7 +47,8 @@ public class OrderUserController {
     public ApiResponse<OrderCreateResponse> createOrder(
             @Valid @RequestBody OrderCreateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        OrderCreateResponse data = orderService.createOrder(request, userDetails);
+        User currentUser = (User) userDetails;
+        OrderCreateResponse data = orderService.createOrder(request, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -62,7 +64,8 @@ public class OrderUserController {
             @Valid @RequestBody DirectOrderCreateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderCreateResponse data = directOrderService.createDirectOrder(request, userDetails);
+        User currentUser = (User) userDetails;
+        OrderCreateResponse data = directOrderService.createDirectOrder(request, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -95,7 +98,8 @@ public class OrderUserController {
             @RequestParam(required = false) String status,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderPageResponse data = orderService.getOrderListForUser(page, size, status, userDetails);
+        User currentUser = (User) userDetails;
+        OrderPageResponse data = orderService.getOrderListForUser(page, size, status, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -114,7 +118,8 @@ public class OrderUserController {
             Long orderId,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderDetailResponse data = orderService.getOrderDetail(orderId, userDetails);
+        User currentUser = (User) userDetails;
+        OrderDetailResponse data = orderService.getOrderDetail(orderId, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -130,7 +135,8 @@ public class OrderUserController {
     public ApiResponse<PurchasedItemListResponse> getPurchasedItems(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        PurchasedItemListResponse response = purchasedItemService.getPurchasedItems(userDetails);
+        User currentUser = (User) userDetails;
+        PurchasedItemListResponse response = purchasedItemService.getPurchasedItems(currentUser.getUsername());
         return ApiResponse.success(response);
     }
 
@@ -152,7 +158,8 @@ public class OrderUserController {
             @Valid @RequestBody OrderStatusUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
         ) {
-        OrderStatusUpdateResponse data = orderService.updateUserOrderStatus(orderId, request, userDetails);
+        User currentUser = (User) userDetails;
+        OrderStatusUpdateResponse data = orderService.updateUserOrderStatus(orderId, request, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 }

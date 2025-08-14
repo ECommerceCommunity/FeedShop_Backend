@@ -19,7 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -53,8 +52,7 @@ class ProductOptionServiceDeleteTest {
     @Mock
     private ProductOptionRepository productOptionRepository; // 상품 옵션 저장소
 
-    @Mock
-    private UserDetails userDetails; // 로그인한 사용자 정보
+ // 로그인한 사용자 정보
 
     // ========== 테스트할 실제 서비스 ==========
     @InjectMocks
@@ -134,8 +132,7 @@ class ProductOptionServiceDeleteTest {
      * 로그인한 사용자 정보를 설정하는 메서드
      */
     private void setupUserDetails() {
-        // 로그인한 사용자의 아이디를 반환하도록 설정
-        given(userDetails.getUsername()).willReturn(LOGIN_ID);
+        // String으로 변경했으므로 이 설정은 더 이상 필요하지 않음
     }
 
     // ========== 성공 케이스 테스트 ==========
@@ -162,7 +159,7 @@ class ProductOptionServiceDeleteTest {
                 .willReturn(Optional.of(productOption));
 
         // when - 실제 테스트 실행
-        productOptionService.deleteProductOption(OPTION_ID, userDetails);
+        productOptionService.deleteProductOption(OPTION_ID, "seller123");
 
         // then - 결과 검증
         // 1. 사용자를 제대로 찾았는지 확인
@@ -194,7 +191,7 @@ class ProductOptionServiceDeleteTest {
         // when & then - 예외가 발생하는지 확인
         ProductException exception = assertThrows(
                 ProductException.class,
-                () -> productOptionService.deleteProductOption(OPTION_ID, userDetails)
+                () -> productOptionService.deleteProductOption(OPTION_ID, "seller123")
         );
 
         // 올바른 에러 코드가 나오는지 확인
@@ -221,7 +218,7 @@ class ProductOptionServiceDeleteTest {
         // when & then - 권한 예외가 발생하는지 확인
         ProductException exception = assertThrows(
                 ProductException.class,
-                () -> productOptionService.deleteProductOption(OPTION_ID, userDetails)
+                () -> productOptionService.deleteProductOption(OPTION_ID, "seller123")
         );
 
         // 권한 오류 코드가 나오는지 확인
@@ -254,7 +251,7 @@ class ProductOptionServiceDeleteTest {
         // when & then - 상품 옵션을 찾을 수 없다는 예외가 발생하는지 확인
         ProductException exception = assertThrows(
                 ProductException.class,
-                () -> productOptionService.deleteProductOption(OPTION_ID, userDetails)
+                () -> productOptionService.deleteProductOption(OPTION_ID, "seller123")
         );
 
         // 올바른 에러 코드가 나오는지 확인
@@ -290,7 +287,7 @@ class ProductOptionServiceDeleteTest {
         // when & then - 권한 예외가 발생하는지 확인
         ProductException exception = assertThrows(
                 ProductException.class,
-                () -> productOptionService.deleteProductOption(OPTION_ID, userDetails)
+                () -> productOptionService.deleteProductOption(OPTION_ID, "seller123")
         );
 
         // 권한 오류 코드와 메시지가 올바른지 확인
@@ -320,7 +317,7 @@ class ProductOptionServiceDeleteTest {
         // when & then - null ID로 요청했을 때 예외 발생
         assertThrows(
                 Exception.class, // ProductException 또는 다른 예외
-                () -> productOptionService.deleteProductOption(null, userDetails)
+                () -> productOptionService.deleteProductOption(null, "seller123")
         );
 
         // 삭제가 호출되지 않았는지 확인
