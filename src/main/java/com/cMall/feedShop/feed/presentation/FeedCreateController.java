@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.cMall.feedShop.user.domain.model.User;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,7 +35,8 @@ public class FeedCreateController {
             @Valid @RequestBody FeedCreateRequestDto requestDto,
             @AuthenticationPrincipal UserDetails userDetails) {
         
-        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, userDetails);
+        User currentUser = (User) userDetails;
+        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, currentUser.getLoginId());
         return ApiResponse.success(response);
     }
 } 

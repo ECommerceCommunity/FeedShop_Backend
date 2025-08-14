@@ -8,6 +8,8 @@ import com.cMall.feedShop.review.domain.enums.Stability;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,4 +46,31 @@ public interface ReviewRepository {
      * 사용자가 특정 상품에 대해 작성한 활성 리뷰가 있는지 확인
      */
     boolean existsActiveReviewByUserIdAndProductId(Long userId, Long productId);
+
+    // ========== 삭제 관련 통계 메서드들 ==========
+    
+    /**
+     * 사용자가 삭제한 리뷰 목록 조회
+     */
+    List<Review> findDeletedReviewsByUserId(Long userId);
+    
+    /**
+     * 특정 기간 내에 삭제된 리뷰들 조회
+     */
+    List<Review> findDeletedReviewsBetween(LocalDateTime startDate, LocalDateTime endDate);
+    
+    /**
+     * 상품별 삭제된 리뷰 개수
+     */
+    Long countDeletedReviewsByProductId(Long productId);
+    
+    /**
+     * 상품별 전체 리뷰 개수 (활성 + 삭제)
+     */
+    Long countAllReviewsByProductId(Long productId);
+    
+    /**
+     * 사용자별 삭제된 리뷰 개수
+     */
+    Long countDeletedReviewsByUserId(Long userId);
 }
