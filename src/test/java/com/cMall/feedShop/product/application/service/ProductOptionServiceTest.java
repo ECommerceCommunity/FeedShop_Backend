@@ -65,11 +65,11 @@ class ProductOptionServiceTest {
     @BeforeEach
     void setUp() {
         // 판매자 사용자 생성 - 생성자 사용
-        seller = new User("seller@test.com", "password", "seller@test.com", UserRole.SELLER);
+        seller = new User("seller123", "password", "seller@test.com", UserRole.SELLER);
         ReflectionTestUtils.setField(seller, "id", 1L);
 
         // 일반 사용자 생성 - 생성자 사용
-        normalUser = new User("user@test.com", "password", "user@test.com", UserRole.USER);
+        normalUser = new User("user123", "password", "user@test.com", UserRole.USER);
         ReflectionTestUtils.setField(normalUser, "id", 2L);
 
         // 판매자의 가게 생성
@@ -109,13 +109,12 @@ class ProductOptionServiceTest {
     @DisplayName("판매자가 자신의 상품 옵션 조회 성공")
     void getProductOptions_Success() {
         // given
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.of(store));
 
         // when
-        List<ProductOptionInfo> result = productOptionService.getProductOptions(1L, userDetails);
+        List<ProductOptionInfo> result = productOptionService.getProductOptions(1L, "seller123");
 
         // then
         assertThat(result).hasSize(2);
@@ -136,11 +135,10 @@ class ProductOptionServiceTest {
     @DisplayName("비로그인 사용자 접근 시 예외 발생")
     void getProductOptions_Fail_UserNotFound() {
         // given
-        given(userDetails.getUsername()).willReturn("nonexistent@test.com");
         given(userRepository.findByLoginId("nonexistent@test.com")).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, userDetails))
+        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, "nonexistent@test.com"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
@@ -153,11 +151,10 @@ class ProductOptionServiceTest {
     @DisplayName("일반 사용자(USER 권한) 접근 시 예외 발생")
     void getProductOptions_Fail_NotSeller() {
         // given
-        given(userDetails.getUsername()).willReturn("user@test.com");
-        given(userRepository.findByLoginId("user@test.com")).willReturn(Optional.of(normalUser));
+        given(userRepository.findByLoginId("user123")).willReturn(Optional.of(normalUser));
 
         // when & then
-        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, userDetails))
+        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, "user123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FORBIDDEN);
 
@@ -170,12 +167,11 @@ class ProductOptionServiceTest {
     @DisplayName("존재하지 않는 상품 조회 시 예외 발생")
     void getProductOptions_Fail_ProductNotFound() {
         // given
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(999L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> productOptionService.getProductOptions(999L, userDetails))
+        assertThatThrownBy(() -> productOptionService.getProductOptions(999L, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
 
@@ -187,13 +183,12 @@ class ProductOptionServiceTest {
     @DisplayName("판매자 가게 없음 시 예외 발생")
     void getProductOptions_Fail_StoreNotFound() {
         // given
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, userDetails))
+        assertThatThrownBy(() -> productOptionService.getProductOptions(1L, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
     }
@@ -210,13 +205,12 @@ class ProductOptionServiceTest {
                 .build();
         ReflectionTestUtils.setField(otherProduct, "productId", 2L);
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(2L)).willReturn(Optional.of(otherProduct));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.of(store));
 
         // when & then
-        assertThatThrownBy(() -> productOptionService.getProductOptions(2L, userDetails))
+        assertThatThrownBy(() -> productOptionService.getProductOptions(2L, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_BELONG_TO_STORE);
     }
@@ -232,13 +226,12 @@ class ProductOptionServiceTest {
                 .build();
         ReflectionTestUtils.setField(productWithoutOptions, "productId", 3L);
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(3L)).willReturn(Optional.of(productWithoutOptions));
         given(storeRepository.findBySellerId(1L)).willReturn(Optional.of(store));
 
         // when
-        List<ProductOptionInfo> result = productOptionService.getProductOptions(3L, userDetails);
+        List<ProductOptionInfo> result = productOptionService.getProductOptions(3L, "seller123");
 
         // then
         assertThat(result).isEmpty();

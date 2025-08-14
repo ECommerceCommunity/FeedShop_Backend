@@ -49,12 +49,12 @@ public class CartService {
      * 장바구니에 상품을 추가하는 서비스 메서드
      *
      * @param request      장바구니 아이템 생성 요청
-     * @param userDetails  현재 로그인한 사용자 정보
+     * @param loginId  현재 로그인한 사용자 정보
      * @return CartItemResponse 장바구니 아이템 응답
      */
-    public CartItemResponse addCartItem(CartItemCreateRequest request, UserDetails userDetails) {
+    public CartItemResponse addCartItem(CartItemCreateRequest request, String loginId) {
         // 1. 현재 사용자 조회
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 상품 옵션 검증
         ProductOption productOption = validateProductOption(request.getOptionId());
@@ -103,13 +103,13 @@ public class CartService {
     /**
      * 장바구니에 있는 모든 아이템을 조회하는 서비스 메서드
      *
-     * @param userDetails 현재 로그인한 사용자 정보
+     * @param loginId 현재 로그인한 사용자 정보
      * @return CartItemListResponse 장바구니 아이템 리스트 응답
      */
     @Transactional(readOnly = true)
-    public CartItemListResponse getCartItems(UserDetails userDetails) {
+    public CartItemListResponse getCartItems(String loginId) {
         // 1. 현재 사용자 조회
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 사용자 ID로 장바구니 조회 (CartItem + Cart + User)
         List<CartItem> cartItems = cartItemRepository.findByUserIdWithCart(currentUser.getId());
@@ -176,11 +176,11 @@ public class CartService {
      *
      * @param cartItemId
      * @param request
-     * @param userDetails
+     * @param loginId
      */
-    public void updateCartItem(Long cartItemId, CartItemUpdateRequest request, UserDetails userDetails) {
+    public void updateCartItem(Long cartItemId, CartItemUpdateRequest request, String loginId) {
         // 1. 현재 사용자 조회
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 장바구니 아이템 조회
         CartItem cartItem = cartItemRepository.findByCartItemIdAndUserId(cartItemId, currentUser.getId())
@@ -209,11 +209,11 @@ public class CartService {
      * 장바구니 아이템을 삭제하는 서비스 메서드
      *
      * @param cartItemId 장바구니 아이템 ID
-     * @param userDetails 현재 로그인한 사용자 정보
+     * @param loginId 현재 로그인한 사용자 정보
      */
-    public void deleteCartItem(Long cartItemId, UserDetails userDetails) {
+    public void deleteCartItem(Long cartItemId, String loginId) {
         // 1. 현재 사용자 조회
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 장바구니 아이템 조회
         CartItem cartItem = cartItemRepository.findByCartItemIdAndUserId(cartItemId, currentUser.getId())
@@ -248,9 +248,8 @@ public class CartService {
     }
 
     // JWT 에서 현재 사용자 ID 추출
-    private User getCurrentUser(UserDetails userDetails) {
-        String login_id = userDetails.getUsername();
-        return userRepository.findByLoginId(login_id)
+    private User getCurrentUser(String loginId) {
+        return userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
     }
 

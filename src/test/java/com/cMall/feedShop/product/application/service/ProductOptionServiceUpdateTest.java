@@ -22,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -48,8 +47,6 @@ class ProductOptionServiceUpdateTest {
     @Mock
     private ProductOptionRepository productOptionRepository;
 
-    @Mock
-    private UserDetails userDetails;
 
     @InjectMocks
     private ProductOptionService productOptionService;
@@ -64,11 +61,11 @@ class ProductOptionServiceUpdateTest {
     @BeforeEach
     void setUp() {
         // 1. 판매자 계정 생성 - 실제 객체로 생성
-        seller = new User("seller@test.com", "password123", "seller@test.com", UserRole.SELLER);
+        seller = new User("seller123", "password123", "seller@test.com", UserRole.SELLER);
         ReflectionTestUtils.setField(seller, "id", 1L);
 
         // 2. 일반 구매자 계정 생성
-        buyer = new User("buyer@test.com", "password123", "buyer@test.com", UserRole.USER);
+        buyer = new User("buyer123", "password123", "buyer@test.com", UserRole.USER);
         ReflectionTestUtils.setField(buyer, "id", 2L);
 
         // 3. 가게 생성 - 실제 객체로 생성
@@ -114,12 +111,12 @@ class ProductOptionServiceUpdateTest {
         // given
         Long optionId = 1L;
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productOptionRepository.findByOptionId(optionId)).willReturn(Optional.of(productOption));
 
         // when
-        productOptionService.updateProductOption(optionId, request, userDetails);
+        productOptionService.updateProductOption(optionId, request, "seller123");
 
         // then
         verify(productOption, times(1)).updateStock(50);
@@ -135,12 +132,11 @@ class ProductOptionServiceUpdateTest {
         // given
         Long optionId = 1L;
 
-        given(userDetails.getUsername()).willReturn("buyer@test.com");
-        given(userRepository.findByLoginId("buyer@test.com")).willReturn(Optional.of(buyer));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(buyer));
 
         // when & then
         ProductException exception = assertThrows(ProductException.class, () -> {
-            productOptionService.updateProductOption(optionId, request, userDetails);
+            productOptionService.updateProductOption(optionId, request, "seller123");
         });
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN);
@@ -157,13 +153,12 @@ class ProductOptionServiceUpdateTest {
         User otherSeller = new User("other@test.com", "password123", "other@test.com", UserRole.SELLER);
         ReflectionTestUtils.setField(otherSeller, "id", 99L);
 
-        given(userDetails.getUsername()).willReturn("other@test.com");
-        given(userRepository.findByLoginId("other@test.com")).willReturn(Optional.of(otherSeller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(otherSeller));
         given(productOptionRepository.findByOptionId(optionId)).willReturn(Optional.of(productOption));
 
         // when & then
         ProductException exception = assertThrows(ProductException.class, () -> {
-            productOptionService.updateProductOption(optionId, request, userDetails);
+            productOptionService.updateProductOption(optionId, request, "seller123");
         });
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN);
@@ -175,13 +170,13 @@ class ProductOptionServiceUpdateTest {
         // given
         Long notExistOptionId = 999L;
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productOptionRepository.findByOptionId(notExistOptionId)).willReturn(Optional.empty());
 
         // when & then
         ProductException exception = assertThrows(ProductException.class, () -> {
-            productOptionService.updateProductOption(notExistOptionId, request, userDetails);
+            productOptionService.updateProductOption(notExistOptionId, request, "seller123");
         });
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_OPTION_NOT_FOUND);
@@ -193,12 +188,11 @@ class ProductOptionServiceUpdateTest {
         // given
         Long optionId = 1L;
 
-        given(userDetails.getUsername()).willReturn("notexist@test.com");
-        given(userRepository.findByLoginId("notexist@test.com")).willReturn(Optional.empty());
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.empty());
 
         // when & then
         ProductException exception = assertThrows(ProductException.class, () -> {
-            productOptionService.updateProductOption(optionId, request, userDetails);
+            productOptionService.updateProductOption(optionId, request, "seller123");
         });
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
@@ -212,12 +206,12 @@ class ProductOptionServiceUpdateTest {
 
         ProductOptionUpdateRequest stockOnlyRequest = createUpdateRequest(100, null, null, null);
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productOptionRepository.findByOptionId(optionId)).willReturn(Optional.of(productOption));
 
         // when
-        productOptionService.updateProductOption(optionId, stockOnlyRequest, userDetails);
+        productOptionService.updateProductOption(optionId, stockOnlyRequest, "seller123");
 
         // then
         verify(productOption, times(1)).updateStock(100);
@@ -235,13 +229,13 @@ class ProductOptionServiceUpdateTest {
 
         ProductOptionUpdateRequest invalidRequest = createUpdateRequest(50, "RAINBOW", null, null);
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productOptionRepository.findByOptionId(optionId)).willReturn(Optional.of(productOption));
 
         // when & then
         ProductException exception = assertThrows(ProductException.class, () -> {
-            productOptionService.updateProductOption(optionId, invalidRequest, userDetails);
+            productOptionService.updateProductOption(optionId, invalidRequest, "seller123");
         });
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
@@ -255,12 +249,12 @@ class ProductOptionServiceUpdateTest {
 
         ProductOptionUpdateRequest emptyStringRequest = createUpdateRequest(50, "", "   ", null);
 
-        given(userDetails.getUsername()).willReturn("seller@test.com");
-        given(userRepository.findByLoginId("seller@test.com")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productOptionRepository.findByOptionId(optionId)).willReturn(Optional.of(productOption));
 
         // when
-        productOptionService.updateProductOption(optionId, emptyStringRequest, userDetails);
+        productOptionService.updateProductOption(optionId, emptyStringRequest, "seller123");
 
         // then
         verify(productOption, times(1)).updateStock(50);

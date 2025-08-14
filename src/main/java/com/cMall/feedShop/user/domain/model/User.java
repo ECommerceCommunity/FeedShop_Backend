@@ -6,6 +6,7 @@ import com.cMall.feedShop.order.domain.model.Order;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -65,7 +66,7 @@ public class User extends BaseTimeEntity implements UserDetails {
     private UserStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "ENUM('USER', 'ADMIN', 'SELLER') DEFAULT 'USER'") // ERD의 role
+    @Column(nullable = false, columnDefinition = "ENUM('USER', 'ADMIN', 'SELLER') DEFAULT 'USER'")
     private UserRole role;
 
     @Column(name = "verification_token", length = 36)
@@ -74,14 +75,14 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "verification_token_expiry")
     private LocalDateTime verificationTokenExpiry;
 
-    //(회원가입 시 사용)
+    @Builder
     public User(String loginId, String password, String email, UserRole role) {
         this.loginId = loginId;
         this.password = password;
         this.email = email;
         this.role = role;
         this.status = UserStatus.PENDING;
-        this.passwordChangedAt = LocalDateTime.now(); // 초기 비밀번호 변경 시간 설정
+        this.passwordChangedAt = LocalDateTime.now();
     }
 
     public User(Long id, String loginId, String password, String email, UserRole role) {
@@ -90,14 +91,14 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.password = password;
         this.email = email;
         this.role = role;
-        this.status = UserStatus.ACTIVE; // 테스트용으로 ACTIVE 상태가 적합할 수 있습니다.
+        this.status = UserStatus.ACTIVE;
         this.passwordChangedAt = LocalDateTime.now();
     }
 
     public void setUserProfile(UserProfile userProfile) {
         this.userProfile = userProfile;
         if (userProfile != null && userProfile.getUser() != this) {
-            userProfile.setUser(this); // 양방향 관계 동기화
+            userProfile.setUser(this);
         }
     }
 
