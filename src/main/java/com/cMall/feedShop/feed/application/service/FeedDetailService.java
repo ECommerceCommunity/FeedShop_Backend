@@ -52,40 +52,7 @@ public class FeedDetailService {
         
         // 사용자별 좋아요 상태 설정
         boolean isLiked = feedLikeService.isLikedByUser(feedId, userDetails);
-        dto = FeedDetailResponseDto.builder()
-                .feedId(dto.getFeedId())
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .feedType(dto.getFeedType())
-                .instagramId(dto.getInstagramId())
-                .createdAt(dto.getCreatedAt())
-                .updatedAt(dto.getUpdatedAt())
-                .likeCount(dto.getLikeCount())
-                .commentCount(dto.getCommentCount())
-                .participantVoteCount(dto.getParticipantVoteCount())
-                .userId(dto.getUserId())
-                .userNickname(dto.getUserNickname())
-                .userProfileImg(dto.getUserProfileImg())
-                .userLevel(dto.getUserLevel())
-                .userGender(dto.getUserGender())
-                .userHeight(dto.getUserHeight())
-                .orderItemId(dto.getOrderItemId())
-                .productName(dto.getProductName())
-                .productSize(dto.getProductSize())
-                .productImageUrl(dto.getProductImageUrl())
-                .productId(dto.getProductId())
-                .eventId(dto.getEventId())
-                .eventTitle(dto.getEventTitle())
-                .eventDescription(dto.getEventDescription())
-                .eventStartDate(dto.getEventStartDate())
-                .eventEndDate(dto.getEventEndDate())
-                .hashtags(dto.getHashtags())
-                .images(dto.getImages())
-                .comments(dto.getComments())
-                .isLiked(isLiked)
-                .isVoted(dto.getIsVoted())
-                .canVote(dto.getCanVote())
-                .build();
+        dto = dto.toBuilder().isLiked(isLiked).build();
         
         log.info("사용자별 좋아요 상태 설정 - feedId: {}, isLiked: {}", feedId, isLiked);
         
