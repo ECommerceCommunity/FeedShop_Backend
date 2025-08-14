@@ -88,13 +88,23 @@ public class EventReadService {
     public List<EventSummaryDto> getFeedAvailableEvents() {
         LocalDate currentDate = LocalDate.now();
         
-        // DB에서 필터링된 이벤트만 가져옴
+        // DB에서 필터링된 이벤트만 가져옴 (종료일이 현재 날짜보다 미래인 이벤트)
         List<Event> availableEvents = eventRepository.findAvailableEvents(currentDate);
         
-        return availableEvents.stream()
-                // 이 부분은 calculateStatus()가 DB에서 처리할 수 없는 비즈니스 로직이라면 유지
-                .filter(event -> event.calculateStatus() == EventStatus.ONGOING)
+        // 실시간 상태 계산으로 진행중인 이벤트만 필터링
+        List<EventSummaryDto> result = availableEvents.stream()
+                .filter(event -> {
+                    EventStatus calculatedStatus = event.calculateStatus();
+                    boolean isOngoing = calculatedStatus == EventStatus.ONGOING;
+                    if (!isOngoing) {
+                        System.out.println("이벤트 " + event.getId() + " 제외됨 - 상태: " + calculatedStatus);
+                    }
+                    return isOngoing;
+                })
                 .map(eventMapper::toSummaryDto)
                 .toList();
+        
+        System.out.println("피드 생성 가능한 이벤트 수: " + result.size());
+        return result;
     }
 } 
