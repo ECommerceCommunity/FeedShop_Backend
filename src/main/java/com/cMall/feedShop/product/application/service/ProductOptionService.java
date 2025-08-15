@@ -20,7 +20,6 @@ import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +39,7 @@ public class ProductOptionService {
      * 상품 ID로 상품 옵션 정보를 조회하는 서비스 메서드
      *
      * @param productId 상품 ID
-     * @param userDetails 사용자 정보 (판매자)
+     * @param loginId 사용자 정보 (판매자)
      * @return 상품 옵션 정보 리스트
      */
     @Transactional(readOnly = true)
@@ -63,7 +62,7 @@ public class ProductOptionService {
      *
      * @param productId 상품 ID
      * @param request   상품 옵션 생성 요청
-     * @param userDetails 인증된 사용자 정보
+     * @param loginId 인증된 사용자 정보
      * @return 생성된 상품 옵션의 ID를 포함한 응답 객체
      */
     @Transactional
@@ -92,7 +91,7 @@ public class ProductOptionService {
      *
      * @param optionId 상품 옵션 ID
      * @param request  상품 옵션 수정 요청
-     * @param userDetails 인증된 사용자 정보
+     * @param loginId 인증된 사용자 정보
      */
     @Transactional
     public void updateProductOption(Long optionId, ProductOptionUpdateRequest request, String loginId) {
