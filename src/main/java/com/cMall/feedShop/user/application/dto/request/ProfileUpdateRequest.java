@@ -26,9 +26,9 @@ public class ProfileUpdateRequest {
 
     private Integer height;
 
-    private Integer weight;
-
     private Integer footSize;
+
+    private Integer weight;
 
     private FootWidth footWidth;
 
