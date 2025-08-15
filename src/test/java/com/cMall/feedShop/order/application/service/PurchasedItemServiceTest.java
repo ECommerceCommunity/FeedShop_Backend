@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -36,8 +35,6 @@ class PurchasedItemServiceTest {
     @Mock
     private OrderItemQueryRepository orderItemQueryRepository;
 
-    @Mock
-    private UserDetails userDetails;
 
     @InjectMocks
     private PurchasedItemService purchasedItemService;
@@ -60,12 +57,11 @@ class PurchasedItemServiceTest {
     @DisplayName("구매 상품 목록 조회 성공")
     void getPurchasedItems_Success() {
         // Given
-        when(userDetails.getUsername()).thenReturn("testuser");
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByLoginId("testUser")).thenReturn(Optional.of(user));
         when(orderItemQueryRepository.findPurchasedItemsByUserId(1L)).thenReturn(purchasedItems);
 
         // When
-        PurchasedItemListResponse result = purchasedItemService.getPurchasedItems(userDetails);
+        PurchasedItemListResponse result = purchasedItemService.getPurchasedItems("testUser");
 
         // Then
         assertThat(result).isNotNull();
@@ -79,12 +75,11 @@ class PurchasedItemServiceTest {
     @DisplayName("구매 상품 목록 조회 성공 - 빈 목록")
     void getPurchasedItems_EmptyList() {
         // Given
-        when(userDetails.getUsername()).thenReturn("testuser");
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findByLoginId("testUser")).thenReturn(Optional.of(user));
         when(orderItemQueryRepository.findPurchasedItemsByUserId(1L)).thenReturn(Arrays.asList());
 
         // When
-        PurchasedItemListResponse result = purchasedItemService.getPurchasedItems(userDetails);
+        PurchasedItemListResponse result = purchasedItemService.getPurchasedItems("testUser");
 
         // Then
         assertThat(result).isNotNull();
@@ -96,11 +91,10 @@ class PurchasedItemServiceTest {
     @DisplayName("구매 상품 목록 조회 실패 - 사용자 없음")
     void getPurchasedItems_UserNotFound() {
         // Given
-        when(userDetails.getUsername()).thenReturn("nonexistent");
-        when(userRepository.findByLoginId("nonexistent")).thenReturn(Optional.empty());
+        when(userRepository.findByLoginId("testUser")).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> purchasedItemService.getPurchasedItems(userDetails))
+        assertThatThrownBy(() -> purchasedItemService.getPurchasedItems("testUser"))
                 .isInstanceOf(UserException.class)
                 .hasMessage(ErrorCode.USER_NOT_FOUND.getMessage());
     }

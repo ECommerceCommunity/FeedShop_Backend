@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum UploadDirectory {
     REVIEWS("reviews"),
-    PROFILES("profiles");
+    PROFILES("profiles"),
+    PRODUCTS("products");
 
     private final String path;
 
