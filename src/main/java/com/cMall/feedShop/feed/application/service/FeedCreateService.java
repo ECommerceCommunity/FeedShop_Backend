@@ -12,7 +12,6 @@ import com.cMall.feedShop.order.application.service.PurchasedItemService;
 import com.cMall.feedShop.order.application.dto.response.info.PurchasedItemInfo;
 import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.order.domain.repository.OrderRepository;
-import org.springframework.security.core.userdetails.UserDetails;
 import com.cMall.feedShop.user.domain.model.User;
 import java.util.List;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
@@ -37,13 +36,13 @@ public class FeedCreateService {
      * 피드 생성
      */
     @Transactional
-    public FeedCreateResponseDto createFeed(FeedCreateRequestDto requestDto, UserDetails userDetails) {
+    public FeedCreateResponseDto createFeed(FeedCreateRequestDto requestDto, String loginId) {
         // 1. 사용자 조회
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         
         // 2. 구매한 상품 목록 조회 (API 활용)
-        List<PurchasedItemInfo> purchasedItems = purchasedItemService.getPurchasedItems(userDetails).getItems();
+        List<PurchasedItemInfo> purchasedItems = purchasedItemService.getPurchasedItems(user.getLoginId()).getItems();
         
         // 3. 해당 주문 상품이 구매 목록에 있는지 검증
         PurchasedItemInfo purchasedItem = purchasedItems.stream()

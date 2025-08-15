@@ -63,8 +63,8 @@ public class OrderCommonService {
      * @param userDetails Spring Security의 UserDetails 객체
      * @return 검증된 User 객체
      */
-    public User validateUser(UserDetails userDetails) {
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+    public User validateUser(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new OrderException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.USER) {

@@ -34,11 +34,15 @@ public class UserCouponService {
                 .collect(Collectors.toList());
     }
 
-    // 사용자 이메일로 쿠폰 페이징 조회
     public Page<CouponResponse> getUserCouponsByEmail(String email, UserCouponStatus status, Pageable pageable) {
-        Page<UserCoupon> userCouponPage = status != null
-                ? userCouponRepository.findByUserEmailAndCouponStatus(email, status, pageable)
-                : userCouponRepository.findByUserEmail(email, pageable);
+        Page<UserCoupon> userCouponPage;
+        if (status != null) {
+            // (1) 상태가 지정된 경우, 만료되지 않은 쿠폰만 필터링
+            userCouponPage = userCouponRepository.findByUserEmailAndCouponStatusAndExpiresAtAfter(email, status, LocalDateTime.now(), pageable);
+        } else {
+            // (2) 상태가 지정되지 않은 경우, 모든 쿠폰 조회 (만료 조건 제외)
+            userCouponPage = userCouponRepository.findByUserEmail(email, pageable);
+        }
         return userCouponPage.map(this::mapToCouponResponse);
     }
 
@@ -70,7 +74,7 @@ public class UserCouponService {
     }
 
     // 쿠폰 사용
-    @Transactional
+    @Transactional(noRollbackFor = IllegalStateException.class)
     public CouponResponse useCoupon(String email, String couponCode) {
         UserCoupon userCoupon = userCouponRepository.findByUserEmailAndCouponCode(email, couponCode)
                 .orElseThrow(() -> new IllegalArgumentException("Coupon not found for user: " + email + ", code: " + couponCode));

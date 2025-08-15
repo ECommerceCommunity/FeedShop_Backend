@@ -66,4 +66,10 @@ public class ReviewImageRepositoryImpl implements ReviewImageRepository {
     public List<ReviewImage> findActiveImagesByReviewIdAndImageIds(Long reviewId, List<Long> imageIds) {
         return jpaRepository.findActiveImagesByReviewIdAndImageIds(reviewId, imageIds);
     }
+
+    @Override
+    public List<ReviewImage> findByReviewReviewIdAndDeletedFalse(Long reviewId) {
+        return jpaRepository.findByReviewReviewIdAndDeletedFalse(reviewId);
+    }
+
 }

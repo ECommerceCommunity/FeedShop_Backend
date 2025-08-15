@@ -24,11 +24,11 @@ public class PurchasedItemService {
     private final UserRepository userRepository;
     private final OrderItemQueryRepository orderItemQueryRepository;
 
-    public PurchasedItemListResponse getPurchasedItems(UserDetails userDetails) {
+    public PurchasedItemListResponse getPurchasedItems(String loginId) {
         // 현재 사용자 조회
-        User currentUser = userRepository.findByLoginId(userDetails.getUsername())
+        User currentUser = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> {
-                    log.warn("구매 상품 목록 조회 시 사용자를 찾을 수 없음. username: {}", userDetails.getUsername());
+                    log.warn("구매 상품 목록 조회 시 사용자를 찾을 수 없음.");
                     return new UserException(ErrorCode.USER_NOT_FOUND);
                 });
 

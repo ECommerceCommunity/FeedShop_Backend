@@ -44,9 +44,9 @@ public class ProductOptionService {
      * @return 상품 옵션 정보 리스트
      */
     @Transactional(readOnly = true)
-    public List<ProductOptionInfo> getProductOptions(Long productId, UserDetails userDetails) {
+    public List<ProductOptionInfo> getProductOptions(Long productId, String loginId) {
         // 1. 현재 사용자를 가져오고 권한을 검증한다.
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 판매자 권한을 검증한다.
         validateSellerRole(currentUser);
@@ -67,9 +67,9 @@ public class ProductOptionService {
      * @return 생성된 상품 옵션의 ID를 포함한 응답 객체
      */
     @Transactional
-    public ProductOptionCreateResponse addProductOption(Long productId, ProductOptionCreateRequest request, UserDetails userDetails) {
+    public ProductOptionCreateResponse addProductOption(Long productId, ProductOptionCreateRequest request, String loginId) {
         // 1. 현재 사용자를 가져오고 권한을 검증한다.
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 상품 소유권을 검증하고 상품 정보를 가져온다.
         Product product = getProductOwnership(productId, currentUser.getId());
@@ -95,9 +95,9 @@ public class ProductOptionService {
      * @param userDetails 인증된 사용자 정보
      */
     @Transactional
-    public void updateProductOption(Long optionId, ProductOptionUpdateRequest request, UserDetails userDetails) {
+    public void updateProductOption(Long optionId, ProductOptionUpdateRequest request, String loginId) {
         // 1. 현재 사용자 정보를 가져온다.
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 판매자 권한을 검증한다.
         validateSellerRole(currentUser);
@@ -116,9 +116,9 @@ public class ProductOptionService {
     }
 
     @Transactional
-    public void deleteProductOption(Long optionId, UserDetails userDetails) {
+    public void deleteProductOption(Long optionId, String loginId) {
         // 1. 현재 사용자 정보를 가져온다.
-        User currentUser = getCurrentUser(userDetails);
+        User currentUser = getCurrentUser(loginId);
 
         // 2. 판매자 권한을 검증한다.
         validateSellerRole(currentUser);
@@ -136,8 +136,8 @@ public class ProductOptionService {
         productOptionRepository.delete(productOption);
     }
 
-    private User getCurrentUser(UserDetails userDetails) {
-        return userRepository.findByLoginId(userDetails.getUsername())
+    private User getCurrentUser(String loginId) {
+        return userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new ProductException(ErrorCode.USER_NOT_FOUND));
     }
 

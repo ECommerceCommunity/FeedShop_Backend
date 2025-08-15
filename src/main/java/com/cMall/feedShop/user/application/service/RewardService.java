@@ -15,6 +15,7 @@ import com.cMall.feedShop.user.domain.repository.RewardPolicyRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -86,37 +87,34 @@ public class RewardService {
     public RewardHistoryResponse grantReviewReward(User user, Long reviewId, String reviewType) {
         RewardType rewardType = getReviewRewardType(reviewType);
         RewardPolicy policy = getValidPolicy(rewardType);
-        
-        // 중복 지급 방지
-        if (isAlreadyRewarded(reviewId, "REVIEW", rewardType)) {
-            log.info("리뷰 보상 이미 지급됨: 사용자 ID={}, 리뷰 ID={}, 타입={}", user.getId(), reviewId, rewardType);
-            return null;
+
+        try {
+            RewardHistory rewardHistory = RewardHistory.builder()
+                    .user(user)
+                    .rewardType(rewardType)
+                    .points(policy.getPoints())
+                    .description(policy.getDescription())
+                    .relatedId(reviewId)
+                    .relatedType("REVIEW")
+                    .build();
+
+            RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
+
+            pointService.earnPoints(user, policy.getPoints(),
+                    "리뷰 보상: " + policy.getDescription(), null);
+
+            savedHistory.markAsProcessed();
+            rewardHistoryRepository.save(savedHistory);
+
+            log.info("리뷰 보상 지급 완료: 사용자 ID={}, 리뷰 ID={}, 포인트={}, 타입={}",
+                    user.getId(), reviewId, policy.getPoints(), rewardType);
+
+            return RewardHistoryResponse.from(savedHistory);
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("리뷰 보상 이미 지급됨 (DB 충돌): 사용자 ID={}, 리뷰 ID={}, 타입={}", user.getId(), reviewId, rewardType);
+            throw new UserException(ErrorCode.REWARD_ALREADY_GRANTED);
         }
-        
-        // 리워드 히스토리 생성
-        RewardHistory rewardHistory = RewardHistory.builder()
-                .user(user)
-                .rewardType(rewardType)
-                .points(policy.getPoints())
-                .description(policy.getDescription())
-                .relatedId(reviewId)
-                .relatedType("REVIEW")
-                .build();
-        
-        RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
-        
-        // 포인트 적립 처리
-        pointService.earnPoints(user, policy.getPoints(), 
-                "리뷰 보상: " + policy.getDescription(), null);
-        
-        // 처리 완료 표시
-        savedHistory.markAsProcessed();
-        rewardHistoryRepository.save(savedHistory);
-        
-        log.info("리뷰 보상 지급 완료: 사용자 ID={}, 리뷰 ID={}, 포인트={}, 타입={}", 
-                user.getId(), reviewId, policy.getPoints(), rewardType);
-        
-        return RewardHistoryResponse.from(savedHistory);
     }
 
     /**
@@ -125,40 +123,36 @@ public class RewardService {
     @Transactional
     public RewardHistoryResponse grantEventReward(User user, Long eventId, RewardType eventRewardType) {
         RewardPolicy policy = getValidPolicy(eventRewardType);
-        
-        // 중복 지급 방지
-        if (isAlreadyRewarded(eventId, "EVENT", eventRewardType)) {
-            log.info("이벤트 보상 이미 지급됨: 사용자 ID={}, 이벤트 ID={}, 타입={}", user.getId(), eventId, eventRewardType);
-            return null;
-        }
-        
-        // 일일/월간 제한 확인
+
         validateRewardLimits(user, eventRewardType);
-        
-        // 리워드 히스토리 생성
-        RewardHistory rewardHistory = RewardHistory.builder()
-                .user(user)
-                .rewardType(eventRewardType)
-                .points(policy.getPoints())
-                .description(policy.getDescription())
-                .relatedId(eventId)
-                .relatedType("EVENT")
-                .build();
-        
-        RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
-        
-        // 포인트 적립 처리
-        pointService.earnPoints(user, policy.getPoints(), 
-                "이벤트 보상: " + policy.getDescription(), null);
-        
-        // 처리 완료 표시
-        savedHistory.markAsProcessed();
-        rewardHistoryRepository.save(savedHistory);
-        
-        log.info("이벤트 보상 지급 완료: 사용자 ID={}, 이벤트 ID={}, 포인트={}, 타입={}", 
-                user.getId(), eventId, policy.getPoints(), eventRewardType);
-        
-        return RewardHistoryResponse.from(savedHistory);
+
+        try {
+            RewardHistory rewardHistory = RewardHistory.builder()
+                    .user(user)
+                    .rewardType(eventRewardType)
+                    .points(policy.getPoints())
+                    .description(policy.getDescription())
+                    .relatedId(eventId)
+                    .relatedType("EVENT")
+                    .build();
+
+            RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
+
+            pointService.earnPoints(user, policy.getPoints(),
+                    "이벤트 보상: " + policy.getDescription(), null);
+
+            savedHistory.markAsProcessed();
+            rewardHistoryRepository.save(savedHistory);
+
+            log.info("이벤트 보상 지급 완료: 사용자 ID={}, 이벤트 ID={}, 포인트={}, 타입={}",
+                    user.getId(), eventId, policy.getPoints(), eventRewardType);
+
+            return RewardHistoryResponse.from(savedHistory);
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("이벤트 보상 이미 지급됨 (DB 충돌): 사용자 ID={}, 이벤트 ID={}, 타입={}", user.getId(), eventId, eventRewardType);
+            throw new UserException(ErrorCode.REWARD_ALREADY_GRANTED);
+        }
     }
 
     /**
@@ -204,37 +198,34 @@ public class RewardService {
     @Transactional
     public RewardHistoryResponse grantFirstPurchaseReward(User user, Long orderId) {
         RewardPolicy policy = getValidPolicy(RewardType.FIRST_PURCHASE);
-        
-        // 첫 구매 보상 이미 지급되었는지 확인
-        if (hasReceivedFirstPurchaseReward(user)) {
-            log.info("첫 구매 보상 이미 지급됨: 사용자 ID={}", user.getId());
-            return null;
+
+        try {
+            RewardHistory rewardHistory = RewardHistory.builder()
+                    .user(user)
+                    .rewardType(RewardType.FIRST_PURCHASE)
+                    .points(policy.getPoints())
+                    .description(policy.getDescription())
+                    .relatedId(orderId)
+                    .relatedType("ORDER")
+                    .build();
+
+            RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
+
+            pointService.earnPoints(user, policy.getPoints(),
+                    "첫 구매 보너스", orderId);
+
+            savedHistory.markAsProcessed();
+            rewardHistoryRepository.save(savedHistory);
+
+            log.info("첫 구매 보너스 지급 완료: 사용자 ID={}, 주문 ID={}, 포인트={}",
+                    user.getId(), orderId, policy.getPoints());
+
+            return RewardHistoryResponse.from(savedHistory);
+
+        } catch (DataIntegrityViolationException e) {
+            log.warn("첫 구매 보상 이미 지급됨 (DB 충돌): 사용자 ID={}, 주문 ID={}", user.getId(), orderId);
+            throw new UserException(ErrorCode.REWARD_ALREADY_GRANTED);
         }
-        
-        // 리워드 히스토리 생성
-        RewardHistory rewardHistory = RewardHistory.builder()
-                .user(user)
-                .rewardType(RewardType.FIRST_PURCHASE)
-                .points(policy.getPoints())
-                .description(policy.getDescription())
-                .relatedId(orderId)
-                .relatedType("ORDER")
-                .build();
-        
-        RewardHistory savedHistory = rewardHistoryRepository.save(rewardHistory);
-        
-        // 포인트 적립 처리
-        pointService.earnPoints(user, policy.getPoints(), 
-                "첫 구매 보너스", orderId);
-        
-        // 처리 완료 표시
-        savedHistory.markAsProcessed();
-        rewardHistoryRepository.save(savedHistory);
-        
-        log.info("첫 구매 보너스 지급 완료: 사용자 ID={}, 주문 ID={}, 포인트={}", 
-                user.getId(), orderId, policy.getPoints());
-        
-        return RewardHistoryResponse.from(savedHistory);
     }
 
     /**
