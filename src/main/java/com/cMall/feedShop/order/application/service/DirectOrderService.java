@@ -36,9 +36,9 @@ public class DirectOrderService {
      * @return 주문 생성 응답 정보
      */
     @Transactional
-    public OrderCreateResponse createDirectOrder(DirectOrderCreateRequest request, UserDetails userDetails) {
+    public OrderCreateResponse createDirectOrder(DirectOrderCreateRequest request, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 주문 아이템 목록을 조회
         List<OrderItemRequest> orderItemRequests = request.getItems();

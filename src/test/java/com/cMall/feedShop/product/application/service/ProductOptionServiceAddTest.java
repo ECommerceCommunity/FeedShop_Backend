@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -48,7 +47,6 @@ class ProductOptionServiceAddTest {
     @Mock private UserRepository userRepository;
     @Mock private StoreRepository storeRepository;
     @Mock private ProductOptionRepository productOptionRepository;
-    @Mock private UserDetails userDetails;
 
     // 테스트할 실제 서비스 객체
     @InjectMocks
@@ -89,7 +87,6 @@ class ProductOptionServiceAddTest {
         Long savedOptionId = 10L;
 
         // Mock 객체들이 어떻게 동작할지 정의
-        given(userDetails.getUsername()).willReturn("seller123");
         given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(seller.getId())).willReturn(Optional.of(store));
@@ -103,7 +100,7 @@ class ProductOptionServiceAddTest {
 
         // when - 실제 메서드 실행
         ProductOptionCreateResponse response = productOptionService.addProductOption(
-                productId, request, userDetails
+                productId, request, "seller123"
         );
 
         // then - 결과 확인
@@ -125,12 +122,11 @@ class ProductOptionServiceAddTest {
     void addProductOption_UserNotFound() {
         // given - 존재하지 않는 사용자 ID로 테스트
         Long productId = 1L;
-        given(userDetails.getUsername()).willReturn("unknown_user");
-        given(userRepository.findByLoginId("unknown_user")).willReturn(Optional.empty());
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.empty());
 
         // when & then - 예외가 발생하는지 확인
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
     }
@@ -145,14 +141,13 @@ class ProductOptionServiceAddTest {
         Long productId = 1L;
         User buyer = createBuyer();  // 판매자가 아닌 일반 구매자
 
-        given(userDetails.getUsername()).willReturn("buyer123");
-        given(userRepository.findByLoginId("buyer123")).willReturn(Optional.of(buyer));
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(buyer));
         given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(buyer.getId())).willReturn(Optional.empty());  // 구매자는 스토어가 없음
 
         // when & then - 스토어를 찾을 수 없다는 예외가 발생하는지 확인 (서비스 로직 순서상 먼저 발생)
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
     }
@@ -166,13 +161,12 @@ class ProductOptionServiceAddTest {
         // given - 존재하지 않는 상품 ID로 테스트
         Long productId = 999L;
 
-        given(userDetails.getUsername()).willReturn("seller123");
         given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(productId)).willReturn(Optional.empty());
 
         // when & then - 상품을 찾을 수 없다는 예외가 발생하는지 확인
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_FOUND);
     }
@@ -194,14 +188,13 @@ class ProductOptionServiceAddTest {
         // 상품의 소유 가게를 다른 가게로 설정
         ReflectionTestUtils.setField(product, "store", otherStore);
 
-        given(userDetails.getUsername()).willReturn("seller123");
         given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(seller.getId())).willReturn(Optional.of(store));
 
         // when & then - 상품 소유권 없음 예외가 발생하는지 확인
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.PRODUCT_NOT_BELONG_TO_STORE);
     }
@@ -215,7 +208,6 @@ class ProductOptionServiceAddTest {
         // given - 이미 같은 옵션이 존재하는 상황 만들기
         Long productId = 1L;
 
-        given(userDetails.getUsername()).willReturn("seller123");
         given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(seller.getId())).willReturn(Optional.of(store));
@@ -227,7 +219,7 @@ class ProductOptionServiceAddTest {
 
         // when & then - 중복 옵션 예외가 발생하는지 확인
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DUPLICATE_PRODUCT_OPTION);
 
@@ -244,14 +236,13 @@ class ProductOptionServiceAddTest {
         // given - 가게가 없는 판매자로 테스트
         Long productId = 1L;
 
-        given(userDetails.getUsername()).willReturn("seller123");
         given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
         given(productRepository.findByProductId(productId)).willReturn(Optional.of(product));
         given(storeRepository.findBySellerId(seller.getId())).willReturn(Optional.empty());
 
         // when & then - 가게를 찾을 수 없다는 예외가 발생하는지 확인
         assertThatThrownBy(() ->
-                productOptionService.addProductOption(productId, request, userDetails))
+                productOptionService.addProductOption(productId, request, "seller123"))
                 .isInstanceOf(ProductException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.STORE_NOT_FOUND);
     }

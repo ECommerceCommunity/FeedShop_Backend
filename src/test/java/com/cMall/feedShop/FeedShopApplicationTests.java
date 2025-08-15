@@ -1,7 +1,10 @@
 package com.cMall.feedShop;
 
 import com.cMall.feedShop.common.captcha.RecaptchaVerificationService;
+import com.cMall.feedShop.common.email.EmailServiceImpl;
+import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.common.storage.StorageService;
+import com.cMall.feedShop.common.validator.ImageValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
@@ -37,7 +40,13 @@ class FeedShopApplicationTests {
     private EmailService emailService;
 
     @MockBean
-    private StorageService storageService;
+    private EmailServiceImpl emailServiceImpl;
+
+    @MockBean
+    private GcpStorageService gcpStorageService;
+
+    @MockBean
+    private ImageValidator imageValidator;
 
     @Autowired
     private RecaptchaVerificationService recaptchaVerificationService;
