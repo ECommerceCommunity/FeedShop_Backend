@@ -6,6 +6,7 @@ import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
+import com.cMall.feedShop.user.domain.exception.DuplicateEmailException;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
@@ -148,10 +149,10 @@ class UserServiceTest {
         given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingUser));
 
         // When & Then
-        UserException thrown = assertThrows(UserException.class, () ->
+        DuplicateEmailException thrown = assertThrows(DuplicateEmailException.class, () ->
                 userService.signUp(signUpRequest)
         );
-        assertThat(thrown.getErrorCode()).isEqualTo(DUPLICATE_EMAIL); // ErrorCode 사용
+        assertThat(thrown.getErrorCode()).isEqualTo(DUPLICATE_EMAIL);
         verify(emailService, never()).sendSimpleEmail(anyString(), anyString(), anyString());
     }
 
@@ -669,7 +670,7 @@ class UserServiceTest {
         // UserNotFoundException이 발생하는지 검증합니다.
         assertThatThrownBy(() -> userService.findByUsernameAndPhoneNumber(name, phoneNumber))
                 .isInstanceOf(UserNotFoundException.class)
-                .hasMessageContaining("입력하신 정보와 일치하는 사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
+                .hasMessageContaining("사용자를 찾을 수 없습니다."); // 실제 예외 메시지를 확인합니다.
 
         // Verify
         // userRepository가 한 번 호출되었는지 확인합니다.
