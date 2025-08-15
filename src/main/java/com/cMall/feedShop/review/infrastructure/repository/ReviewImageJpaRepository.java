@@ -53,4 +53,12 @@ public interface ReviewImageJpaRepository extends JpaRepository<ReviewImage, Lon
             @Param("reviewId") Long reviewId,
             @Param("imageIds") List<Long> imageIds);
 
+
+    /**
+     * 리뷰 ID로 활성 이미지들을 조회 (isDeleted = false)
+     */
+    @Query("SELECT ri FROM ReviewImage ri WHERE ri.review.reviewId = :reviewId AND ri.isDeleted = false")
+    List<ReviewImage> findByReviewReviewIdAndDeletedFalse(@Param("reviewId") Long reviewId);
+
+
 }

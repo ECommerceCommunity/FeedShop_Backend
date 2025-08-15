@@ -171,7 +171,7 @@ public class GcpStorageService implements StorageService {
      * 파일 경로에서 객체명 추출
      * gs://feedshop-dev-bucket/images/reviews/filename.jpg -> images/reviews/filename.jpg
      */
-    private String extractObjectName(String filePath) {
+    public String extractObjectName(String filePath) {
         if (filePath == null || !filePath.startsWith("gs://")) {
             return null;
         }
@@ -181,6 +181,17 @@ public class GcpStorageService implements StorageService {
             return filePath.substring(prefix.length());
         }
         return null;
+    }
+
+    /**
+     * 전체 파일 경로 생성
+     * gs://feedshop-dev-bucket/images/reviews/filename.jpg
+     */
+    public String getFullFilePath(String objectName) {
+        if (objectName == null || objectName.isEmpty()) {
+            return null;
+        }
+        return String.format("gs://%s/%s", bucketName, objectName);
     }
 
     /**

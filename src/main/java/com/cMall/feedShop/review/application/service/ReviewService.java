@@ -9,11 +9,9 @@ import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
 import com.cMall.feedShop.review.application.dto.request.ReviewCreateRequest;
 import com.cMall.feedShop.review.application.dto.request.ReviewUpdateRequest;
-import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewUpdateResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
-import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
+import com.cMall.feedShop.review.application.dto.response.*;
+import com.cMall.feedShop.review.application.dto.response.ReviewDeleteResponse;
+import com.cMall.feedShop.review.application.dto.response.ReviewImageDeleteResponse;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.exception.ReviewAccessDeniedException;
 import com.cMall.feedShop.review.domain.Review;
@@ -41,8 +39,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Slf4j
 @Service
@@ -75,7 +78,9 @@ public class ReviewService {
         this.duplicationValidator = duplicationValidator;
         this.reviewImageService = reviewImageService;
         this.reviewImageRepository = reviewImageRepository;
+
     }
+
 
     /**
      * 리뷰 생성 (DTO 불변성 적용)
@@ -272,7 +277,7 @@ public class ReviewService {
             // 이미지 처리 실패 시에도 리뷰 텍스트 수정은 유지하고 경고만 로그
             log.warn("이미지 처리는 실패했지만 리뷰 내용 수정은 완료되었습니다.");
         }
-
+        
         // 6. 리뷰 저장
         Review updatedReview = reviewRepository.save(review);
 
@@ -280,6 +285,7 @@ public class ReviewService {
         int totalImageCount = reviewImageService.getActiveImageCount(reviewId);
 
         log.info("리뷰 수정 완료: reviewId={}, 총 이미지 수={}", reviewId, totalImageCount);
+        // GitHub CI 빌드 오류 해결을 위한 동기화
 
         return ReviewUpdateResponse.of(
                 updatedReview.getReviewId(),
@@ -326,7 +332,6 @@ public class ReviewService {
         if (!review.isActive()) {
             throw new BusinessException(ErrorCode.REVIEW_NOT_FOUND, "삭제되었거나 숨김 처리된 리뷰는 수정할 수 없습니다.");
         }
-
         // 본인이 작성한 리뷰인지 확인
         if (!review.isOwnedBy(userId)) {
             throw new ReviewAccessDeniedException("본인이 작성한 리뷰만 수정할 수 있습니다.");
@@ -636,6 +641,7 @@ public class ReviewService {
         } catch (Exception e) {
             log.error("리뷰 수정 가능 여부 확인 실패: reviewId={}, userId={}", reviewId, userId, e);
             return false;
+
         }
     }
 
@@ -648,4 +654,377 @@ public class ReviewService {
         log.info("사용자 리뷰 목록 조회 요청: userId={}, page={}, size={}", userId, page, size);
         return List.of(); // 임시 반환
     }
+
+    // ============= 리뷰 삭제 관련 메서드들 =============
+
+    /**
+     * 리뷰 전체 삭제 (리뷰 + 모든 이미지)
+     */
+    @Transactional
+    public ReviewDeleteResponse deleteReview(Long reviewId) {
+        log.info("리뷰 전체 삭제 시작: reviewId={}", reviewId);
+        
+        // 현재 사용자 정보 가져오기
+        User currentUser = getCurrentUserFromSecurity();
+        
+        // 리뷰 조회 및 검증
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException("ID " + reviewId + "에 해당하는 리뷰를 찾을 수 없습니다."));
+        
+        // 삭제 권한 확인
+        validateDeletePermission(review, currentUser.getId());
+        
+        // 연관된 이미지들 먼저 삭제
+        int deletedImageCount = 0;
+        boolean imagesDeleted = false;
+        
+        try {
+            List<ReviewImage> reviewImages = reviewImageRepository.findByReviewReviewIdAndDeletedFalse(reviewId);
+            
+            if (!reviewImages.isEmpty()) {
+                // 각 이미지 파일 삭제 (GCP Storage에서)
+                for (ReviewImage image : reviewImages) {
+                    try {
+                        if (gcpStorageService != null) {
+                            boolean fileDeleted = gcpStorageService.deleteFile(image.getFilePath());
+                            if (fileDeleted) {
+                                image.delete(); // 소프트 삭제
+                                deletedImageCount++;
+                            }
+                        } else {
+                            image.delete(); // GCP 없어도 DB에서는 삭제 처리
+                            deletedImageCount++;
+                        }
+                    } catch (Exception e) {
+                        log.warn("이미지 파일 삭제 실패: imageId={}, filePath={}", 
+                                image.getReviewImageId(), image.getFilePath(), e);
+                    }
+                }
+                
+                reviewImageRepository.saveAll(reviewImages);
+                imagesDeleted = deletedImageCount > 0;
+                
+                log.info("리뷰 이미지 삭제 완료: reviewId={}, 삭제된 이미지 수={}", reviewId, deletedImageCount);
+            }
+            
+        } catch (Exception e) {
+            log.error("리뷰 이미지 삭제 중 오류 발생: reviewId={}", reviewId, e);
+            // 이미지 삭제 실패해도 리뷰 삭제는 진행
+        }
+        
+        // 리뷰 소프트 삭제
+        review.markAsDeleted();
+        reviewRepository.save(review);
+        
+        log.info("리뷰 전체 삭제 완료: reviewId={}, 삭제된 이미지 수={}", reviewId, deletedImageCount);
+        
+        return ReviewDeleteResponse.of(reviewId, imagesDeleted, deletedImageCount);
+    }
+    
+    /**
+     * 리뷰 이미지 일괄 삭제
+     */
+    @Transactional
+    public ReviewImageDeleteResponse deleteReviewImages(Long reviewId, List<Long> imageIds) {
+        log.info("리뷰 이미지 일괄 삭제 시작: reviewId={}, imageIds={}", reviewId, imageIds);
+        
+        // 현재 사용자 정보 가져오기
+        User currentUser = getCurrentUserFromSecurity();
+        
+        // 리뷰 조회 및 권한 검증
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException("ID " + reviewId + "에 해당하는 리뷰를 찾을 수 없습니다."));
+        
+        validateUpdatePermission(review, currentUser.getId());
+        
+        List<Long> deletedImageIds = reviewImageService.deleteSelectedImages(reviewId, imageIds);
+        int remainingImageCount = reviewImageService.getActiveImageCount(reviewId);
+        
+        log.info("리뷰 이미지 일괄 삭제 완료: reviewId={}, 삭제된 이미지 수={}, 남은 이미지 수={}", 
+                reviewId, deletedImageIds.size(), remainingImageCount);
+        
+        return ReviewImageDeleteResponse.of(reviewId, deletedImageIds, remainingImageCount);
+    }
+    
+    /**
+     * 리뷰 이미지 개별 삭제
+     */
+    @Transactional
+    public ReviewImageDeleteResponse deleteReviewImage(Long reviewId, Long imageId) {
+        log.info("리뷰 이미지 개별 삭제 시작: reviewId={}, imageId={}", reviewId, imageId);
+        
+        // 현재 사용자 정보 가져오기
+        User currentUser = getCurrentUserFromSecurity();
+        
+        // 리뷰 조회 및 권한 검증
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException("ID " + reviewId + "에 해당하는 리뷰를 찾을 수 없습니다."));
+        
+        validateUpdatePermission(review, currentUser.getId());
+        
+        List<Long> deletedImageIds = reviewImageService.deleteSelectedImages(reviewId, List.of(imageId));
+        int remainingImageCount = reviewImageService.getActiveImageCount(reviewId);
+        
+        if (deletedImageIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND, "삭제할 이미지를 찾을 수 없습니다.");
+        }
+        
+        log.info("리뷰 이미지 개별 삭제 완료: reviewId={}, imageId={}, 남은 이미지 수={}", 
+                reviewId, imageId, remainingImageCount);
+        
+        return ReviewImageDeleteResponse.ofSingle(reviewId, imageId, remainingImageCount);
+    }
+    
+    /**
+     * 리뷰의 모든 이미지 삭제 (리뷰 텍스트는 유지)
+     */
+    @Transactional
+    public ReviewImageDeleteResponse deleteAllReviewImages(Long reviewId) {
+        log.info("리뷰 모든 이미지 삭제 시작: reviewId={}", reviewId);
+        
+        // 현재 사용자 정보 가져오기
+        User currentUser = getCurrentUserFromSecurity();
+        
+        // 리뷰 조회 및 권한 검증
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException("ID " + reviewId + "에 해당하는 리뷰를 찾을 수 없습니다."));
+        
+        validateUpdatePermission(review, currentUser.getId());
+        
+        // 모든 활성 이미지 조회
+        List<ReviewImage> allImages = reviewImageRepository.findByReviewReviewIdAndDeletedFalse(reviewId);
+        List<Long> allImageIds = allImages.stream()
+                .map(ReviewImage::getReviewImageId)
+                .toList();
+        
+        if (allImageIds.isEmpty()) {
+            log.info("삭제할 이미지가 없습니다: reviewId={}", reviewId);
+            return ReviewImageDeleteResponse.ofAll(reviewId, List.of());
+        }
+        
+        List<Long> deletedImageIds = reviewImageService.deleteSelectedImages(reviewId, allImageIds);
+        
+        log.info("리뷰 모든 이미지 삭제 완료: reviewId={}, 삭제된 이미지 수={}", 
+                reviewId, deletedImageIds.size());
+        
+        return ReviewImageDeleteResponse.ofAll(reviewId, deletedImageIds);
+    }
+    
+    /**
+     * 리뷰 삭제 권한 검증
+     */
+    private void validateDeletePermission(Review review, Long userId) {
+        // 리뷰가 활성 상태인지 확인
+        if (!review.isActive()) {
+            throw new BusinessException(ErrorCode.REVIEW_NOT_FOUND, "이미 삭제된 리뷰입니다.");
+        }
+        
+        // 본인이 작성한 리뷰인지 확인
+        if (!review.isOwnedBy(userId)) {
+            throw new ReviewAccessDeniedException("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+        }
+        
+        log.debug("리뷰 삭제 권한 확인 완료: reviewId={}, userId={}", review.getReviewId(), userId);
+    }
+
+    // ============= Repository 미사용 메서드들을 활용한 통계/관리 기능들 =============
+
+    /**
+     * 사용자별 삭제된 리뷰 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getUserDeletedReviews(Long userId) {
+        log.info("사용자 삭제된 리뷰 목록 조회: userId={}", userId);
+        
+        List<Review> deletedReviews = reviewRepository.findDeletedReviewsByUserId(userId);
+        
+        List<ReviewResponse> responses = deletedReviews.stream()
+                .map(this::createReviewResponseSafely)
+                .toList();
+        
+        log.info("사용자 삭제된 리뷰 조회 완료: userId={}, 개수={}", userId, responses.size());
+        
+        return responses;
+    }
+
+    /**
+     * 특정 기간 내 삭제된 리뷰들 조회 (관리자용)
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getDeletedReviewsBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("기간별 삭제된 리뷰 조회: {} ~ {}", startDate, endDate);
+        
+        List<Review> deletedReviews = reviewRepository.findDeletedReviewsBetween(startDate, endDate);
+        
+        List<ReviewResponse> responses = deletedReviews.stream()
+                .map(this::createReviewResponseSafely)
+                .toList();
+        
+        log.info("기간별 삭제된 리뷰 조회 완료: 기간={} ~ {}, 개수={}", 
+                startDate, endDate, responses.size());
+        
+        return responses;
+    }
+
+    /**
+     * 상품별 리뷰 통계 조회 (활성/삭제/전체 개수)
+     */
+    @Transactional(readOnly = true)
+    public ReviewStatsResponse getProductReviewStats(Long productId) {
+        log.info("상품 리뷰 통계 조회: productId={}", productId);
+        
+        Long activeCount = reviewRepository.countActiveReviewsByProductId(productId);
+        Long deletedCount = reviewRepository.countDeletedReviewsByProductId(productId);
+        Long totalCount = reviewRepository.countAllReviewsByProductId(productId);
+        Double averageRating = reviewRepository.findAverageRatingByProductId(productId);
+        
+        if (averageRating == null) {
+            averageRating = 0.0;
+        }
+        
+        // 삭제율 계산
+        double deletionRate = totalCount > 0 ? (double) deletedCount / totalCount * 100 : 0.0;
+        
+        ReviewStatsResponse response = ReviewStatsResponse.builder()
+                .productId(productId)
+                .activeReviewCount(activeCount)
+                .deletedReviewCount(deletedCount)
+                .totalReviewCount(totalCount)
+                .averageRating(averageRating)
+                .deletionRate(deletionRate)
+                .generatedAt(LocalDateTime.now())
+                .build();
+        
+        log.info("상품 리뷰 통계 조회 완료: productId={}, active={}, deleted={}, total={}, avg={}", 
+                productId, activeCount, deletedCount, totalCount, averageRating);
+        
+        return response;
+    }
+
+    /**
+     * 사용자별 삭제된 리뷰 개수 조회
+     */
+    @Transactional(readOnly = true)
+    public Long getUserDeletedReviewCount(Long userId) {
+        log.info("사용자 삭제된 리뷰 개수 조회: userId={}", userId);
+        
+        Long deletedCount = reviewRepository.countDeletedReviewsByUserId(userId);
+        
+        log.info("사용자 삭제된 리뷰 개수 조회 완료: userId={}, 삭제된 개수={}", userId, deletedCount);
+        
+        return deletedCount;
+    }
+
+    /**
+     * 최근 30일간 삭제된 리뷰 통계
+     */
+    @Transactional(readOnly = true)
+    public PeriodReviewStatsResponse getRecentDeletedReviewStats() {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(30);
+        
+        return getDeletedReviewStatsBetween(startDate, endDate);
+    }
+
+    /**
+     * 특정 기간 삭제된 리뷰 통계
+     */
+    @Transactional(readOnly = true)
+    public PeriodReviewStatsResponse getDeletedReviewStatsBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        log.info("기간별 삭제된 리뷰 통계 조회: {} ~ {}", startDate, endDate);
+        
+        List<Review> deletedReviews = reviewRepository.findDeletedReviewsBetween(startDate, endDate);
+        
+        long totalDeleted = deletedReviews.size();
+        long uniqueUsers = deletedReviews.stream()
+                .mapToLong(review -> review.getUser().getId())
+                .distinct()
+                .count();
+        long uniqueProducts = deletedReviews.stream()
+                .mapToLong(review -> review.getProduct().getProductId())
+                .distinct()
+                .count();
+        
+        double averageRatingOfDeleted = deletedReviews.stream()
+                .mapToDouble(Review::getRating)
+                .average()
+                .orElse(0.0);
+        
+        PeriodReviewStatsResponse response = PeriodReviewStatsResponse.builder()
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalDeletedCount(totalDeleted)
+                .uniqueUserCount(uniqueUsers)
+                .uniqueProductCount(uniqueProducts)
+                .averageRatingOfDeleted(averageRatingOfDeleted)
+                .deletedReviews(deletedReviews.stream()
+                        .map(review -> PeriodReviewStatsResponse.DeletedReviewSummary.builder()
+                                .reviewId(review.getReviewId())
+                                .userId(review.getUser().getId())
+                                .productId(review.getProduct().getProductId())
+                                .rating(review.getRating())
+                                .title(review.getTitle())
+                                .deletedAt(review.getUpdatedAt())
+                                .build())
+                        .toList())
+                .build();
+        
+        log.info("기간별 삭제된 리뷰 통계 조회 완료: 기간={} ~ {}, 총 삭제={}, 사용자={}, 상품={}", 
+                startDate, endDate, totalDeleted, uniqueUsers, uniqueProducts);
+        
+        return response;
+    }
+
+    // ============= 필요한 응답 DTO들 (내부 클래스) =============
+
+    /**
+     * 상품별 리뷰 통계 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReviewStatsResponse {
+        private Long productId;
+        private Long activeReviewCount;
+        private Long deletedReviewCount;
+        private Long totalReviewCount;
+        private Double averageRating;
+        private Double deletionRate;
+        private LocalDateTime generatedAt;
+    }
+
+    /**
+     * 기간별 삭제된 리뷰 통계 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PeriodReviewStatsResponse {
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+        private Long totalDeletedCount;
+        private Long uniqueUserCount;
+        private Long uniqueProductCount;
+        private Double averageRatingOfDeleted;
+        private List<DeletedReviewSummary> deletedReviews;
+
+        /**
+         * 삭제된 리뷰 요약 정보
+         */
+        @Getter
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class DeletedReviewSummary {
+            private Long reviewId;
+            private Long userId;
+            private Long productId;
+            private Integer rating;
+            private String title;
+            private LocalDateTime deletedAt;
+        }
+    }
 }
+

@@ -58,4 +58,8 @@ public class UserAddress extends BaseTimeEntity {
         this.addressLine2 = addressLine2;
         this.isDefault = isDefault;
     }
+
+    public void updateDefault(boolean isDefault) {
+        this.isDefault = isDefault;
+    }
 }
