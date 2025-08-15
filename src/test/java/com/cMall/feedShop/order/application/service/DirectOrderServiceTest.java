@@ -118,7 +118,7 @@ class DirectOrderServiceTest {
         given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 주문 후 처리가 성공한다고 설정 (재고 차감, 포인트 처리)
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any());
+        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // When: 실제 테스트 실행 단계
         OrderCreateResponse response = directOrderService.createDirectOrder(testRequest, "testUser");
@@ -141,7 +141,7 @@ class DirectOrderServiceTest {
         verify(orderCommonService).calculateOrderAmount(any(), any(), anyInt()); // 4. 금액 계산
         verify(orderCommonService).validatePointUsage(any(), anyInt()); // 5. 포인트 검증
         verify(orderCommonService).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 6. 주문 생성
-        verify(orderCommonService).processPostOrder(any(), any(), any(), any()); // 7. 후처리
+        verify(orderCommonService).processPostOrder(any(), any(), any(), any(), any()); // 7. 후처리
     }
 
     /**
@@ -188,7 +188,7 @@ class DirectOrderServiceTest {
         given(orderCommonService.calculateOrderAmount(any(), any(), eq(1000))).willReturn(calculationWithPoints);
         willDoNothing().given(orderCommonService).validatePointUsage(testUser, 1000);
         given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any());
+        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // When: 테스트 실행
         OrderCreateResponse response = directOrderService.createDirectOrder(requestWithPoints, "testUser");
@@ -306,7 +306,7 @@ class DirectOrderServiceTest {
 
         // 재고 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.OUT_OF_STOCK))
-                .given(orderCommonService).processPostOrder(any(), any(), any(), any());
+                .given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(testRequest, "testUser"))
@@ -381,7 +381,7 @@ class DirectOrderServiceTest {
         given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
         willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
         given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any());
+        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // When
         OrderCreateResponse response = directOrderService.createDirectOrder(request, "testUser");

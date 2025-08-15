@@ -18,6 +18,7 @@ import com.cMall.feedShop.product.domain.repository.ProductImageRepository;
 import com.cMall.feedShop.product.domain.repository.ProductOptionRepository;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.application.service.PointService;
 import com.cMall.feedShop.user.domain.model.UserPoint;
 import com.cMall.feedShop.user.domain.repository.UserPointRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
@@ -47,6 +48,7 @@ public class OrderCommonService {
 
     private final UserRepository userRepository;
     private final UserPointRepository userPointRepository;
+    private final PointService pointService;
     private final ProductOptionRepository productOptionRepository;
     private final DiscountCalculator discountCalculator;
     private final ProductImageRepository productImageRepository;
@@ -375,13 +377,14 @@ public class OrderCommonService {
      * @param adapters 주문 아이템 어댑터 리스트
      * @param optionMap 유효한 상품 옵션 ID와 ProductOption 객체의 매핑
      * @param calculation 주문 금액 계산 결과
+     * @param orderId 주문 ID (포인트 거래 내역 연결용)
      */
-    public void processPostOrder(User user, List<OrderItemData> adapters, Map<Long, ProductOption> optionMap, OrderCalculation calculation) {
+    public void processPostOrder(User user, List<OrderItemData> adapters, Map<Long, ProductOption> optionMap, OrderCalculation calculation, Long orderId) {
         // 재고 차감
         decreaseStock(adapters, optionMap);
 
         // 포인트 처리
-        processUserPoints(user, calculation.getActualUsedPoints(), calculation.getEarnedPoints());
+        processUserPoints(user, calculation.getActualUsedPoints(), calculation.getEarnedPoints(), orderId);
     }
 
     /**
@@ -391,23 +394,18 @@ public class OrderCommonService {
      * @param user 주문을 요청한 사용자 정보
      * @param usedPoints 사용한 포인트
      * @param earnedPoints 적립한 포인트
+     * @param orderId 주문 ID (포인트 거래 내역 연결용)
      */
-    private void processUserPoints(User user, Integer usedPoints, Integer earnedPoints) {
-        // UserPoint를 조회한다.
-        UserPoint userPoint = getUserPoint(user);
-
+    private void processUserPoints(User user, Integer usedPoints, Integer earnedPoints, Long orderId) {
         // 포인트 사용
         if (usedPoints != null && usedPoints > 0) {
-            userPoint.usePoints(usedPoints);
+            pointService.usePoints(user, usedPoints, "주문 결제", orderId);
         }
 
         // 포인트 적립
         if (earnedPoints != null && earnedPoints > 0) {
-            userPoint.earnPoints(earnedPoints);
+            pointService.earnPoints(user, earnedPoints, "주문 적립", orderId);
         }
-
-        // DB에 저장
-        userPointRepository.save(userPoint);
     }
 
     // 재고 차감
