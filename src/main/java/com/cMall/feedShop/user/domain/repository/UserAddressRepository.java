@@ -7,9 +7,6 @@ import java.util.List;
 
 public interface UserAddressRepository extends JpaRepository<UserAddress, Long> {
     List<UserAddress> findByUserId(Long userId);
-<<<<<<< HEAD
 
-    List<UserAddress> findByUserIdAndIsDefault(Long  userId, Boolean isDefault);
-=======
->>>>>>> rewardChange
+    List<UserAddress> findByUserIdAndIsDefault(Long userId, Boolean isDefault);
 }

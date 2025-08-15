@@ -3,11 +3,8 @@ package com.cMall.feedShop.user.application.service;
 import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
 import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
 import com.cMall.feedShop.user.domain.enums.UserRole;
-<<<<<<< HEAD
 import com.cMall.feedShop.user.domain.exception.UserAddressException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
-=======
->>>>>>> rewardChange
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserAddress;
 import com.cMall.feedShop.user.domain.repository.UserAddressRepository;
@@ -148,13 +145,8 @@ class UserAddressServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userAddressService.addAddress(999L, addressRequestDto))
-<<<<<<< HEAD
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
-=======
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User not found");
->>>>>>> rewardChange
 
         verify(userRepository, times(1)).findById(999L);
         verify(userAddressRepository, never()).save(any(UserAddress.class));
@@ -182,13 +174,8 @@ class UserAddressServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userAddressService.updateAddress(1L, 999L, addressRequestDto))
-<<<<<<< HEAD
                 .isInstanceOf(UserAddressException.class)
                 .hasMessage("주소 정보를 찾을 수 없습니다.");
-=======
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Address not found");
->>>>>>> rewardChange
 
         verify(userAddressRepository, times(1)).findById(999L);
     }
@@ -241,13 +228,8 @@ class UserAddressServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userAddressService.deleteAddress(1L, 999L))
-<<<<<<< HEAD
                 .isInstanceOf(UserAddressException.class)
                 .hasMessage("주소 정보를 찾을 수 없습니다.");
-=======
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Address not found");
->>>>>>> rewardChange
 
         verify(userAddressRepository, times(1)).findById(999L);
         verify(userAddressRepository, never()).delete(any(UserAddress.class));

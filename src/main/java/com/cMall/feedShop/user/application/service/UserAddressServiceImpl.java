@@ -1,15 +1,10 @@
 package com.cMall.feedShop.user.application.service;
 
-<<<<<<< HEAD
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
 import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
 import com.cMall.feedShop.user.domain.exception.UserAddressException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
-=======
-import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
-import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
->>>>>>> rewardChange
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserAddress;
 import com.cMall.feedShop.user.domain.repository.UserAddressRepository;
@@ -41,7 +36,6 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     public AddressResponseDto addAddress(Long userId, AddressRequestDto requestDto) {
         User user = userRepository.findById(userId)
-<<<<<<< HEAD
                 .orElseThrow(() -> new UserNotFoundException());
 
         if (requestDto.isDefault()) {
@@ -50,9 +44,6 @@ public class UserAddressServiceImpl implements UserAddressService {
                 address.updateDefault(false);
             });
         }
-=======
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
->>>>>>> rewardChange
 
         UserAddress userAddress = UserAddress.builder()
                 .user(user)
@@ -71,11 +62,7 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     public void updateAddress(Long userId, Long addressId, AddressRequestDto requestDto) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
-<<<<<<< HEAD
                 .orElseThrow(() -> new UserAddressException());
-=======
-                .orElseThrow(() -> new IllegalArgumentException("Address not found"));
->>>>>>> rewardChange
 
         if (!userAddress.getUser().getId().equals(userId)) {
             throw new SecurityException("You are not authorized to update this address.");
@@ -94,11 +81,7 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     public void deleteAddress(Long userId, Long addressId) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
-<<<<<<< HEAD
                 .orElseThrow(() -> new UserAddressException());
-=======
-                .orElseThrow(() -> new IllegalArgumentException("Address not found"));
->>>>>>> rewardChange
 
         if (!userAddress.getUser().getId().equals(userId)) {
             throw new SecurityException("You are not authorized to delete this address.");
