@@ -13,7 +13,6 @@ import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +31,7 @@ public class DirectOrderService {
     /**
      * 직접 주문 생성 (장바구니 없이 상품을 직접 선택하여 주문)
      * @param request 직접 주문 생성 요청 정보
-     * @param userDetails 현재 로그인된 사용자 정보
+     * @param loginId 현재 로그인된 사용자 정보
      * @return 주문 생성 응답 정보
      */
     @Transactional
