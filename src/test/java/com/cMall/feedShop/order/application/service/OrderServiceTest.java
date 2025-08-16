@@ -128,7 +128,7 @@ class OrderServiceTest {
         given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 주문 후 처리가 성공한다고 설정
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any());
+        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // 장바구니 아이템 삭제가 성공한다고 설정
         willDoNothing().given(cartItemRepository).deleteAll(testCartItems);
@@ -155,7 +155,7 @@ class OrderServiceTest {
         verify(orderCommonService).calculateOrderAmount(any(), any(), anyInt()); // 5. 금액 계산
         verify(orderCommonService).validatePointUsage(any(), anyInt()); // 6. 포인트 검증
         verify(orderCommonService).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 7. 주문 생성
-        verify(orderCommonService).processPostOrder(any(), any(), any(), any()); // 8. 후처리
+        verify(orderCommonService).processPostOrder(any(), any(), any(), any(), any()); // 8. 후처리
         verify(cartItemRepository).deleteAll(testCartItems); // 9. 장바구니 삭제
     }
 
@@ -377,7 +377,7 @@ class OrderServiceTest {
 
         // 재고 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.OUT_OF_STOCK))
-                .given(orderCommonService).processPostOrder(any(), any(), any(), any());
+                .given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
 
         // When & Then
         assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))

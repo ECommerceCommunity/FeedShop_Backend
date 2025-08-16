@@ -58,7 +58,7 @@ public class DirectOrderService {
         Order order = orderCommonService.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
 
         // 7. 재고 차감
-        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation);
+        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
 
         // 8. 주문 생성 응답 반환
         return OrderCreateResponse.from(order);
