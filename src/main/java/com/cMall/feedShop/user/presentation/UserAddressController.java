@@ -21,8 +21,19 @@ public class UserAddressController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AddressResponseDto>>> getAddresses(@AuthenticationPrincipal User user) {
+        System.out.println("🎯 UserAddressController.getAddresses 호출됨");
+        System.out.println("👤 현재 사용자 ID: " + user.getId());
+        
         List<AddressResponseDto> addresses = userAddressService.getAddresses(user.getId());
-        return ResponseEntity.ok(ApiResponse.success("Successfully retrieved addresses.", addresses));
+        
+        System.out.println("✅ 컨트롤러에서 반환할 배송지 개수: " + addresses.size());
+        System.out.println("📨 최종 응답 데이터:");
+        for (AddressResponseDto dto : addresses) {
+            System.out.println("  - ID: " + dto.getId() + ", isDefault: " + dto.getIsDefault());
+        }
+        
+        ApiResponse<List<AddressResponseDto>> response = ApiResponse.success("Successfully retrieved addresses.", addresses);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping

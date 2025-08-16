@@ -27,10 +27,29 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     @Transactional(readOnly = true)
     public List<AddressResponseDto> getAddresses(Long userId) {
+        System.out.println("🔍 UserAddressService.getAddresses 호출됨 - userId: " + userId);
+        
         List<UserAddress> addresses = userAddressRepository.findByUserId(userId);
-        return addresses.stream()
+        System.out.println("📦 데이터베이스에서 조회된 배송지 개수: " + addresses.size());
+        
+        for (UserAddress address : addresses) {
+            System.out.println("📍 배송지 ID: " + address.getId() + 
+                             ", recipientName: " + address.getRecipientName() + 
+                             ", isDefault: " + address.isDefault());
+        }
+        
+        List<AddressResponseDto> result = addresses.stream()
                 .map(AddressResponseDto::new)
                 .collect(Collectors.toList());
+                
+        System.out.println("📤 변환된 DTO 개수: " + result.size());
+        for (AddressResponseDto dto : result) {
+            System.out.println("📋 DTO ID: " + dto.getId() + 
+                             ", recipientName: " + dto.getRecipientName() + 
+                             ", isDefault: " + dto.getIsDefault());
+        }
+        
+        return result;
     }
 
     @Override
@@ -60,12 +79,18 @@ public class UserAddressServiceImpl implements UserAddressService {
     }
 
     @Override
+    @Transactional
     public void updateAddress(Long userId, Long addressId, AddressRequestDto requestDto) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
-                .orElseThrow(() -> new UserAddressException());
+                .orElseThrow(UserAddressException::new);
 
         if (!userAddress.getUser().getId().equals(userId)) {
             throw new SecurityException("You are not authorized to update this address.");
+        }
+
+        if (requestDto.isDefault()) {
+            // ✅ 기존 기본 배송지를 한 번의 쿼리로 초기화
+            userAddressRepository.resetDefaultAddress(userId);
         }
 
         userAddress.updateAddress(
@@ -76,6 +101,9 @@ public class UserAddressServiceImpl implements UserAddressService {
                 requestDto.getAddressLine2(),
                 requestDto.isDefault()
         );
+
+        // ✅ 현재 주소만 저장
+        userAddressRepository.save(userAddress);
     }
 
     @Override
