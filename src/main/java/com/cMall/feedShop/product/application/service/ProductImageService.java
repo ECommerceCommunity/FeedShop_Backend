@@ -2,7 +2,7 @@ package com.cMall.feedShop.product.application.service;
 
 import com.cMall.feedShop.common.dto.UploadResult;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.common.storage.GcpStorageService;
+import com.cMall.feedShop.common.storage.StorageService;
 import com.cMall.feedShop.common.storage.UploadDirectory;
 import com.cMall.feedShop.common.validator.ImageValidator;
 import com.cMall.feedShop.product.domain.enums.ImageType;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductImageService {
 
-    private final GcpStorageService gcpStorageService;
+    private final StorageService storageService;
     private final ImageValidator imageValidator;
 
     /**
@@ -77,11 +77,11 @@ public class ProductImageService {
     private List<ProductImage> createProductImages(Product product, List<MultipartFile> files, ImageType type) {
         try {
             List<UploadResult> uploadResults =
-                    gcpStorageService.uploadFilesWithDetails(files, UploadDirectory.PRODUCTS);
+                    storageService.uploadFilesWithDetails(files, UploadDirectory.PRODUCTS);
 
             return uploadResults.stream()
                     .map(result -> new ProductImage(
-                            gcpStorageService.extractObjectName(result.getFilePath()),
+                            storageService.extractObjectName(result.getFilePath()),
                             type,
                             product
                     ))
@@ -103,7 +103,7 @@ public class ProductImageService {
     private void deleteImageFilesSafely(List<ProductImage> images) {
         images.forEach(image -> {
             try {
-                gcpStorageService.deleteFile(gcpStorageService.getFullFilePath(image.getUrl()));
+                storageService.deleteFile(storageService.getFullFilePath(image.getUrl()));
             } catch (Exception e) {
                 log.warn("이미지 파일 삭제 실패: {} - {}", image.getUrl(), e.getMessage());
             }

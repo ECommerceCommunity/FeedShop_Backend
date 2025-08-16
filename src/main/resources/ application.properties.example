@@ -120,3 +120,4 @@ management.endpoint.health.show-details=always
 app.verification-url=${APP_VERIFICATION_URL:https://www.yourdomain.com/api/auth/verify-email?token=}
 # 비밀번호 재설정 URL (로컬 개발 시 localhost, 운영 시 실제 도메인)
 app.password-reset-url=${APP_PASSWORD_RESET_URL:https://www.yourdomain.com/reset-password}
+

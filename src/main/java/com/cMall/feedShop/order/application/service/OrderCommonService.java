@@ -76,7 +76,6 @@ public class OrderCommonService {
      * - 주문을 요청한 사용자의 포인트 정보를 조회
      *
      * @param user 주문을 요청한 사용자 정보
-     * @return 사용자 포인트 정보
      */
     public void validatePointUsage(User user, Integer usedPoints) {
         // 사용할 포인트 검증
