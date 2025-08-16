@@ -190,7 +190,7 @@ public class PointService {
     }
 
     /**
-     * 만료된 포인트 처리 (스케줄러에서 호출)
+     * 만료된 포인트 처리 (PointScheduler에서 매일 자정에 호출)
      */
     @Transactional
     public void processExpiredPoints() {
@@ -201,18 +201,27 @@ public class PointService {
         
         for (User user : users) {
             try {
-                List<PointTransaction> expiredPoints = pointTransactionRepository.findExpiredPointsByUser(user, now);
-                
-                if (!expiredPoints.isEmpty()) {
+                List<PointTransaction> expiredTransactions = pointTransactionRepository.findExpiredPointsByUser(user, now);
+
+                if (!expiredTransactions.isEmpty()) {
                     UserPoint userPoint = getUserPoint(user);
-                    int totalExpiredPoints = expiredPoints.stream().mapToInt(PointTransaction::getPoints).sum();
-                    
+                    int totalExpiredPoints = expiredTransactions.stream().mapToInt(PointTransaction::getPoints).sum();
+
+                    userPoint.usePoints(totalExpiredPoints);
+                    userPointRepository.save(userPoint);
+
                     // 만료 거래 내역 생성
                     PointTransaction expireTransaction = PointTransaction.createExpireTransaction(
                             user, totalExpiredPoints, userPoint.getCurrentPoints(), 
                             "포인트 만료 처리");
                     pointTransactionRepository.save(expireTransaction);
-                    
+
+                    expiredTransactions.forEach(transaction -> {
+                        // PointTransaction 모델에 만료 상태를 표시하는 메소드가 있다고 가정합니다.
+                        transaction.markAsExpired();
+                    });
+                    pointTransactionRepository.saveAll(expiredTransactions);
+
                     log.info("포인트 만료 처리 완료: 사용자 ID={}, 만료 포인트={}", user.getId(), totalExpiredPoints);
                 }
             } catch (Exception e) {
