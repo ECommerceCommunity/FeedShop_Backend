@@ -52,9 +52,11 @@ public class UserProfile extends BaseTimeEntity {
     private Integer footSize;
 
     @Column(name="foot_width")
+    @Enumerated(EnumType.STRING)
     private FootWidth footWidth;
 
     @Column(name="foot_arch_type")
+    @Enumerated(EnumType.STRING)
     private FootArchType footArchType;
 
     @Column(name="profile_image_url")
@@ -82,16 +84,15 @@ public class UserProfile extends BaseTimeEntity {
     // 양방향 관계를 설정하는 메서드를 생성자 밖에서 정의
     public void setUser(User user) {
         if (this.user != null) {
-            this.user.setUserProfile(null); // 기존 연관관계 제거
+            this.user.setUserProfile(null);
         }
         this.user = user;
         if (user != null) {
-            user.setUserProfile(this); // 새로운 연관관계 설정
+            user.setUserProfile(this);
         }
     }
 
-
-      public void updateProfile(String name, String nickname, String phone,
+    public void updateProfile(String name, String nickname, String phone,
                                 Integer height, Integer weight, Integer footSize,
                                 FootWidth footWidth, FootArchType footArchType,
                                 Gender gender, LocalDate birthDate) {

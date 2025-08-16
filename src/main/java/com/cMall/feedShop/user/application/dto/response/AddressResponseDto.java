@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.application.dto.response;
 
 import com.cMall.feedShop.user.domain.model.UserAddress;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.Getter;
 
 @Getter
@@ -22,5 +23,10 @@ public class AddressResponseDto {
         this.addressLine1 = userAddress.getAddressLine1();
         this.addressLine2 = userAddress.getAddressLine2();
         this.isDefault = userAddress.isDefault();
+    }
+
+    @JsonGetter("isDefault")
+    public boolean getIsDefault() {
+        return this.isDefault;
     }
 }

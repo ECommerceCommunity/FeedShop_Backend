@@ -1,5 +1,6 @@
 package com.cMall.feedShop.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -12,6 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * - 사용자 프로필: /uploads/images/users/** (추후 추가)
  * - 기타 파일: /uploads/** (전체)
  */
+@Slf4j
 @Configuration
 public class ImageWebConfig implements WebMvcConfigurer {
 
@@ -29,6 +31,6 @@ public class ImageWebConfig implements WebMvcConfigurer {
                 .setCachePeriod(cachePeriod);
 
         // 로그로 설정된 경로 확인
-        System.out.println("📁 이미지 업로드 경로 설정 완료: " + baseUploadPath);
+        log.info("📁 이미지 업로드 경로 설정 완료: {}", baseUploadPath);
     }
 }
