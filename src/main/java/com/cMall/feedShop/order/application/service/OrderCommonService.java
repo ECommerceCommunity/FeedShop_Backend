@@ -23,7 +23,6 @@ import com.cMall.feedShop.user.domain.model.UserPoint;
 import com.cMall.feedShop.user.domain.repository.UserPointRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +59,7 @@ public class OrderCommonService {
      * - 사용자 역할이 USER인지 확인
      * - USER가 아닌 경우 예외 처리
      *
-     * @param userDetails Spring Security의 UserDetails 객체
+     * @param loginId Spring Security의 UserDetails 객체
      * @return 검증된 User 객체
      */
     public User validateUser(String loginId) {
@@ -79,7 +78,6 @@ public class OrderCommonService {
      * - 주문을 요청한 사용자의 포인트 정보를 조회
      *
      * @param user 주문을 요청한 사용자 정보
-     * @return 사용자 포인트 정보
      */
     public void validatePointUsage(User user, Integer usedPoints) {
         // 사용할 포인트 검증

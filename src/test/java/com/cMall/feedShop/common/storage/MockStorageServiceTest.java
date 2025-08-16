@@ -44,16 +44,16 @@ class MockStorageServiceTest {
         // then
         assertThat(results).hasSize(1);
         UploadResult result = results.get(0);
-        assertThat(result.getOriginalFilename()).isEqualTo("mock-file.jpg");
-        assertThat(result.getStoredFilename()).isEqualTo("mock-test-image.jpg");
-        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/reviews/test-image.jpg");
-        assertThat(result.getFileSize()).isEqualTo(1000L);
+        assertThat(result.getOriginalFilename()).isEqualTo("test-image.jpg");
+        assertThat(result.getStoredFilename()).startsWith("mock-").endsWith(".jpg");
+        assertThat(result.getFilePath()).startsWith("https://mock-cdn.example.com/images/reviews/mock-").endsWith(".jpg");
+        assertThat(result.getFileSize()).isEqualTo(12L); // "test content" 바이트 크기
         assertThat(result.getContentType()).isEqualTo("image/jpeg");
     }
 
     @Test
-    @DisplayName("여러 파일 업로드 시 첫 번째 파일만 Mock 결과를 반환한다")
-    void uploadMultipleFiles_ReturnsSingleMockResult() {
+    @DisplayName("여러 파일 업로드 시 Mock 결과를 반환한다")
+    void uploadMultipleFiles_ReturnsMockResult() {
         // given
         MockMultipartFile file1 = new MockMultipartFile(
                 "file1",
@@ -73,11 +73,17 @@ class MockStorageServiceTest {
         List<UploadResult> results = mockStorageService.uploadFilesWithDetails(files, UploadDirectory.PROFILES);
 
         // then
-        assertThat(results).hasSize(1);
-        UploadResult result = results.get(0);
-        assertThat(result.getOriginalFilename()).isEqualTo("mock-file.jpg");
-        assertThat(result.getStoredFilename()).isEqualTo("mock-test1.jpg");
-        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/profiles/test1.jpg");
+        assertThat(results).hasSize(2);
+        
+        UploadResult result1 = results.get(0);
+        assertThat(result1.getOriginalFilename()).isEqualTo("test1.jpg");
+        assertThat(result1.getStoredFilename()).startsWith("mock-").endsWith(".jpg");
+        assertThat(result1.getFilePath()).startsWith("https://mock-cdn.example.com/images/profiles/mock-").endsWith(".jpg");
+        
+        UploadResult result2 = results.get(1);
+        assertThat(result2.getOriginalFilename()).isEqualTo("test2.png");
+        assertThat(result2.getStoredFilename()).startsWith("mock-").endsWith(".png");
+        assertThat(result2.getFilePath()).startsWith("https://mock-cdn.example.com/images/profiles/mock-").endsWith(".png");
     }
 
     @Test
@@ -131,7 +137,9 @@ class MockStorageServiceTest {
         // then
         assertThat(results).hasSize(1);
         UploadResult result = results.get(0);
-        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/reviews/review-image.jpg");
+        assertThat(result.getOriginalFilename()).isEqualTo("review-image.jpg");
+        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/reviews/mock-");
+        assertThat(result.getFilePath()).endsWith(".jpg");
     }
 
     @Test
@@ -152,6 +160,8 @@ class MockStorageServiceTest {
         // then
         assertThat(results).hasSize(1);
         UploadResult result = results.get(0);
-        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/profiles/profile-image.jpg");
+        assertThat(result.getOriginalFilename()).isEqualTo("profile-image.jpg");
+        assertThat(result.getFilePath()).contains("mock-cdn.example.com/images/profiles/mock-");
+        assertThat(result.getFilePath()).endsWith(".jpg");
     }
 }
