@@ -8,10 +8,8 @@ import com.cMall.feedShop.feed.application.dto.response.CommentListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentResponseDto;
 import com.cMall.feedShop.feed.domain.Comment;
 import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.CommentRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
-import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
@@ -50,40 +48,41 @@ class CommentServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private User user;
+
+    @Mock
+    private UserProfile userProfile;
+
+    @Mock
+    private Feed feed;
+
+    @Mock
+    private Comment comment;
+
     @InjectMocks
     private CommentService commentService;
 
-    private User user;
-    private UserProfile userProfile;
-    private Feed feed;
-    private Comment comment;
     private CommentCreateRequestDto createRequestDto;
 
     @BeforeEach
     void setUp() {
-        // UserProfile 설정
-        userProfile = UserProfile.builder()
-                .nickname("테스트유저")
-                .profileImageUrl("test-profile.jpg")
-                .build();
-
-        // User 설정
-        user = new User(1L, "testuser", "password", "test@test.com", UserRole.USER);
-        user.setUserProfile(userProfile);
-
-        // Feed 설정
-        feed = Feed.builder()
-                .title("테스트 피드")
-                .content("테스트 내용")
-                .user(user)
-                .build();
-
-        // Comment 설정
-        comment = Comment.builder()
-                .feed(feed)
-                .user(user)
-                .content("테스트 댓글")
-                .build();
+        // 기본 Mock 설정
+        when(user.getId()).thenReturn(1L);
+        when(user.getUserProfile()).thenReturn(userProfile);
+        when(userProfile.getNickname()).thenReturn("테스트유저");
+        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
+        
+        when(feed.getId()).thenReturn(1L);
+        
+        when(comment.getId()).thenReturn(1L);
+        when(comment.getContent()).thenReturn("테스트 댓글");
+        when(comment.getUser()).thenReturn(user);
+        when(comment.getFeed()).thenReturn(feed);
+        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
+        when(comment.getUpdatedAt()).thenReturn(LocalDateTime.now());
+        when(comment.isWrittenBy(1L)).thenReturn(true);
+        when(comment.isWrittenBy(999L)).thenReturn(false);
 
         // CommentCreateRequestDto 설정
         createRequestDto = CommentCreateRequestDto.builder()
@@ -101,7 +100,6 @@ class CommentServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);
-        when(feed.getId()).thenReturn(feedId);
 
         // when
         CommentResponseDto result = commentService.createComment(feedId, userId, createRequestDto);
@@ -171,7 +169,6 @@ class CommentServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(commentRepository.findByFeedIdWithUser(feedId, pageable)).thenReturn(commentPage);
         when(commentRepository.countByFeedId(feedId)).thenReturn(1L);
-        when(feed.getId()).thenReturn(feedId);
 
         // when
         CommentListResponseDto result = commentService.getComments(feedId, page, size);
@@ -255,7 +252,6 @@ class CommentServiceTest {
         Long userId = 1L;
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
-        when(feed.getId()).thenReturn(1L); // 댓글의 피드 ID는 1L
 
         // when & then
         assertThatThrownBy(() -> commentService.deleteComment(feedId, commentId, userId))
@@ -283,5 +279,33 @@ class CommentServiceTest {
 
         verify(commentRepository).findById(commentId);
         verify(commentRepository, never()).delete(any(Comment.class));
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 - 빈 페이지")
+    void getComments_emptyPage() {
+        // given
+        Long feedId = 1L;
+        int page = 0;
+        int size = 20;
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Comment> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(commentRepository.findByFeedIdWithUser(feedId, pageable)).thenReturn(emptyPage);
+        when(commentRepository.countByFeedId(feedId)).thenReturn(0L);
+
+        // when
+        CommentListResponseDto result = commentService.getComments(feedId, page, size);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getTotalComments()).isEqualTo(0L);
+        assertThat(result.getPagination().getContent()).isEmpty();
+
+        verify(feedRepository).findById(feedId);
+        verify(commentRepository).findByFeedIdWithUser(feedId, pageable);
+        verify(commentRepository).countByFeedId(feedId);
     }
 }
