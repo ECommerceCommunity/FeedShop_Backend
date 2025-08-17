@@ -67,23 +67,6 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 기본 Mock 설정
-        when(user.getId()).thenReturn(1L);
-        when(user.getUserProfile()).thenReturn(userProfile);
-        when(userProfile.getNickname()).thenReturn("테스트유저");
-        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
-        
-        when(feed.getId()).thenReturn(1L);
-        
-        when(comment.getId()).thenReturn(1L);
-        when(comment.getContent()).thenReturn("테스트 댓글");
-        when(comment.getUser()).thenReturn(user);
-        when(comment.getFeed()).thenReturn(feed);
-        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
-        when(comment.getUpdatedAt()).thenReturn(LocalDateTime.now());
-        when(comment.isWrittenBy(1L)).thenReturn(true);
-        when(comment.isWrittenBy(999L)).thenReturn(false);
-
         // CommentCreateRequestDto 설정
         createRequestDto = CommentCreateRequestDto.builder()
                 .content("테스트 댓글")
@@ -100,6 +83,19 @@ class CommentServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(commentRepository.save(any(Comment.class))).thenReturn(comment);
+        
+        // User Mock 설정
+        when(user.getId()).thenReturn(userId);
+        when(user.getUserProfile()).thenReturn(userProfile);
+        when(userProfile.getNickname()).thenReturn("테스트유저");
+        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
+        
+        // Comment Mock 설정
+        when(comment.getId()).thenReturn(1L);
+        when(comment.getContent()).thenReturn("테스트 댓글");
+        when(comment.getUser()).thenReturn(user);
+        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
+        when(comment.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
         CommentResponseDto result = commentService.createComment(feedId, userId, createRequestDto);
@@ -169,6 +165,19 @@ class CommentServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(commentRepository.findByFeedIdWithUser(feedId, pageable)).thenReturn(commentPage);
         when(commentRepository.countByFeedId(feedId)).thenReturn(1L);
+        
+        // User Mock 설정
+        when(user.getId()).thenReturn(1L);
+        when(user.getUserProfile()).thenReturn(userProfile);
+        when(userProfile.getNickname()).thenReturn("테스트유저");
+        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
+        
+        // Comment Mock 설정
+        when(comment.getId()).thenReturn(1L);
+        when(comment.getContent()).thenReturn("테스트 댓글");
+        when(comment.getUser()).thenReturn(user);
+        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
+        when(comment.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
         CommentListResponseDto result = commentService.getComments(feedId, page, size);
@@ -215,6 +224,13 @@ class CommentServiceTest {
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         doNothing().when(commentRepository).delete(comment);
+        
+        // Feed Mock 설정
+        when(feed.getId()).thenReturn(feedId);
+        
+        // Comment Mock 설정
+        when(comment.getFeed()).thenReturn(feed);
+        when(comment.isWrittenBy(userId)).thenReturn(true);
 
         // when
         commentService.deleteComment(feedId, commentId, userId);
@@ -252,6 +268,12 @@ class CommentServiceTest {
         Long userId = 1L;
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        
+        // Feed Mock 설정
+        when(feed.getId()).thenReturn(1L); // 댓글의 피드 ID는 1L
+        
+        // Comment Mock 설정
+        when(comment.getFeed()).thenReturn(feed);
 
         // when & then
         assertThatThrownBy(() -> commentService.deleteComment(feedId, commentId, userId))
@@ -271,6 +293,13 @@ class CommentServiceTest {
         Long userId = 999L; // 다른 사용자 ID
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        
+        // Feed Mock 설정
+        when(feed.getId()).thenReturn(feedId);
+        
+        // Comment Mock 설정
+        when(comment.getFeed()).thenReturn(feed);
+        when(comment.isWrittenBy(userId)).thenReturn(false);
 
         // when & then
         assertThatThrownBy(() -> commentService.deleteComment(feedId, commentId, userId))
