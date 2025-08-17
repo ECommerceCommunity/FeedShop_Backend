@@ -27,6 +27,14 @@ public class UserController {
     @GetMapping("/me/profile")
     @PreAuthorize("isAuthenticated()")
     public UserProfileResponse getMyProfile(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            // 인증된 사용자가 아니면 적절한 예외를 던지거나 처리
+            throw new AccessDeniedException("User not authenticated.");
+        }
+        // userDetails가 User 클래스 인스턴스인지도 확인하는 것이 더 안전
+        if (!(userDetails instanceof User)) {
+            throw new IllegalStateException("Principal is not a User object.");
+        }
         User currentUser = (User) userDetails;
         return userProfileService.getUserProfile(currentUser.getId());
     }
