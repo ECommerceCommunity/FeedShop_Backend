@@ -1,16 +1,16 @@
 package com.cMall.feedShop.event.application.service;
 
-import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
-import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
-import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
-import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
-import com.cMall.feedShop.event.application.exception.EventNotFoundException;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
+import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
+import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
+import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
+import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -97,14 +98,14 @@ public class EventReadService {
                     EventStatus calculatedStatus = event.calculateStatus();
                     boolean isOngoing = calculatedStatus == EventStatus.ONGOING;
                     if (!isOngoing) {
-                        System.out.println("이벤트 " + event.getId() + " 제외됨 - 상태: " + calculatedStatus);
+                        log.debug("이벤트 {} 제외됨 - 상태: {}", event.getId(), calculatedStatus);
                     }
                     return isOngoing;
                 })
                 .map(eventMapper::toSummaryDto)
                 .toList();
         
-        System.out.println("피드 생성 가능한 이벤트 수: " + result.size());
+        log.info("피드 생성 가능한 이벤트 수: {}", result.size());
         return result;
     }
 } 
