@@ -108,26 +108,18 @@ public class FeedLikeController {
             return null;
         }
 
-        String username = userDetails.getUsername(); // JWT 토큰의 subject
-        log.debug("UserDetails에서 추출한 username: {}", username);
+        String email = userDetails.getUsername(); // JWT 토큰의 subject는 email
+        log.info("UserDetails에서 추출한 email: {}", email);
 
-        // 1. 먼저 email로 시도
-        Optional<User> userOptional = userRepository.findByEmail(username);
+        // JWT 토큰의 subject가 email이므로 findByEmail 사용
+        Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            log.debug("email로 사용자 찾음 - ID: {} (email: {})", user.getId(), username);
+            log.info("사용자 ID 추출 완료: {} (email: {})", user.getId(), email);
             return user.getId();
         }
 
-        // 2. email로 찾지 못하면 loginId로 시도
-        userOptional = userRepository.findByLoginId(username);
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            log.debug("loginId로 사용자 찾음 - ID: {} (loginId: {})", user.getId(), username);
-            return user.getId();
-        }
-
-        log.warn("username '{}'로 사용자를 찾을 수 없습니다 (email, loginId 모두 시도)", username);
+        log.warn("email '{}'로 사용자를 찾을 수 없습니다", email);
         return null;
     }
 }
