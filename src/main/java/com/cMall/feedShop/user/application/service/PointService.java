@@ -196,6 +196,7 @@ public class PointService {
     public void processExpiredPoints() {
         LocalDateTime now = LocalDateTime.now();
         
+        // 모든 사용자에 대해 만료된 포인트 처리
         List<User> users = userRepository.findAll();
         
         for (User user : users) {

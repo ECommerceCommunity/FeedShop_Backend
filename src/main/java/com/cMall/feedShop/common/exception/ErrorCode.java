@@ -27,8 +27,8 @@ public enum ErrorCode {
     OUT_OF_POINT(409, "U008", "사용 가능한 포인트가 부족합니다."),
     INVALID_POINT_AMOUNT(400, "U009", "유효하지 않은 포인트 금액입니다."),
     ACCOUNT_NOT_VERIFIED(403, "U010", "이메일 인증이 완료되지 않은 계정입니다."),
-    DUPLICATE_LOGIN_ID(409, "U009", "이미 존재하는 로그인 ID입니다."),
-    USER_ACCOUNT_NOT_ACTIVE(403, "U010", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."),
+    DUPLICATE_LOGIN_ID(409, "U011", "이미 존재하는 로그인 ID입니다."),
+    USER_ACCOUNT_NOT_ACTIVE(403, "U012", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."),
     ADDRESS_NOT_FOUND(404, "A001", "주소 정보를 찾을 수 없습니다."),
 
 
@@ -99,7 +99,14 @@ public enum ErrorCode {
     FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
     FEED_ACCESS_DENIED(403, "F002", "해당 피드에 대한 권한이 없습니다."),
     DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
-    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다.");
+    ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다."),
+
+    // 리워드
+    REWARD_POLICY_NOT_FOUND(404, "RW001", "리워드 정책을 찾을 수 없습니다."),
+    DAILY_REWARD_LIMIT_EXCEEDED(409, "RW002", "일일 리워드 획득 한도를 초과했습니다."),
+    MONTHLY_REWARD_LIMIT_EXCEEDED(409, "RW003", "월간 리워드 획득 한도를 초과했습니다."),
+    REWARD_ALREADY_GRANTED(409, "RW004", "이미 지급된 리워드입니다."),
+    ACCESS_DENIED(403, "RW005", "접근 권한이 없습니다.");
 
     private final int status;
     private final String code;
