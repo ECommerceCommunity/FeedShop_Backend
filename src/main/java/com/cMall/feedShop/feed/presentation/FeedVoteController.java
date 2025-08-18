@@ -39,7 +39,6 @@ public class FeedVoteController {
     @Operation(summary = "피드 투표", description = "이벤트 피드에 투표합니다. 한 번만 투표 가능합니다.")
     public ApiResponse<FeedVoteResponseDto> voteFeed(
             @Parameter(description = "피드 ID") @PathVariable Long feedId,
-            @Parameter(description = "투표 요청") @Valid @RequestBody FeedVoteRequestDto requestDto,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         Long userId = getUserIdFromUserDetails(userDetails);

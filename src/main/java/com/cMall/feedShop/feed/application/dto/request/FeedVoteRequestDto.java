@@ -1,17 +1,10 @@
 package com.cMall.feedShop.feed.application.dto.request;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
 public class FeedVoteRequestDto {
-
-    @NotNull(message = "피드 ID는 필수입니다.")
-    private Long feedId;
-
-    public FeedVoteRequestDto(Long feedId) {
-        this.feedId = feedId;
-    }
+    // feedId는 URL 경로 변수에서 제공되므로 별도 필드 불필요
 }

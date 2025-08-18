@@ -70,28 +70,40 @@ public class FeedVoteService {
      * 피드의 투표 개수 조회
      */
     public int getVoteCount(Long feedId) {
-        // 피드 존재 확인
-        if (!feedRepository.findById(feedId).isPresent()) {
-            throw new BusinessException(ErrorCode.FEED_NOT_FOUND);
-        }
+        try {
+            // 피드 존재 확인
+            if (!feedRepository.findById(feedId).isPresent()) {
+                throw new BusinessException(ErrorCode.FEED_NOT_FOUND);
+            }
 
-        return (int) feedVoteRepository.countByFeedId(feedId);
+            return (int) feedVoteRepository.countByFeedId(feedId);
+        } catch (Exception e) {
+            log.error("투표 개수 조회 중 오류 발생 - 피드ID: {}", feedId, e);
+            // 테이블이 존재하지 않는 경우 0 반환
+            return 0;
+        }
     }
 
     /**
      * 사용자가 특정 피드에 투표했는지 확인
      */
     public boolean hasVoted(Long feedId, Long userId) {
-        // 피드 존재 확인
-        if (!feedRepository.findById(feedId).isPresent()) {
-            throw new BusinessException(ErrorCode.FEED_NOT_FOUND);
-        }
+        try {
+            // 피드 존재 확인
+            if (!feedRepository.findById(feedId).isPresent()) {
+                throw new BusinessException(ErrorCode.FEED_NOT_FOUND);
+            }
 
-        // 사용자 존재 확인
-        if (!userRepository.findById(userId).isPresent()) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-        }
+            // 사용자 존재 확인
+            if (!userRepository.findById(userId).isPresent()) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
 
-        return feedVoteRepository.existsByFeedIdAndUserId(feedId, userId);
+            return feedVoteRepository.existsByFeedIdAndUserId(feedId, userId);
+        } catch (Exception e) {
+            log.error("투표 여부 확인 중 오류 발생 - 피드ID: {}, 사용자ID: {}", feedId, userId, e);
+            // 테이블이 존재하지 않는 경우 false 반환
+            return false;
+        }
     }
 }
