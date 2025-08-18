@@ -7,7 +7,6 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.request.CommentCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentResponseDto;
-import com.cMall.feedShop.feed.application.dto.response.MyCommentListResponseDto;
 import com.cMall.feedShop.feed.application.service.CommentService;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
@@ -89,27 +88,6 @@ public class CommentController {
 
         commentService.deleteComment(feedId, commentId, userId);
         return ApiResponse.success(null);
-    }
-
-    /**
-     * 내가 작성한 댓글 목록 조회
-     */
-    @GetMapping("/comments/my")
-    @PreAuthorize("hasRole('USER')")
-    @ApiResponseFormat
-    @Operation(summary = "내 댓글 목록 조회", description = "내가 작성한 모든 댓글 목록을 페이징으로 조회합니다.")
-    public ApiResponse<MyCommentListResponseDto> getMyComments(
-            @Parameter(description = "페이지 번호 (0부터 시작)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        Long userId = getUserIdFromUserDetails(userDetails);
-        if (userId == null) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED);
-        }
-
-        MyCommentListResponseDto responseDto = commentService.getMyComments(userId, page, size);
-        return ApiResponse.success(responseDto);
     }
 
     /**

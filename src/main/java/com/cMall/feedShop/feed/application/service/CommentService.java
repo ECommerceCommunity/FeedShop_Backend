@@ -6,8 +6,6 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.request.CommentCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentResponseDto;
-import com.cMall.feedShop.feed.application.dto.response.MyCommentItemDto;
-import com.cMall.feedShop.feed.application.dto.response.MyCommentListResponseDto;
 import com.cMall.feedShop.feed.domain.Comment;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.repository.CommentRepository;
@@ -112,26 +110,5 @@ public class CommentService {
 
         commentRepository.delete(comment);
         log.info("댓글 삭제 완료 - 피드ID: {}, 댓글ID: {}, 사용자ID: {}", feedId, commentId, userId);
-    }
-
-    /**
-     * 내가 작성한 댓글 목록 조회 (페이징)
-     */
-    public MyCommentListResponseDto getMyComments(Long userId, int page, int size) {
-        // 사용자 존재 확인
-        if (!userRepository.findById(userId).isPresent()) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Comment> commentPage = commentRepository.findByUserIdWithFeedAndAuthor(userId, pageable);
-
-        // DTO 변환
-        Page<MyCommentItemDto> responseDtoPage = commentPage.map(MyCommentItemDto::from);
-
-        log.info("내 댓글 목록 조회 완료 - 사용자ID: {}, 페이지: {}, 크기: {}, 총 개수: {}", 
-                userId, page, size, responseDtoPage.getTotalElements());
-
-        return MyCommentListResponseDto.from(responseDtoPage);
     }
 }
