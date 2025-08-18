@@ -36,6 +36,7 @@ public class Store extends BaseTimeEntity {
 
     @Column(name = "logo")
     private String logo;
+
     @Builder
     public Store(String storeName, Long sellerId, String description, String logo) {
         this.storeName = storeName;
