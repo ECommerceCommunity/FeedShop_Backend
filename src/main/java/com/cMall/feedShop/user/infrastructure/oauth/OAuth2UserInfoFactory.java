@@ -1,8 +1,7 @@
 package com.cMall.feedShop.user.infrastructure.oauth;
 
-import com.cMall.feedShop.common.exception.BusinessException;
-import com.cMall.feedShop.common.exception.ErrorCode;
 
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import java.util.Map;
 
 /**
@@ -20,7 +19,7 @@ public class OAuth2UserInfoFactory {
             case "naver":
                 return new NaverOAuth2UserInfo(attributes);
             default:
-                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "지원하지 않는 소셜 로그인 제공자입니다: " + registrationId);
+                throw new OAuth2AuthenticationException("지원하지 않는 소셜 로그인 제공자입니다: " + registrationId);
         }
     }
 }
