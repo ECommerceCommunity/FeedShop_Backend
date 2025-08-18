@@ -12,6 +12,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -33,6 +35,7 @@ public class FeedReadController {
      * @param page 페이지 번호 (기본값: 0)
      * @param size 페이지 크기 (기본값: 20)
      * @param sort 정렬 기준 (latest, popular)
+     * @param userDetails 사용자 정보 (선택적)
      * @return 피드 목록 페이지
      */
     @GetMapping
@@ -40,7 +43,8 @@ public class FeedReadController {
             @RequestParam(required = false) String feedType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "latest") String sort) {
+            @RequestParam(defaultValue = "latest") String sort,
+            @AuthenticationPrincipal UserDetails userDetails) {
         
         log.info("피드 목록 조회 요청 - feedType: {}, page: {}, size: {}, sort: {}", 
                 feedType, page, size, sort);
@@ -70,7 +74,7 @@ public class FeedReadController {
         Pageable pageable = PageRequest.of(page, size, sortConfig);
         
         // 서비스 호출
-        Page<FeedListResponseDto> feedPage = feedReadService.getFeeds(type, pageable);
+        Page<FeedListResponseDto> feedPage = feedReadService.getFeeds(type, pageable, userDetails);
         
         // 응답 생성
         PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()
@@ -96,6 +100,7 @@ public class FeedReadController {
      * @param page 페이지 번호 (기본값: 0)
      * @param size 페이지 크기 (기본값: 20)
      * @param sort 정렬 기준 (latest, popular)
+     * @param userDetails 사용자 정보 (선택적)
      * @return 피드 목록 페이지
      */
     @GetMapping("/type/{feedType}")
@@ -103,7 +108,8 @@ public class FeedReadController {
             @PathVariable String feedType,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "latest") String sort) {
+            @RequestParam(defaultValue = "latest") String sort,
+            @AuthenticationPrincipal UserDetails userDetails) {
         
         log.info("피드 타입별 조회 요청 - feedType: {}, page: {}, size: {}, sort: {}", 
                 feedType, page, size, sort);
@@ -124,7 +130,7 @@ public class FeedReadController {
             Pageable pageable = PageRequest.of(page, size, sortConfig);
             
             // 서비스 호출
-            Page<FeedListResponseDto> feedPage = feedReadService.getFeedsByType(type, pageable);
+            Page<FeedListResponseDto> feedPage = feedReadService.getFeedsByType(type, pageable, userDetails);
             
             // 응답 생성
             PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()

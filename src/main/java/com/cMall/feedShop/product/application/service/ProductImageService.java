@@ -29,7 +29,6 @@ public class ProductImageService {
      * @param product 상품 엔티티
      * @param files 업로드할 이미지 파일 리스트
      * @param type 이미지 타입 (MAIN, DETAIL)
-     * @return
      */
     public void uploadImages(Product product, List<MultipartFile> files, ImageType type) {
         if (files == null || files.isEmpty()) {

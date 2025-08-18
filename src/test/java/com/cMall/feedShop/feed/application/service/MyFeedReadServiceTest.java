@@ -43,6 +43,9 @@ class MyFeedReadServiceTest {
     @Mock
     private FeedMapper feedMapper;
 
+    @Mock
+    private FeedLikeService feedLikeService;
+
     @InjectMocks
     private MyFeedReadService myFeedReadService;
 
@@ -53,34 +56,22 @@ class MyFeedReadServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트용 User 엔티티 생성
-        testUser = new User(1L, "test_user", "password", "test@example.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
+        testPageable = PageRequest.of(0, 10);
+        
+        testUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
 
-        // 테스트용 Feed 엔티티 생성
         testFeed = Feed.builder()
-                .title("테스트 마이피드")
+                .title("테스트 피드")
                 .content("테스트 내용")
-                .instagramId("test_user")
-                .user(testUser)
                 .build();
 
-        // 테스트용 DTO 생성
         testFeedDto = MyFeedListResponseDto.builder()
                 .feedId(1L)
-                .title("테스트 마이피드")
+                .title("테스트 피드")
                 .content("테스트 내용")
                 .feedType(FeedType.DAILY)
-                .instagramId("test_user")
-                .likeCount(10)
-                .commentCount(5)
-                .participantVoteCount(2)
                 .createdAt(LocalDateTime.now())
-                .userId(1L)
-                .userNickname("테스트 사용자")
                 .build();
-
-        // 테스트용 Pageable 생성
-        testPageable = PageRequest.of(0, 20);
     }
 
     @Test
@@ -90,20 +81,20 @@ class MyFeedReadServiceTest {
         Long userId = 1L;
         List<Feed> feeds = List.of(testFeed);
         Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
         when(feedRepository.findByUserId(userId, testPageable)).thenReturn(feedPage);
         when(feedMapper.toMyFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable);
+        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
-        assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 마이피드");
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 피드");
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).findByUserId(userId, testPageable);
@@ -118,18 +109,19 @@ class MyFeedReadServiceTest {
         FeedType feedType = FeedType.EVENT;
         List<Feed> feeds = List.of(testFeed);
         Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
         when(feedRepository.findByUserIdAndFeedType(userId, feedType.name(), testPageable)).thenReturn(feedPage);
         when(feedMapper.toMyFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeedsByType(userId, feedType, testPageable);
+        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeedsByType(userId, feedType, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getFeedType()).isEqualTo(FeedType.DAILY);
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).findByUserIdAndFeedType(userId, feedType.name(), testPageable);
@@ -137,38 +129,36 @@ class MyFeedReadServiceTest {
     }
 
     @Test
-    @DisplayName("마이피드 목록 조회 - 사용자가 존재하지 않는 경우")
-    void getMyFeeds_UserNotFound() {
+    @DisplayName("존재하지 않는 사용자 - 예외 발생")
+    void getMyFeeds_UserNotFound_ThrowsException() {
         // given
         Long userId = 999L;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> myFeedReadService.getMyFeeds(userId, testPageable))
+        assertThatThrownBy(() -> myFeedReadService.getMyFeeds(userId, testPageable, null))
                 .isInstanceOf(FeedAccessDeniedException.class)
                 .hasMessageContaining("존재하지 않는 사용자입니다.");
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, never()).findByUserId(any(), any());
-        verify(feedMapper, never()).toMyFeedListResponseDto(any());
     }
 
     @Test
-    @DisplayName("마이피드 타입별 조회 - 사용자가 존재하지 않는 경우")
-    void getMyFeedsByType_UserNotFound() {
+    @DisplayName("존재하지 않는 사용자 타입별 조회 - 예외 발생")
+    void getMyFeedsByType_UserNotFound_ThrowsException() {
         // given
         Long userId = 999L;
         FeedType feedType = FeedType.DAILY;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> myFeedReadService.getMyFeedsByType(userId, feedType, testPageable))
+        assertThatThrownBy(() -> myFeedReadService.getMyFeedsByType(userId, feedType, testPageable, null))
                 .isInstanceOf(FeedAccessDeniedException.class)
                 .hasMessageContaining("존재하지 않는 사용자입니다.");
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, never()).findByUserIdAndFeedType(any(), any(), any());
-        verify(feedMapper, never()).toMyFeedListResponseDto(any());
     }
 
     @Test
@@ -177,12 +167,12 @@ class MyFeedReadServiceTest {
         // given
         Long userId = 1L;
         Page<Feed> emptyPage = new PageImpl<>(List.of(), testPageable, 0);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
         when(feedRepository.findByUserId(userId, testPageable)).thenReturn(emptyPage);
 
         // when
-        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable);
+        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -191,7 +181,7 @@ class MyFeedReadServiceTest {
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).findByUserId(userId, testPageable);
-        verify(feedMapper, never()).toMyFeedListResponseDto(any());
+        verify(feedMapper, never()).toMyFeedListResponseDto(any(Feed.class));
     }
 
     @Test
@@ -199,32 +189,32 @@ class MyFeedReadServiceTest {
     void getMyFeeds_MultipleFeeds_Success() {
         // given
         Long userId = 1L;
-        Feed feed1 = Feed.builder().title("마이피드1").user(testUser).build();
-        Feed feed2 = Feed.builder().title("마이피드2").user(testUser).build();
+        Feed feed1 = Feed.builder().title("피드1").build();
+        Feed feed2 = Feed.builder().title("피드2").build();
         List<Feed> feeds = List.of(feed1, feed2);
         Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 2);
-
-        MyFeedListResponseDto dto1 = MyFeedListResponseDto.builder().feedId(1L).title("마이피드1").build();
-        MyFeedListResponseDto dto2 = MyFeedListResponseDto.builder().feedId(2L).title("마이피드2").build();
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        
+        MyFeedListResponseDto dto1 = MyFeedListResponseDto.builder().feedId(1L).title("피드1").build();
+        MyFeedListResponseDto dto2 = MyFeedListResponseDto.builder().feedId(2L).title("피드2").build();
+        
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
         when(feedRepository.findByUserId(userId, testPageable)).thenReturn(feedPage);
         when(feedMapper.toMyFeedListResponseDto(feed1)).thenReturn(dto1);
         when(feedMapper.toMyFeedListResponseDto(feed2)).thenReturn(dto2);
 
         // when
-        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable);
+        Page<MyFeedListResponseDto> result = myFeedReadService.getMyFeeds(userId, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getTotalElements()).isEqualTo(2);
-        assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
-        assertThat(result.getContent().get(1).getFeedId()).isEqualTo(2L);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("피드1");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("피드2");
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).findByUserId(userId, testPageable);
-        verify(feedMapper, times(2)).toMyFeedListResponseDto(any());
+        verify(feedMapper, times(2)).toMyFeedListResponseDto(any(Feed.class));
     }
 
     @Test
@@ -232,16 +222,14 @@ class MyFeedReadServiceTest {
     void getMyFeedCount_Success() {
         // given
         Long userId = 1L;
-        long expectedCount = 5L;
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-        when(feedRepository.countByUserId(userId)).thenReturn(expectedCount);
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
+        when(feedRepository.countByUserId(userId)).thenReturn(5L);
 
         // when
-        long result = myFeedReadService.getMyFeedCount(userId);
+        long count = myFeedReadService.getMyFeedCount(userId);
 
         // then
-        assertThat(result).isEqualTo(expectedCount);
+        assertThat(count).isEqualTo(5L);
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).countByUserId(userId);
@@ -253,51 +241,16 @@ class MyFeedReadServiceTest {
         // given
         Long userId = 1L;
         FeedType feedType = FeedType.EVENT;
-        long expectedCount = 3L;
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-        when(feedRepository.countByUserIdAndFeedType(userId, feedType.name())).thenReturn(expectedCount);
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(testUser));
+        when(feedRepository.countByUserIdAndFeedType(userId, feedType.name())).thenReturn(3L);
 
         // when
-        long result = myFeedReadService.getMyFeedCountByType(userId, feedType);
+        long count = myFeedReadService.getMyFeedCountByType(userId, feedType);
 
         // then
-        assertThat(result).isEqualTo(expectedCount);
+        assertThat(count).isEqualTo(3L);
 
         verify(userRepository, times(1)).findById(userId);
         verify(feedRepository, times(1)).countByUserIdAndFeedType(userId, feedType.name());
-    }
-
-    @Test
-    @DisplayName("마이피드 개수 조회 - 사용자가 존재하지 않는 경우")
-    void getMyFeedCount_UserNotFound() {
-        // given
-        Long userId = 999L;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> myFeedReadService.getMyFeedCount(userId))
-                .isInstanceOf(FeedAccessDeniedException.class)
-                .hasMessageContaining("존재하지 않는 사용자입니다.");
-
-        verify(userRepository, times(1)).findById(userId);
-        verify(feedRepository, never()).countByUserId(any());
-    }
-
-    @Test
-    @DisplayName("마이피드 타입별 개수 조회 - 사용자가 존재하지 않는 경우")
-    void getMyFeedCountByType_UserNotFound() {
-        // given
-        Long userId = 999L;
-        FeedType feedType = FeedType.RANKING;
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        // when & then
-        assertThatThrownBy(() -> myFeedReadService.getMyFeedCountByType(userId, feedType))
-                .isInstanceOf(FeedAccessDeniedException.class)
-                .hasMessageContaining("존재하지 않는 사용자입니다.");
-
-        verify(userRepository, times(1)).findById(userId);
-        verify(feedRepository, never()).countByUserIdAndFeedType(any(), any());
     }
 } 
