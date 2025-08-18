@@ -1,6 +1,7 @@
 package com.cMall.feedShop.product.application.service;
 
 import com.cMall.feedShop.common.exception.ErrorCode;
+import com.cMall.feedShop.product.application.dto.request.ProductSearchRequest;
 import com.cMall.feedShop.product.application.dto.response.*;
 import com.cMall.feedShop.product.application.utils.PagingUtils;
 import com.cMall.feedShop.product.domain.enums.ProductSortType;
@@ -29,13 +30,15 @@ public class ProductReadService {
     private final StoreRepository storeRepository;
 
     // 상품 목록 조회 (페이징)
-    public ProductPageResponse getProductList(int page, int size, ProductSortType productSortType) {
+    public ProductPageResponse getProductList(ProductSearchRequest request, int page, int size, ProductSortType productSortType) {
         // 페이지 정보 생성
-        long totalElements = productRepository.countAll();
+        long totalElements = productRepository.countWithAllConditions(request);
+
+        // Page Overflow 체크하여 Pageable 생성
         Pageable pageable = PagingUtils.createPageable(page, size, totalElements);
 
         // 정렬 기준에 따라 상품 목록 조회
-        Page<Product> productPage = getProductsBySortType(productSortType, pageable);
+        Page<Product> productPage = productRepository.findWithAllConditions(request, productSortType, pageable);
 
         // 각각의 상품(Product 엔티티)을 ProductListResponse(응답값)로 변환한다.
         Page<ProductListResponse> responsePage = productPage.map(productMapper::toListResponse);
@@ -81,13 +84,6 @@ public class ProductReadService {
 
         // 상품(Product 엔티티)을 ProductDetailResponse(응답값)로 변환한다.
         return productMapper.toDetailResponse(product);
-    }
-
-    // 정렬 기준에 따라 상품 목록을 조회한다.
-    private Page<Product> getProductsBySortType(ProductSortType productSortType, Pageable pageable) {
-        return productSortType == ProductSortType.POPULAR
-                ? productRepository.findAllByOrderByWishNumberDesc(pageable)
-                : productRepository.findAllByOrderByCreatedAtDesc(pageable);
     }
 
     // JWT 에서 현재 사용자 추출

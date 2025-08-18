@@ -1,18 +1,17 @@
 package com.cMall.feedShop.product.application.service;
 
+import com.cMall.feedShop.product.application.dto.request.ProductSearchRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductDetailResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductListResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
+import com.cMall.feedShop.product.domain.enums.CategoryType;
+import com.cMall.feedShop.product.domain.enums.DiscountType;
+import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.exception.ProductException;
-import com.cMall.feedShop.product.domain.enums.*;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.repository.ProductRepository;
 import com.cMall.feedShop.store.domain.model.Store;
-import com.cMall.feedShop.store.domain.repository.StoreRepository;
-import com.cMall.feedShop.user.domain.enums.UserRole;
-import com.cMall.feedShop.user.domain.model.User;
-import com.cMall.feedShop.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,17 +28,18 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductReadService 테스트")
+@DisplayName("통합 ProductService 테스트")
 class ProductReadServiceTest {
 
     @Mock
@@ -48,77 +48,61 @@ class ProductReadServiceTest {
     @Mock
     private ProductMapper productMapper;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private StoreRepository storeRepository;
+    @InjectMocks
+    private ProductService productService;
 
     @InjectMocks
     private ProductReadService productReadService;
 
-    private Product product1;
-    private Product product2;
-    private Store store;
-    private Category category;
-    private User seller;
-    private ProductListResponse listResponse1;
-    private ProductListResponse listResponse2;
+    private Product testProduct1;
+    private Product testProduct2;
+    private Store testStore;
+    private Category testCategory;
+    private ProductListResponse testResponse1;
+    private ProductListResponse testResponse2;
     private ProductDetailResponse detailResponse;
 
     @BeforeEach
     void setUp() {
-        setupSeller();
-        setupStore();
-        setupCategory();
-        setupProducts();
-        setupResponses();
+        setupTestData();
     }
 
-    private void setupSeller() {
-        // User 생성자를 올바르게 사용 (loginId, password, email, role 순서)
-        seller = new User("seller123", "password", "seller123@test.com", UserRole.SELLER);
-        ReflectionTestUtils.setField(seller, "id", 1L);
-    }
-
-    private void setupStore() {
-        store = Store.builder()
+    private void setupTestData() {
+        // 테스트용 스토어 생성
+        testStore = Store.builder()
                 .storeName("테스트 스토어")
-                .sellerId(1L)
                 .build();
-        ReflectionTestUtils.setField(store, "storeId", 1L);
-    }
+        ReflectionTestUtils.setField(testStore, "storeId", 1L);
 
-    private void setupCategory() {
-        category = new Category(CategoryType.SNEAKERS, "운동화");
-        ReflectionTestUtils.setField(category, "categoryId", 1L);
-    }
+        // 테스트용 카테고리 생성
+        testCategory = new Category(CategoryType.SNEAKERS, "운동화");
+        ReflectionTestUtils.setField(testCategory, "categoryId", 1L);
 
-    private void setupProducts() {
-        product1 = Product.builder()
+        // 테스트용 상품들 생성
+        testProduct1 = Product.builder()
                 .name("상품1")
                 .price(new BigDecimal("50000"))
                 .discountType(DiscountType.RATE_DISCOUNT)
                 .discountValue(new BigDecimal("10"))
                 .description("상품 1 설명")
-                .store(store)
-                .category(category)
+                .store(testStore)
+                .category(testCategory)
                 .build();
-        ReflectionTestUtils.setField(product1, "productId", 1L);
+        ReflectionTestUtils.setField(testProduct1, "productId", 1L);
 
-        product2 = Product.builder()
+        testProduct2 = Product.builder()
                 .name("상품2")
-                .price(new BigDecimal("30000"))
-                .discountType(DiscountType.NONE)
+                .price(new BigDecimal("80000"))
+                .discountType(DiscountType.FIXED_DISCOUNT)
+                .discountValue(new BigDecimal("5000"))
                 .description("상품 2 설명")
-                .store(store)
-                .category(category)
+                .store(testStore)
+                .category(testCategory)
                 .build();
-        ReflectionTestUtils.setField(product2, "productId", 2L);
-    }
+        ReflectionTestUtils.setField(testProduct2, "productId", 2L);
 
-    private void setupResponses() {
-        listResponse1 = ProductListResponse.builder()
+        // 테스트용 응답 데이터 생성
+        testResponse1 = ProductListResponse.builder()
                 .productId(1L)
                 .name("상품1")
                 .price(new BigDecimal("50000"))
@@ -128,11 +112,11 @@ class ProductReadServiceTest {
                 .storeName("테스트 스토어")
                 .build();
 
-        listResponse2 = ProductListResponse.builder()
+        testResponse2 = ProductListResponse.builder()
                 .productId(2L)
                 .name("상품2")
-                .price(new BigDecimal("30000"))
-                .discountPrice(new BigDecimal("30000"))
+                .price(new BigDecimal("80000"))
+                .discountPrice(new BigDecimal("75000"))
                 .categoryId(1L)
                 .storeId(1L)
                 .storeName("테스트 스토어")
@@ -149,21 +133,23 @@ class ProductReadServiceTest {
                 .build();
     }
 
-    @Test
-    @DisplayName("상품 목록 조회 성공")
-    void getProductList_Success() {
-        // given
-        Page<Product> productPage = new PageImpl<>(Arrays.asList(product1, product2), PageRequest.of(0, 20), 2);
+    // ===== 통합 상품 조회 테스트 =====
 
-        // ProductRepository countAll 메소드 mock 추가
-        given(productRepository.countAll()).willReturn(2L);
-        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+    @Test
+    @DisplayName("전체 상품 목록 조회 성공")
+    void getProducts_All_Success() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder().build();
+        Page<Product> productPage = new PageImpl<>(Arrays.asList(testProduct1, testProduct2), PageRequest.of(0, 20), 2);
+
+        given(productRepository.countWithAllConditions(any(ProductSearchRequest.class))).willReturn(2L);
+        given(productRepository.findWithAllConditions(any(ProductSearchRequest.class), any(ProductSortType.class), any(Pageable.class)))
                 .willReturn(productPage);
-        given(productMapper.toListResponse(product1)).willReturn(listResponse1);
-        given(productMapper.toListResponse(product2)).willReturn(listResponse2);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+        given(productMapper.toListResponse(testProduct2)).willReturn(testResponse2);
 
         // when
-        ProductPageResponse response = productReadService.getProductList(0, 20, null);
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
 
         // then
         assertThat(response).isNotNull();
@@ -172,56 +158,228 @@ class ProductReadServiceTest {
         assertThat(response.getContent().get(0).getName()).isEqualTo("상품1");
         assertThat(response.getContent().get(1).getName()).isEqualTo("상품2");
 
-        verify(productRepository, times(1)).countAll();
-        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        verify(productRepository, times(1)).countWithAllConditions(any(ProductSearchRequest.class));
+        verify(productRepository, times(1)).findWithAllConditions(any(ProductSearchRequest.class), eq(ProductSortType.LATEST), any(Pageable.class));
     }
 
     @Test
-    @DisplayName("상품 목록 조회 - 잘못된 페이지 파라미터 처리")
-    void getProductList_InvalidParameters() {
+    @DisplayName("키워드 검색 성공")
+    void getProducts_WithKeyword_Success() {
         // given
-        Page<Product> productPage = new PageImpl<>(Arrays.asList(product1), PageRequest.of(0, 20), 1);
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .keyword("상품1")
+                .build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
 
-        given(productRepository.countAll()).willReturn(1L);
-        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+        given(productRepository.countWithAllConditions(request)).willReturn(1L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
                 .willReturn(productPage);
-        given(productMapper.toListResponse(product1)).willReturn(listResponse1);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
 
-        // when - 음수 페이지와 큰 사이즈로 호출
-        ProductPageResponse response = productReadService.getProductList(-1, 200, null);
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
 
         // then
         assertThat(response).isNotNull();
-        verify(productRepository, times(1)).countAll();
-        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getTotalElements()).isEqualTo(1);
+        assertThat(response.getContent().get(0).getName()).isEqualTo("상품1");
+
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), any(Pageable.class));
     }
 
     @Test
-    @DisplayName("빈 상품 목록 조회")
-    void getProductList_EmptyResult() {
+    @DisplayName("카테고리 필터링 성공")
+    void getProducts_WithCategory_Success() {
         // given
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .categoryId(1L)
+                .build();
+        Page<Product> productPage = new PageImpl<>(Arrays.asList(testProduct1, testProduct2), PageRequest.of(0, 20), 2);
+
+        given(productRepository.countWithAllConditions(request)).willReturn(2L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+        given(productMapper.toListResponse(testProduct2)).willReturn(testResponse2);
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+        assertThat(response.getTotalElements()).isEqualTo(2);
+
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("가격 범위 필터링 성공")
+    void getProducts_WithPriceRange_Success() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .minPrice(new BigDecimal("40000"))
+                .maxPrice(new BigDecimal("60000"))
+                .build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
+
+        given(productRepository.countWithAllConditions(request)).willReturn(1L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getName()).isEqualTo("상품1");
+
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("복합 조건 검색 성공 - 키워드 + 카테고리 + 가격")
+    void getProducts_ComplexConditions_Success() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .keyword("상품")
+                .categoryId(1L)
+                .minPrice(new BigDecimal("30000"))
+                .maxPrice(new BigDecimal("100000"))
+                .storeId(1L)
+                .build();
+        Page<Product> productPage = new PageImpl<>(Arrays.asList(testProduct1, testProduct2), PageRequest.of(0, 20), 2);
+
+        given(productRepository.countWithAllConditions(request)).willReturn(2L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+        given(productMapper.toListResponse(testProduct2)).willReturn(testResponse2);
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.POPULAR);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(2);
+        assertThat(response.getTotalElements()).isEqualTo(2);
+
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.POPULAR), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("검색 결과 없음")
+    void getProducts_NoResults() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .keyword("존재하지않는상품")
+                .build();
         Page<Product> emptyPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
 
-        given(productRepository.countAll()).willReturn(0L);
-        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+        given(productRepository.countWithAllConditions(request)).willReturn(0L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
                 .willReturn(emptyPage);
 
         // when
-        ProductPageResponse response = productReadService.getProductList(0, 20, null);
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.getContent()).isEmpty();
         assertThat(response.getTotalElements()).isEqualTo(0);
+
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), any(Pageable.class));
     }
+
+    @Test
+    @DisplayName("페이지 파라미터 검증 - 음수 페이지")
+    void getProducts_NegativePage() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder().build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
+
+        given(productRepository.countWithAllConditions(any(ProductSearchRequest.class))).willReturn(1L);
+        given(productRepository.findWithAllConditions(any(ProductSearchRequest.class), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, -1, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(1);
+
+        // 음수 페이지가 0으로 보정되어 호출되었는지 확인
+        verify(productRepository).findWithAllConditions(any(ProductSearchRequest.class), eq(ProductSortType.LATEST), eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
+    @DisplayName("페이지 크기 검증 - 범위 초과")
+    void getProducts_InvalidSize() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder().build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
+
+        given(productRepository.countWithAllConditions(any(ProductSearchRequest.class))).willReturn(1L);
+        given(productRepository.findWithAllConditions(any(ProductSearchRequest.class), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+
+        // when - 사이즈 150으로 호출 (최대 50 초과)
+        ProductPageResponse response = productReadService.getProductList(request, 0, 150, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(1);
+
+        // 사이즈가 20(기본값)으로 보정되어 호출되었는지 확인
+        verify(productRepository).findWithAllConditions(any(ProductSearchRequest.class), eq(ProductSortType.LATEST), eq(PageRequest.of(0, 20)));
+    }
+
+    @Test
+    @DisplayName("Page Overflow 처리")
+    void getProducts_PageOverflow() {
+        // given
+        ProductSearchRequest request = ProductSearchRequest.builder()
+                .keyword("테스트")
+                .build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 5); // 총 5개, 마지막 페이지는 0
+
+        given(productRepository.countWithAllConditions(request)).willReturn(5L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
+                .willReturn(productPage);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
+
+        // when - 10페이지 요청 (실제로는 0페이지까지만 존재)
+        ProductPageResponse response = productReadService.getProductList(request, 10, 20, ProductSortType.LATEST);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).hasSize(1);
+
+        // Page Overflow로 인해 0페이지로 조정되어 호출되었는지 확인
+        verify(productRepository).countWithAllConditions(request);
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), eq(PageRequest.of(0, 20)));
+    }
+
+    // ===== 상품 상세 조회 테스트 (기존 유지) =====
 
     @Test
     @DisplayName("상품 상세 조회 성공")
     void getProductDetail_Success() {
         // given
         Long productId = 1L;
-        given(productRepository.findByProductId(productId)).willReturn(Optional.of(product1));
-        given(productMapper.toDetailResponse(product1)).willReturn(detailResponse);
+        given(productRepository.findByProductId(productId)).willReturn(Optional.of(testProduct1));
+        given(productMapper.toDetailResponse(testProduct1)).willReturn(detailResponse);
 
         // when
         ProductDetailResponse response = productReadService.getProductDetail(productId);
@@ -236,6 +394,7 @@ class ProductReadServiceTest {
         assertThat(response.getCategoryName()).isEqualTo("운동화");
 
         verify(productRepository, times(1)).findByProductId(productId);
+        verify(productMapper, times(1)).toDetailResponse(testProduct1);
     }
 
     @Test
@@ -252,43 +411,49 @@ class ProductReadServiceTest {
         verify(productRepository, times(1)).findByProductId(productId);
     }
 
+    // ===== 정렬 타입별 테스트 =====
+
     @Test
-    @DisplayName("상품 목록 조회 - 최소 사이즈 테스트")
-    void getProductList_MinSize() {
+    @DisplayName("인기순 정렬")
+    void getProducts_PopularSort() {
         // given
-        Page<Product> productPage = new PageImpl<>(Arrays.asList(product1), PageRequest.of(0, 20), 1);
+        ProductSearchRequest request = ProductSearchRequest.builder().build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
 
-        given(productRepository.countAll()).willReturn(1L);
-        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+        given(productRepository.countWithAllConditions(request)).willReturn(1L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
                 .willReturn(productPage);
-        given(productMapper.toListResponse(product1)).willReturn(listResponse1);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
 
-        // when - 사이즈 0으로 호출
-        ProductPageResponse response = productReadService.getProductList(0, 0, null);
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.POPULAR);
 
         // then
         assertThat(response).isNotNull();
-        verify(productRepository, times(1)).countAll();
-        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        assertThat(response.getContent()).hasSize(1);
+
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.POPULAR), any(Pageable.class));
     }
 
     @Test
-    @DisplayName("상품 목록 조회 - 최대 사이즈 초과 테스트")
-    void getProductList_MaxSizeExceeded() {
+    @DisplayName("최신순 정렬")
+    void getProducts_LatestSort() {
         // given
-        Page<Product> productPage = new PageImpl<>(Arrays.asList(product1), PageRequest.of(0, 20), 1);
+        ProductSearchRequest request = ProductSearchRequest.builder().build();
+        Page<Product> productPage = new PageImpl<>(List.of(testProduct1), PageRequest.of(0, 20), 1);
 
-        given(productRepository.countAll()).willReturn(1L);
-        given(productRepository.findAllByOrderByCreatedAtDesc(any(Pageable.class)))
+        given(productRepository.countWithAllConditions(request)).willReturn(1L);
+        given(productRepository.findWithAllConditions(eq(request), any(ProductSortType.class), any(Pageable.class)))
                 .willReturn(productPage);
-        given(productMapper.toListResponse(product1)).willReturn(listResponse1);
+        given(productMapper.toListResponse(testProduct1)).willReturn(testResponse1);
 
-        // when - 사이즈 150으로 호출 (최대 50 초과)
-        ProductPageResponse response = productReadService.getProductList(0, 150, null);
+        // when
+        ProductPageResponse response = productReadService.getProductList(request, 0, 20, ProductSortType.LATEST);
 
         // then
         assertThat(response).isNotNull();
-        verify(productRepository, times(1)).countAll();
-        verify(productRepository, times(1)).findAllByOrderByCreatedAtDesc(any(Pageable.class));
+        assertThat(response.getContent()).hasSize(1);
+
+        verify(productRepository).findWithAllConditions(eq(request), eq(ProductSortType.LATEST), any(Pageable.class));
     }
 }
