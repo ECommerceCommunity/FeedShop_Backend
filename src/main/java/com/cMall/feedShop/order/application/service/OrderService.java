@@ -12,6 +12,7 @@ import com.cMall.feedShop.order.application.calculator.OrderCalculation;
 import com.cMall.feedShop.order.domain.enums.OrderStatus;
 import com.cMall.feedShop.order.domain.exception.OrderException;
 import com.cMall.feedShop.order.domain.model.Order;
+import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.order.domain.repository.OrderRepository;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
@@ -240,6 +241,11 @@ public class OrderService {
         // 3. 상태 변경 가능 여부 검증
         validateUserStatusUpdate(order.getStatus(), request.getStatus());
 
+        // 4. 재고 복구 처리 (취소/반품 시)
+        if (isStockRestoreRequired(request.getStatus())) {
+            restoreStock(order);
+        }
+
         // 4. 주문 상태 업데이트
         order.updateStatus(request.getStatus());
 
@@ -327,6 +333,19 @@ public class OrderService {
             if (item.getOptionId() == null || item.getOptionId() <= 0) {
                 throw new OrderException(ErrorCode.INVALID_OPTION_ID);
             }
+        }
+    }
+
+    // 재고 복구 처리가 필요한 상태인지 확인한다.
+    private boolean isStockRestoreRequired(OrderStatus newStatus) {
+        return newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED;
+    }
+
+    // 주문 취소/반품 시 재고를 복구한다.
+    private void restoreStock(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            ProductOption option = item.getProductOption();
+            option.increaseStock(item.getQuantity());
         }
     }
 }

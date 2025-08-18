@@ -30,6 +30,42 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
+    public long countByStoreId(Long storeId) {
+        Long count = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .where(product.store.storeId.eq(storeId))
+                .fetchOne();
+
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public Page<Product> findByStoreIdOrderByCreatedAtDesc(Long storeId, Pageable pageable) {
+        // 1. 상품 목록 조회
+        List<Product> products = jpaQueryFactory
+                .selectFrom(product)
+                .leftJoin(product.store, store).fetchJoin()  // 스토어 정보 즉시 로딩
+                .leftJoin(product.category, category).fetchJoin()  // 카테고리 정보 즉시 로딩
+                .leftJoin(product.productImages).fetchJoin()  // 이미지 정보 즉시 로딩
+                .where(product.store.storeId.eq(storeId))  // 스토어 ID 조건
+                .orderBy(product.createdAt.desc())  // 최신순 정렬
+                .offset(pageable.getOffset())  // 페이징 시작점
+                .limit(pageable.getPageSize())  // 페이지 크기
+                .fetch();
+
+        // 2. 전체 개수 조회
+        Long totalCount = jpaQueryFactory
+                .select(product.count())
+                .from(product)
+                .where(product.store.storeId.eq(storeId))  // 같은 조건 적용
+                .fetchOne();
+
+        // 3. Page 객체 생성 및 반환
+        return new PageImpl<>(products, pageable, totalCount != null ? totalCount : 0);
+    }
+
+    @Override
     public long countWithAllConditions(ProductSearchRequest request) {
         BooleanBuilder whereClause = createAllConditionsWhereClause(request);
 

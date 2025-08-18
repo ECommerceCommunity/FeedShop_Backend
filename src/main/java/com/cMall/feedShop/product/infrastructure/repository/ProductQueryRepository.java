@@ -12,4 +12,7 @@ public interface ProductQueryRepository {
 
     Page<Product> findWithAllConditions(ProductSearchRequest request, ProductSortType sortType, Pageable pageable);
 
+    long countByStoreId(Long storeId);
+
+    Page<Product> findByStoreIdOrderByCreatedAtDesc(Long storeId, Pageable pageable);
 }
