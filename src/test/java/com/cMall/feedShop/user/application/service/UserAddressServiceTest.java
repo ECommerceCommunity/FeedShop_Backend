@@ -1,7 +1,7 @@
 package com.cMall.feedShop.user.application.service;
 
-import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
-import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
+import com.cMall.feedShop.user.application.dto.request.AddressRequest;
+import com.cMall.feedShop.user.application.dto.response.AddressResponse;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.exception.UserAddressException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
@@ -42,7 +42,7 @@ class UserAddressServiceTest {
     private User testUser;
     private UserAddress testAddress1;
     private UserAddress testAddress2;
-    private AddressRequestDto addressRequestDto;
+    private AddressRequest addressRequest;
 
     @BeforeEach
     void setUp() {
@@ -69,7 +69,7 @@ class UserAddressServiceTest {
                 .isDefault(false)
                 .build();
 
-        addressRequestDto = AddressRequestDto.builder()
+        addressRequest = AddressRequest.builder()
                 .recipientName("박영희")
                 .recipientPhone("010-5555-5555")
                 .zipCode("67890")
@@ -87,7 +87,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findByUserId(1L)).thenReturn(addresses);
 
         // When
-        List<AddressResponseDto> result = userAddressService.getAddresses(1L);
+        List<AddressResponse> result = userAddressService.getAddresses(1L);
 
         // Then
         assertThat(result).hasSize(2);
@@ -108,7 +108,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findByUserId(1L)).thenReturn(Arrays.asList());
 
         // When
-        List<AddressResponseDto> result = userAddressService.getAddresses(1L);
+        List<AddressResponse> result = userAddressService.getAddresses(1L);
 
         // Then
         assertThat(result).isEmpty();
@@ -126,7 +126,7 @@ class UserAddressServiceTest {
         });
 
         // When
-        AddressResponseDto result = userAddressService.addAddress(1L, addressRequestDto);
+        AddressResponse result = userAddressService.addAddress(1L, addressRequest);
 
         // Then
         assertThat(result).isNotNull();
@@ -144,7 +144,7 @@ class UserAddressServiceTest {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userAddressService.addAddress(999L, addressRequestDto))
+        assertThatThrownBy(() -> userAddressService.addAddress(999L, addressRequest))
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessage("사용자를 찾을 수 없습니다.");
 
@@ -159,7 +159,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findById(1L)).thenReturn(Optional.of(testAddress1));
 
         // When
-        userAddressService.updateAddress(1L, 1L, addressRequestDto);
+        userAddressService.updateAddress(1L, 1L, addressRequest);
 
         // Then
         verify(userAddressRepository, times(1)).findById(1L);
@@ -173,7 +173,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findById(999L)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userAddressService.updateAddress(1L, 999L, addressRequestDto))
+        assertThatThrownBy(() -> userAddressService.updateAddress(1L, 999L, addressRequest))
                 .isInstanceOf(UserAddressException.class)
                 .hasMessage("주소 정보를 찾을 수 없습니다.");
 
@@ -198,7 +198,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findById(1L)).thenReturn(Optional.of(otherUserAddress));
 
         // When & Then
-        assertThatThrownBy(() -> userAddressService.updateAddress(1L, 1L, addressRequestDto))
+        assertThatThrownBy(() -> userAddressService.updateAddress(1L, 1L, addressRequest))
                 .isInstanceOf(SecurityException.class)
                 .hasMessage("You are not authorized to update this address.");
 
@@ -265,7 +265,7 @@ class UserAddressServiceTest {
     @DisplayName("기본 주소 설정 테스트")
     void addAddress_DefaultAddress() {
         // Given
-        AddressRequestDto defaultAddressRequest = AddressRequestDto.builder()
+        AddressRequest defaultAddressRequest = AddressRequest.builder()
                 .recipientName("박영희")
                 .recipientPhone("010-5555-5555")
                 .zipCode("67890")
@@ -278,7 +278,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.save(any(UserAddress.class))).thenReturn(testAddress1);
 
         // When
-        AddressResponseDto result = userAddressService.addAddress(1L, defaultAddressRequest);
+        AddressResponse result = userAddressService.addAddress(1L, defaultAddressRequest);
 
         // Then
         assertThat(result).isNotNull();
@@ -293,7 +293,7 @@ class UserAddressServiceTest {
         when(userAddressRepository.findById(1L)).thenReturn(Optional.of(testAddress1));
 
         // When
-        userAddressService.updateAddress(1L, 1L, addressRequestDto);
+        userAddressService.updateAddress(1L, 1L, addressRequest);
 
         // Then
         verify(userAddressRepository, times(1)).findById(1L);

@@ -1,8 +1,8 @@
 package com.cMall.feedShop.user.application.service;
 
-import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
-import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
+
+import com.cMall.feedShop.user.application.dto.request.AddressRequest;
+import com.cMall.feedShop.user.application.dto.response.AddressResponse;
 import com.cMall.feedShop.user.domain.exception.UserAddressException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
@@ -26,15 +26,15 @@ public class UserAddressServiceImpl implements UserAddressService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AddressResponseDto> getAddresses(Long userId) {
+    public List<AddressResponse> getAddresses(Long userId) {
         List<UserAddress> addresses = userAddressRepository.findByUserId(userId);
         return addresses.stream()
-                .map(AddressResponseDto::new)
+                .map(AddressResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public AddressResponseDto addAddress(Long userId, AddressRequestDto requestDto) {
+    public AddressResponse addAddress(Long userId, AddressRequest requestDto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException());
 
@@ -56,12 +56,12 @@ public class UserAddressServiceImpl implements UserAddressService {
                 .build();
 
         userAddressRepository.save(userAddress);
-        return new AddressResponseDto(userAddress);
+        return new AddressResponse(userAddress);
     }
 
     @Override
     @Transactional
-    public void updateAddress(Long userId, Long addressId, AddressRequestDto requestDto) {
+    public void updateAddress(Long userId, Long addressId, AddressRequest requestDto) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
                 .orElseThrow(UserAddressException::new);
 
