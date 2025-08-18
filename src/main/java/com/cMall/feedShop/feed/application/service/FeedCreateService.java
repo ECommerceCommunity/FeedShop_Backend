@@ -17,6 +17,7 @@ import java.util.List;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.event.domain.enums.EventStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -97,12 +98,23 @@ public class FeedCreateService {
      * 이벤트 참여 가능 여부 검증
      */
     private void validateEventAvailability(Event event) {
-        // 이벤트가 진행중인지 확인
-        if (!event.getStatus().name().equals("ONGOING")) {
-            throw new EventNotAvailableException(event.getId(), "진행중이지 않은 이벤트입니다.");
+        // 실시간으로 계산된 이벤트 상태 확인
+        EventStatus calculatedStatus = event.calculateStatus();
+        if (calculatedStatus != EventStatus.ONGOING) {
+            throw new EventNotAvailableException(event.getId(), 
+                String.format("진행중이지 않은 이벤트입니다. 현재 상태: %s", calculatedStatus));
         }
         
-        // 이벤트 기간 확인
+        // 이벤트 상세 정보가 있는지 확인
+        if (event.getEventDetail() == null) {
+            throw new EventNotAvailableException(event.getId(), "이벤트 상세 정보가 없습니다.");
+        }
+        
+        // 이벤트 기간 확인 (추가 검증)
+        if (event.getEventDetail().getEventEndDate() == null) {
+            throw new EventNotAvailableException(event.getId(), "이벤트 종료일이 설정되지 않았습니다.");
+        }
+        
         if (event.getEventDetail().getEventEndDate().isBefore(java.time.LocalDate.now())) {
             throw new EventNotAvailableException(event.getId(), "이미 종료된 이벤트입니다.");
         }
