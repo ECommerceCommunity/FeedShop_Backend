@@ -58,21 +58,7 @@ class MyCommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 기본 Mock 설정
-        when(user.getUserProfile()).thenReturn(userProfile);
-        when(userProfile.getNickname()).thenReturn("테스트유저");
-        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
-        
-        when(feed.getId()).thenReturn(1L);
-        when(feed.getTitle()).thenReturn("테스트 피드");
-        when(feed.getFeedType()).thenReturn(com.cMall.feedShop.feed.domain.FeedType.DAILY);
-        when(feed.getUser()).thenReturn(user);
-        
-        when(comment.getId()).thenReturn(1L);
-        when(comment.getContent()).thenReturn("테스트 댓글");
-        when(comment.getFeed()).thenReturn(feed);
-        when(comment.getUser()).thenReturn(user);
-        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
+        // 기본 Mock 설정 - 실제로 사용되는 것만 설정
     }
 
     @Test
@@ -89,6 +75,21 @@ class MyCommentServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(commentRepository.findByUserIdWithFeedAndAuthor(userId, pageable)).thenReturn(commentPage);
+        
+        // MyCommentItemDto.from()에서 사용하는 Mock 설정
+        when(user.getUserProfile()).thenReturn(userProfile);
+        when(userProfile.getNickname()).thenReturn("테스트유저");
+        when(userProfile.getProfileImageUrl()).thenReturn("test-profile.jpg");
+        
+        when(feed.getId()).thenReturn(1L);
+        when(feed.getTitle()).thenReturn("테스트 피드");
+        when(feed.getFeedType()).thenReturn(com.cMall.feedShop.feed.domain.FeedType.DAILY);
+        when(feed.getUser()).thenReturn(user);
+        
+        when(comment.getId()).thenReturn(1L);
+        when(comment.getContent()).thenReturn("테스트 댓글");
+        when(comment.getFeed()).thenReturn(feed);
+        when(comment.getCreatedAt()).thenReturn(LocalDateTime.now());
 
         // when
         MyCommentListResponseDto result = myCommentService.getMyComments(userId, page, size);
