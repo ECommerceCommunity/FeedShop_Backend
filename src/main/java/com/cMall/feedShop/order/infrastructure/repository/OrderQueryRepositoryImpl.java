@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -180,5 +181,37 @@ public class OrderQueryRepositoryImpl implements OrderQueryRepository {
                 .fetchOne();
 
         return Optional.ofNullable(result);
+    }
+
+    @Override
+    public Long countByUserIdAndOrderStatus(Long userId, OrderStatus orderStatus) {
+        QOrder order = QOrder.order;
+        
+        Long count = queryFactory
+                .select(order.count())
+                .from(order)
+                .where(
+                        order.user.id.eq(userId),
+                        order.status.eq(orderStatus)
+                )
+                .fetchOne();
+        
+        return count != null ? count : 0L;
+    }
+
+    @Override
+    public Long findTotalOrderAmountByUserId(Long userId) {
+        QOrder order = QOrder.order;
+        
+        BigDecimal totalAmount = queryFactory
+                .select(order.finalPrice.sum())
+                .from(order)
+                .where(
+                        order.user.id.eq(userId),
+                        order.status.eq(OrderStatus.DELIVERED)
+                )
+                .fetchOne();
+        
+        return totalAmount != null ? totalAmount.longValue() : 0L;
     }
 }

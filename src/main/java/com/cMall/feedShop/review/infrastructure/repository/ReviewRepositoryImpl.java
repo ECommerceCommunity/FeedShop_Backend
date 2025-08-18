@@ -105,4 +105,9 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     public Long countDeletedReviewsByUserId(Long userId) {
         return reviewQueryRepository.countDeletedReviewsByUserId(userId);
     }
+
+    @Override
+    public Long countByUserId(Long userId) {
+        return reviewQueryRepository.countByUserId(userId);
+    }
 }

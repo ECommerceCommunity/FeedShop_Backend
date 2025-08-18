@@ -196,7 +196,6 @@ public class PointService {
     public void processExpiredPoints() {
         LocalDateTime now = LocalDateTime.now();
         
-        // 모든 사용자에 대해 만료된 포인트 처리
         List<User> users = userRepository.findAll();
         
         for (User user : users) {
@@ -212,7 +211,7 @@ public class PointService {
                     
                     // 만료 거래 내역 생성
                     PointTransaction expireTransaction = PointTransaction.createExpireTransaction(
-                            user, totalExpiredPoints, userPoint.getCurrentPoints(), 
+                            user, totalExpiredPoints, userPoint.getCurrentPoints(),
                             "포인트 만료 처리");
                     pointTransactionRepository.save(expireTransaction);
                     

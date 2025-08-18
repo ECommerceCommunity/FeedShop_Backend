@@ -51,7 +51,7 @@ public class PointTransaction extends BaseTimeEntity {
 
     @Builder
     public PointTransaction(User user, PointTransactionType transactionType, Integer points,
-                          Integer balanceAfter, String description, Long relatedOrderId, 
+                          Integer balanceAfter, String description, Long relatedOrderId,
                           LocalDateTime expiryDate, PointTransactionStatus status) {
         this.user = user;
         this.transactionType = transactionType;
@@ -67,7 +67,7 @@ public class PointTransaction extends BaseTimeEntity {
     public static PointTransaction createEarnTransaction(User user, Integer points, Integer balanceAfter,
                                                         String description, Long orderId) {
         LocalDateTime expiryDate = LocalDateTime.now().plusYears(1); // 1년 후 만료
-        
+
         return PointTransaction.builder()
                 .user(user)
                 .transactionType(PointTransactionType.EARN)
@@ -81,7 +81,7 @@ public class PointTransaction extends BaseTimeEntity {
     }
 
     // 포인트 사용 거래 생성
-    public static PointTransaction createUseTransaction(User user, Integer points, Integer balanceAfter, 
+    public static PointTransaction createUseTransaction(User user, Integer points, Integer balanceAfter,
                                                        String description, Long orderId) {
         return PointTransaction.builder()
                 .user(user)
