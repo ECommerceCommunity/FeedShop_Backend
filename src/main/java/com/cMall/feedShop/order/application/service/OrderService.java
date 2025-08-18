@@ -356,6 +356,8 @@ public class OrderService {
         for (OrderItem item : order.getOrderItems()) {
             ProductOption option = item.getProductOption();
             option.increaseStock(item.getQuantity());
+        }
+    }
 
     /**
      * 주문 완료 후 뱃지 자동 수여 체크
