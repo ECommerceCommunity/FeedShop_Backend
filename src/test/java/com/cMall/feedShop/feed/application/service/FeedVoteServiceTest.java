@@ -49,9 +49,7 @@ class FeedVoteServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(feed.getId()).thenReturn(1L);
-        when(feed.getFeedType()).thenReturn(FeedType.EVENT);
-        when(user.getId()).thenReturn(1L);
+        // 기본 Mock 설정은 각 테스트에서 필요한 것만 설정
     }
 
     @Test
@@ -61,6 +59,7 @@ class FeedVoteServiceTest {
         Long feedId = 1L;
         Long userId = 1L;
 
+        when(feed.getFeedType()).thenReturn(FeedType.EVENT);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(false);
@@ -85,6 +84,7 @@ class FeedVoteServiceTest {
         Long feedId = 1L;
         Long userId = 1L;
 
+        when(feed.getFeedType()).thenReturn(FeedType.EVENT);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(true);
