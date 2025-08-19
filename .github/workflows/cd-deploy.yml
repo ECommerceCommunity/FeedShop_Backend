@@ -74,6 +74,7 @@ jobs:
             --platform managed \
             --region $REGION \
             --allow-unauthenticated \
+            --service-account=feedshop-prod-api-deployer@onyx-oxygen-462722-c0.iam.gserviceaccount.com
             --memory 2Gi \
             --cpu 2 \
             --concurrency 1000 \
