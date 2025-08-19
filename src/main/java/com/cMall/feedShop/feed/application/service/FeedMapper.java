@@ -145,8 +145,8 @@ public class FeedMapper {
                 .eventTitle(getEventTitle(feed.getEvent()))
                 .hashtags(getHashtags(feed.getHashtags()))
                 .imageUrls(getImageUrls(feed.getImages()))
-                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
-                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isLiked(false) // 기본값: 좋아요하지 않음 (서비스에서 실제 상태로 업데이트)
+                .isVoted(false) // 기본값: 투표하지 않음 (서비스에서 실제 상태로 업데이트)
                 .build();
     }
     
@@ -187,8 +187,8 @@ public class FeedMapper {
                 .eventTitle(getEventTitle(feed.getEvent()))
                 .hashtags(getHashtags(feed.getHashtags()))
                 .imageUrls(getImageUrls(feed.getImages()))
-                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
-                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isLiked(false) // 기본값: 좋아요하지 않음 (서비스에서 실제 상태로 업데이트)
+                .isVoted(false) // 기본값: 투표하지 않음 (서비스에서 실제 상태로 업데이트)
                 .build();
     }
     
@@ -238,8 +238,8 @@ public class FeedMapper {
                 .hashtags(toFeedHashtagDtoList(feed.getHashtags()))
                 .images(toFeedImageDtoList(feed.getImages()))
                 .comments(toFeedCommentDtoList(feed.getComments()))
-                .isLiked(false) // 기본값, 실제로는 사용자별 상태 확인 필요
-                .isVoted(false) // 기본값, 실제로는 사용자별 상태 확인 필요
+                .isLiked(false) // 기본값: 좋아요하지 않음 (서비스에서 실제 상태로 업데이트)
+                .isVoted(false) // 기본값: 투표하지 않음 (서비스에서 실제 상태로 업데이트)
                 .canVote(feed.getFeedType() == com.cMall.feedShop.feed.domain.FeedType.EVENT) // 이벤트 피드만 투표 가능
                 .build();
     }

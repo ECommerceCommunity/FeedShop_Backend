@@ -36,6 +36,9 @@ class FeedReadServiceTest {
     @Mock
     private FeedMapper feedMapper;
 
+    @Mock
+    private FeedLikeService feedLikeService;
+
     @InjectMocks
     private FeedReadService feedReadService;
 
@@ -45,33 +48,25 @@ class FeedReadServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 테스트용 Feed 엔티티 생성
+        testPageable = PageRequest.of(0, 10);
+        
         testFeed = Feed.builder()
                 .title("테스트 피드")
                 .content("테스트 내용")
-                .instagramId("test_user")
                 .build();
 
-        // 테스트용 DTO 생성
         testFeedDto = FeedListResponseDto.builder()
                 .feedId(1L)
                 .title("테스트 피드")
                 .content("테스트 내용")
                 .feedType(FeedType.DAILY)
-                .instagramId("test_user")
-                .likeCount(10)
-                .commentCount(5)
-                .participantVoteCount(2)
                 .createdAt(LocalDateTime.now())
                 .build();
-
-        // 테스트용 Pageable 생성
-        testPageable = PageRequest.of(0, 20);
     }
 
     @Test
-    @DisplayName("피드 전체 목록 조회 - 성공")
-    void getFeeds_Success() {
+    @DisplayName("전체 피드 목록 조회 - 성공")
+    void getFeeds_AllFeeds_Success() {
         // given
         List<Feed> feeds = List.of(testFeed);
         Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
@@ -80,7 +75,7 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -104,7 +99,7 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeeds(FeedType.DAILY, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(FeedType.DAILY, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -127,7 +122,7 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.EVENT, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.EVENT, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -147,7 +142,7 @@ class FeedReadServiceTest {
         when(feedRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -175,43 +170,69 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(feed2)).thenReturn(dto2);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getTotalElements()).isEqualTo(2);
-        assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
-        assertThat(result.getContent().get(1).getFeedId()).isEqualTo(2L);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("피드1");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("피드2");
 
         verify(feedRepository, times(1)).findAll(testPageable);
         verify(feedMapper, times(2)).toFeedListResponseDto(any(Feed.class));
     }
 
     @Test
-    @DisplayName("다양한 피드 타입별 조회 - 성공")
-    void getFeedsByType_DifferentTypes_Success() {
+    @DisplayName("피드 타입별 조회 - 여러 피드")
+    void getFeedsByType_MultipleFeeds_Success() {
         // given
-        Feed dailyFeed = Feed.builder().title("일상 피드").build();
-        Feed eventFeed = Feed.builder().title("이벤트 피드").build();
-        Feed rankingFeed = Feed.builder().title("랭킹 피드").build();
+        Feed feed1 = Feed.builder().title("이벤트 피드1").build();
+        Feed feed2 = Feed.builder().title("이벤트 피드2").build();
+        List<Feed> feeds = List.of(feed1, feed2);
+        Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 2);
         
-        List<Feed> dailyFeeds = List.of(dailyFeed);
-        Page<Feed> dailyPage = new PageImpl<>(dailyFeeds, testPageable, 1);
+        FeedListResponseDto dto1 = FeedListResponseDto.builder().feedId(1L).title("이벤트 피드1").feedType(FeedType.EVENT).build();
+        FeedListResponseDto dto2 = FeedListResponseDto.builder().feedId(2L).title("이벤트 피드2").feedType(FeedType.EVENT).build();
         
-        when(feedRepository.findByFeedType(FeedType.DAILY.name(), testPageable)).thenReturn(dailyPage);
-        when(feedMapper.toFeedListResponseDto(dailyFeed)).thenReturn(
-            FeedListResponseDto.builder().feedId(1L).title("일상 피드").feedType(FeedType.DAILY).build()
-        );
+        when(feedRepository.findByFeedType(FeedType.EVENT.name(), testPageable)).thenReturn(feedPage);
+        when(feedMapper.toFeedListResponseDto(feed1)).thenReturn(dto1);
+        when(feedMapper.toFeedListResponseDto(feed2)).thenReturn(dto2);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.DAILY, testPageable);
+        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.EVENT, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getFeedType()).isEqualTo(FeedType.DAILY);
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent().get(0).getFeedType()).isEqualTo(FeedType.EVENT);
+        assertThat(result.getContent().get(1).getFeedType()).isEqualTo(FeedType.EVENT);
 
-        verify(feedRepository, times(1)).findByFeedType(FeedType.DAILY.name(), testPageable);
+        verify(feedRepository, times(1)).findByFeedType(FeedType.EVENT.name(), testPageable);
+        verify(feedMapper, times(2)).toFeedListResponseDto(any(Feed.class));
+    }
+
+    @Test
+    @DisplayName("페이징 정보 확인 - 성공")
+    void getFeeds_PagingInfo_Success() {
+        // given
+        Pageable customPageable = PageRequest.of(1, 5);
+        List<Feed> feeds = List.of(testFeed);
+        Page<Feed> feedPage = new PageImpl<>(feeds, customPageable, 1);
+        
+        when(feedRepository.findAll(customPageable)).thenReturn(feedPage);
+        when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(null, customPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getNumber()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(5);
+        assertThat(result.getTotalElements()).isEqualTo(6);
+
+        verify(feedRepository, times(1)).findAll(customPageable);
     }
 } 

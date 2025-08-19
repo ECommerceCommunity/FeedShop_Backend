@@ -16,23 +16,28 @@ public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     // 피드 생성 관련 - 중복 체크 (OrderItem의 orderItemId 필드에 접근)
     boolean existsByOrderItemOrderItemIdAndUserId(Long orderItemId, Long userId);
     
-    // 사용자별 피드 조회 (페이징)
-    Page<Feed> findByUserId(Long userId, Pageable pageable);
+    // 사용자별 피드 조회 (페이징) - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.deletedAt IS NULL")
+    Page<Feed> findByUserId(@Param("userId") Long userId, Pageable pageable);
     
-    // 피드 타입별 조회 (페이징)
-    Page<Feed> findByFeedType(FeedType feedType, Pageable pageable);
+    // 피드 타입별 조회 (페이징) - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.feedType = :feedType AND f.deletedAt IS NULL")
+    Page<Feed> findByFeedType(@Param("feedType") FeedType feedType, Pageable pageable);
     
-    // 이벤트별 피드 조회
-    List<Feed> findByEventId(Long eventId);
+    // 이벤트별 피드 조회 - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.event.id = :eventId AND f.deletedAt IS NULL")
+    List<Feed> findByEventId(@Param("eventId") Long eventId);
     
-    // 주문 아이템별 피드 조회 (OrderItem의 orderItemId 필드에 접근)
-    List<Feed> findByOrderItemOrderItemId(Long orderItemId);
+    // 주문 아이템별 피드 조회 (OrderItem의 orderItemId 필드에 접근) - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.orderItem.orderItemId = :orderItemId AND f.deletedAt IS NULL")
+    List<Feed> findByOrderItemOrderItemId(@Param("orderItemId") Long orderItemId);
     
-    // 이벤트별 피드 조회 (페이징)
-    Page<Feed> findByEventId(Long eventId, Pageable pageable);
+    // 이벤트별 피드 조회 (페이징) - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.event.id = :eventId AND f.deletedAt IS NULL")
+    Page<Feed> findByEventId(@Param("eventId") Long eventId, Pageable pageable);
     
-    // 사용자와 이벤트별 피드 조회
-    @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.event.id = :eventId")
+    // 사용자와 이벤트별 피드 조회 - 활성 피드만
+    @Query("SELECT f FROM Feed f WHERE f.user.id = :userId AND f.event.id = :eventId AND f.deletedAt IS NULL")
     List<Feed> findByUserIdAndEventId(@Param("userId") Long userId, @Param("eventId") Long eventId);
     
     // 활성 피드만 조회 (삭제되지 않은 피드)
