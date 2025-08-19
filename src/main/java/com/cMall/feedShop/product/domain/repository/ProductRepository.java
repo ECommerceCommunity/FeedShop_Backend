@@ -16,10 +16,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
     @EntityGraph(attributePaths = {"store", "category", "productImages"})
     Page<Product> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-    // 상품 목록 조회 - 인기순
-    @EntityGraph(attributePaths = {"store", "category", "productImages"})
-    Page<Product> findAllByOrderByWishNumberDesc(Pageable pageable);
-
     // 상품 상세 조회 (모든 연관 포함)
     @EntityGraph(attributePaths = {"store", "category", "productImages"})
     Optional<Product> findByProductId(Long productId);
