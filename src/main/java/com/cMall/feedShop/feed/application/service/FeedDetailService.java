@@ -2,8 +2,12 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
+import com.cMall.feedShop.feed.application.service.FeedLikeService;
+import com.cMall.feedShop.feed.application.service.FeedVoteService;
+import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.feed.application.service.FeedMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +26,7 @@ public class FeedDetailService {
     private final FeedRepository feedRepository;
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
+    private final FeedVoteService feedVoteService; // Added FeedVoteService
     private final FeedServiceUtils feedServiceUtils;
     
     /**
@@ -51,9 +56,11 @@ public class FeedDetailService {
         // 사용자별 좋아요 상태 설정
         boolean isLiked = userDetails != null ? 
                 feedLikeService.isLikedByUser(feedId, feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
-        dto = dto.toBuilder().isLiked(isLiked).build();
+        boolean isVoted = userDetails != null ? 
+                feedVoteService.hasVoted(feedId, feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+        dto = dto.toBuilder().isLiked(isLiked).isVoted(isVoted).build();
         
-        log.info("사용자별 좋아요 상태 설정 - feedId: {}, isLiked: {}", feedId, isLiked);
+        log.info("사용자별 상호작용 상태 설정 - feedId: {}, isLiked: {}, isVoted: {}", feedId, isLiked, isVoted);
         
         log.info("피드 상세 조회 완료 - feedId: {}, 제목: {}, isLiked: {}", feedId, feed.getTitle(), dto.getIsLiked());
         

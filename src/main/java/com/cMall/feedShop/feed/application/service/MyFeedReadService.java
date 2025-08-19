@@ -3,6 +3,10 @@ package com.cMall.feedShop.feed.application.service;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
+import com.cMall.feedShop.feed.application.service.FeedLikeService;
+import com.cMall.feedShop.feed.application.service.FeedVoteService;
+import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
+import com.cMall.feedShop.feed.application.service.FeedMapper;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
@@ -34,6 +38,7 @@ public class MyFeedReadService {
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
     private final FeedServiceUtils feedServiceUtils;
+    private final FeedVoteService feedVoteService; // Added FeedVoteService
 
     /**
      * 사용자의 마이피드 목록 조회 (페이징)
@@ -61,6 +66,8 @@ public class MyFeedReadService {
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
                     feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            boolean isVoted = userDetails != null ? 
+                    feedVoteService.hasVoted(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -83,7 +90,7 @@ public class MyFeedReadService {
                     .hashtags(dto.getHashtags())
                     .imageUrls(dto.getImageUrls())
                     .isLiked(isLiked)
-                    .isVoted(dto.getIsVoted())
+                    .isVoted(isVoted)
                     .build();
         });
 
@@ -120,6 +127,8 @@ public class MyFeedReadService {
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
                     feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            boolean isVoted = userDetails != null ? 
+                    feedVoteService.hasVoted(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             return MyFeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
@@ -142,7 +151,7 @@ public class MyFeedReadService {
                     .hashtags(dto.getHashtags())
                     .imageUrls(dto.getImageUrls())
                     .isLiked(isLiked)
-                    .isVoted(dto.getIsVoted())
+                    .isVoted(isVoted)
                     .build();
         });
 
