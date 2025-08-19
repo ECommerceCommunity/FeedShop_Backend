@@ -53,7 +53,12 @@ public class FeedListResponseDto {
     private List<String> imageUrls;
     
     // 사용자 상호작용 상태
+    // false: 좋아요하지 않음, true: 좋아요함
+    // 서비스 레이어에서 실제 사용자 상태로 업데이트됨
     private Boolean isLiked;
+    
+    // false: 투표하지 않음, true: 투표함
+    // 서비스 레이어에서 실제 사용자 상태로 업데이트됨
     private Boolean isVoted;
     
     /**
@@ -108,6 +113,37 @@ public class FeedListResponseDto {
                 .commentCount(0)
                 .isLiked(false)
                 .isVoted(false)
+                .build();
+    }
+    
+    /**
+     * Factory 메서드: 기존 DTO에서 isLiked 상태만 업데이트
+     * 서비스 레이어에서 사용자별 좋아요 상태를 설정할 때 사용
+     */
+    public static FeedListResponseDto from(FeedListResponseDto original, Boolean isLiked) {
+        return FeedListResponseDto.builder()
+                .feedId(original.getFeedId())
+                .title(original.getTitle())
+                .content(original.getContent())
+                .feedType(original.getFeedType())
+                .instagramId(original.getInstagramId())
+                .createdAt(original.getCreatedAt())
+                .likeCount(original.getLikeCount())
+                .commentCount(original.getCommentCount())
+                .participantVoteCount(original.getParticipantVoteCount())
+                .userId(original.getUserId())
+                .userNickname(original.getUserNickname())
+                .userProfileImg(original.getUserProfileImg())
+                .userLevel(original.getUserLevel())
+                .orderItemId(original.getOrderItemId())
+                .productName(original.getProductName())
+                .productSize(original.getProductSize())
+                .eventId(original.getEventId())
+                .eventTitle(original.getEventTitle())
+                .hashtags(original.getHashtags())
+                .imageUrls(original.getImageUrls())
+                .isLiked(isLiked)
+                .isVoted(original.getIsVoted())
                 .build();
     }
 } 

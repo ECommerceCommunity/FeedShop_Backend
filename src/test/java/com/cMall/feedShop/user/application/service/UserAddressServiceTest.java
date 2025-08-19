@@ -93,10 +93,10 @@ class UserAddressServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getRecipientName()).isEqualTo("홍길동");
         assertThat(result.get(0).getAddressLine1()).isEqualTo("서울시 강남구");
-        assertThat(result.get(0).isDefault()).isTrue();
+        assertThat(result.get(0).getIsDefault()).isTrue();
         assertThat(result.get(1).getRecipientName()).isEqualTo("김철수");
         assertThat(result.get(1).getAddressLine1()).isEqualTo("서울시 서초구");
-        assertThat(result.get(1).isDefault()).isFalse();
+        assertThat(result.get(1).getIsDefault()).isFalse();
 
         verify(userAddressRepository, times(1)).findByUserId(1L);
     }

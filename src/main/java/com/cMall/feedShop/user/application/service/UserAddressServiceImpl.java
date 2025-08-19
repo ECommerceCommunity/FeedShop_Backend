@@ -61,12 +61,18 @@ public class UserAddressServiceImpl implements UserAddressService {
     }
 
     @Override
+    @Transactional
     public void updateAddress(Long userId, Long addressId, AddressRequestDto requestDto) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
-                .orElseThrow(() -> new UserAddressException());
+                .orElseThrow(UserAddressException::new);
 
         if (!userAddress.getUser().getId().equals(userId)) {
             throw new SecurityException("You are not authorized to update this address.");
+        }
+
+        if (requestDto.isDefault()) {
+            // ✅ 기존 기본 배송지를 한 번의 쿼리로 초기화
+            userAddressRepository.resetDefaultAddress(userId);
         }
 
         userAddress.updateAddress(
@@ -77,6 +83,9 @@ public class UserAddressServiceImpl implements UserAddressService {
                 requestDto.getAddressLine2(),
                 requestDto.isDefault()
         );
+
+        // ✅ 현재 주소만 저장
+        userAddressRepository.save(userAddress);
     }
 
     @Override
