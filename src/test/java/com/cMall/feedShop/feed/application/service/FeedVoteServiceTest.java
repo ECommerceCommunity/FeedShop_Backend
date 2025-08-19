@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -238,5 +239,82 @@ class FeedVoteServiceTest {
         // then
         assertThat(result).isFalse();
         verify(feedVoteRepository).existsByEventIdAndUserId(eventId, userId);
+    }
+
+    @Test
+    @DisplayName("🔧 개선: 특정 피드 투표 수 동기화 성공")
+    void syncVoteCount_success() {
+        // given
+        Long feedId = 1L;
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feed.getParticipantVoteCount()).thenReturn(3); // 현재 Feed 엔티티 값
+        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(5L); // 실제 투표 수
+
+        // when
+        feedVoteService.syncVoteCount(feedId);
+
+        // then
+        verify(feed).incrementVoteCount(); // 2번 호출되어야 함 (3 -> 5)
+        verify(feed, times(2)).incrementVoteCount();
+    }
+
+    @Test
+    @DisplayName("🔧 개선: 특정 피드 투표 수 동기화 - 감소 케이스")
+    void syncVoteCount_decrease() {
+        // given
+        Long feedId = 1L;
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feed.getParticipantVoteCount()).thenReturn(5); // 현재 Feed 엔티티 값
+        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
+
+        // when
+        feedVoteService.syncVoteCount(feedId);
+
+        // then
+        verify(feed).decrementVoteCount(); // 2번 호출되어야 함 (5 -> 3)
+        verify(feed, times(2)).decrementVoteCount();
+    }
+
+    @Test
+    @DisplayName("🔧 개선: 특정 피드 투표 수 동기화 - 동일한 경우")
+    void syncVoteCount_noChange() {
+        // given
+        Long feedId = 1L;
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feed.getParticipantVoteCount()).thenReturn(3); // 현재 Feed 엔티티 값
+        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
+
+        // when
+        feedVoteService.syncVoteCount(feedId);
+
+        // then
+        verify(feed, never()).incrementVoteCount();
+        verify(feed, never()).decrementVoteCount();
+    }
+
+    @Test
+    @DisplayName("🔧 개선: 전체 피드 투표 수 동기화 성공")
+    void syncAllVoteCounts_success() {
+        // given
+        Object[] voteCount1 = {1L, 5L}; // feedId: 1, voteCount: 5
+        Object[] voteCount2 = {2L, 3L}; // feedId: 2, voteCount: 3
+        List<Object[]> voteCounts = List.of(voteCount1, voteCount2);
+
+        Feed feed1 = mock(Feed.class);
+        Feed feed2 = mock(Feed.class);
+
+        when(feedVoteRepository.getAllFeedVoteCounts()).thenReturn(voteCounts);
+        when(feedRepository.findById(1L)).thenReturn(Optional.of(feed1));
+        when(feedRepository.findById(2L)).thenReturn(Optional.of(feed2));
+        when(feed1.getParticipantVoteCount()).thenReturn(3); // 동기화 필요
+        when(feed2.getParticipantVoteCount()).thenReturn(3); // 동일함
+
+        // when
+        feedVoteService.syncAllVoteCounts();
+
+        // then
+        verify(feed1, times(2)).incrementVoteCount(); // 3 -> 5
+        verify(feed2, never()).incrementVoteCount(); // 변경 없음
+        verify(feed2, never()).decrementVoteCount(); // 변경 없음
     }
 }

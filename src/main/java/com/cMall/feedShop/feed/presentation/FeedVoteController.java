@@ -113,4 +113,31 @@ public class FeedVoteController {
         log.warn("username '{}'로 사용자를 찾을 수 없습니다 (email, loginId 모두 시도)", username);
         return null;
     }
+
+    /**
+     * 🔧 개선: 특정 피드의 투표 수 동기화 (관리자용)
+     */
+    @PostMapping("/{feedId}/vote/sync")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ApiResponseFormat
+    @Operation(summary = "피드 투표 수 동기화", description = "특정 피드의 투표 수를 Feed 엔티티와 동기화합니다.")
+    public ApiResponse<String> syncVoteCount(
+            @Parameter(description = "피드 ID") @PathVariable Long feedId) {
+
+        feedVoteService.syncVoteCount(feedId);
+        return ApiResponse.success("투표 수 동기화가 완료되었습니다.");
+    }
+
+    /**
+     * 🔧 개선: 전체 피드의 투표 수 일괄 동기화 (관리자용)
+     */
+    @PostMapping("/vote/sync-all")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ApiResponseFormat
+    @Operation(summary = "전체 피드 투표 수 동기화", description = "모든 피드의 투표 수를 Feed 엔티티와 동기화합니다.")
+    public ApiResponse<String> syncAllVoteCounts() {
+
+        feedVoteService.syncAllVoteCounts();
+        return ApiResponse.success("전체 피드 투표 수 동기화가 완료되었습니다.");
+    }
 }
