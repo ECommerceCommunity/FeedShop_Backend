@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.domain.repository;
 
 import com.cMall.feedShop.user.domain.model.ActivityType;
+import com.cMall.feedShop.user.domain.model.DailyPoints;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserActivity;
 import org.springframework.data.domain.Page;
@@ -38,10 +39,10 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
     Page<UserActivity> findRecentActivities(Pageable pageable);
     
     // 특정 사용자의 일별 점수 통계
-    @Query("SELECT DATE(ua.createdAt) as date, SUM(ua.pointsEarned) as totalPoints " +
-           "FROM UserActivity ua WHERE ua.user = :user " +
-           "AND ua.createdAt >= :startDate " +
-           "GROUP BY DATE(ua.createdAt) " +
-           "ORDER BY DATE(ua.createdAt) DESC")
-    List<Object[]> getDailyPointsStatistics(@Param("user") User user, @Param("startDate") LocalDateTime startDate);
+    @Query("SELECT new com.cMall.feedShop.user.domain.model.DailyPoints(DATE(ua.createdAt), SUM(ua.pointsEarned)) " +
+            "FROM UserActivity ua WHERE ua.user = :user " +
+            "AND ua.createdAt >= :startDate " +
+            "GROUP BY DATE(ua.createdAt) " +
+            "ORDER BY DATE(ua.createdAt) DESC")
+    List<DailyPoints> getDailyPointsStatistics(@Param("user") User user, @Param("startDate") LocalDateTime startDate);
 }
