@@ -24,6 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
         
         // 정적 파일에 대한 CORS 설정
         registry.addMapping("/images/**")
+
                 .allowedOrigins("http://localhost:3000")
                 .allowedMethods("GET")
                 .allowedHeaders("Origin", "X-Requested-With", "Content-Type", "Accept");
@@ -37,6 +38,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins("http://localhost:3000")
                 .allowedMethods("GET")
                 .allowedHeaders("Origin", "X-Requested-With", "Content-Type", "Accept");
+
     }
     
     @Override
