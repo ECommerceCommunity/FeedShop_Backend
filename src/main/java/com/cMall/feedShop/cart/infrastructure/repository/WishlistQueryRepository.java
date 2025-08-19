@@ -11,9 +11,6 @@ public interface WishlistQueryRepository {
 
     // 찜 수 증가
     void increaseWishCount(Long productId);
-    
-    // 사용자 ID로 위시리스트 조회
-    Page<WishlistInfo> findWishlistByUserId(Long userId, Pageable pageable);
 
     // 찜 수 감소
     void decreaseWishCount(Long productId);
