@@ -61,12 +61,6 @@ public interface FeedVoteRepository extends JpaRepository<FeedVote, Long> {
     List<Object[]> findTopVotersByEvent(@Param("eventId") Long eventId);
 
     /**
-     * 🔧 개선: 특정 피드의 실제 투표 수를 Feed 엔티티와 동기화
-     */
-    @Query("select count(v) from FeedVote v where v.feed.id = :feedId")
-    long getActualVoteCountByFeedId(@Param("feedId") Long feedId);
-
-    /**
      * 🔧 개선: 모든 피드의 투표 수를 일괄 동기화 (배치 작업용)
      */
     @Query("select v.feed.id, count(v) as voteCount from FeedVote v group by v.feed.id")

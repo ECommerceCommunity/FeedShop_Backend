@@ -73,18 +73,12 @@ public class FeedVoteService {
      * 피드의 투표 개수 조회
      */
     public int getVoteCount(Long feedId) {
-        try {
-            // 피드 존재 확인
-            Feed feed = feedRepository.findById(feedId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.FEED_NOT_FOUND));
+        // 피드 존재 확인
+        Feed feed = feedRepository.findById(feedId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FEED_NOT_FOUND));
 
-            // 🔧 개선: Feed 엔티티의 participantVoteCount 반환
-            return feed.getParticipantVoteCount();
-        } catch (Exception e) {
-            log.error("투표 개수 조회 중 오류 발생 - 피드ID: {}", feedId, e);
-            // 테이블이 존재하지 않는 경우 0 반환
-            return 0;
-        }
+        // 🔧 개선: Feed 엔티티의 participantVoteCount 반환
+        return feed.getParticipantVoteCount();
     }
 
     /**
@@ -123,23 +117,34 @@ public class FeedVoteService {
             Feed feed = feedRepository.findById(feedId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.FEED_NOT_FOUND));
             
-            long actualVoteCount = feedVoteRepository.getActualVoteCountByFeedId(feedId);
+            long actualVoteCount = feedVoteRepository.countByFeedId(feedId);
+            int currentVoteCount = feed.getParticipantVoteCount();
             
             // 현재 Feed 엔티티의 투표 수와 실제 투표 수가 다르면 동기화
-            if (feed.getParticipantVoteCount() != (int) actualVoteCount) {
+            if (currentVoteCount != (int) actualVoteCount) {
                 log.info("투표 수 동기화 - 피드ID: {}, 기존: {}, 실제: {}", 
-                        feedId, feed.getParticipantVoteCount(), actualVoteCount);
+                        feedId, currentVoteCount, actualVoteCount);
                 
-                // Feed 엔티티의 투표 수를 실제 값으로 설정
-                while (feed.getParticipantVoteCount() < actualVoteCount) {
-                    feed.incrementVoteCount();
+                // 🔧 개선: 무한 루프 방지를 위한 안전한 동기화
+                int difference = (int) actualVoteCount - currentVoteCount;
+                
+                if (difference > 0) {
+                    // 증가가 필요한 경우
+                    for (int i = 0; i < difference; i++) {
+                        feed.incrementVoteCount();
+                    }
+                } else if (difference < 0) {
+                    // 감소가 필요한 경우
+                    for (int i = 0; i < Math.abs(difference); i++) {
+                        feed.decrementVoteCount();
+                    }
                 }
-                while (feed.getParticipantVoteCount() > actualVoteCount) {
-                    feed.decrementVoteCount();
-                }
+                
+                log.info("투표 수 동기화 완료 - 피드ID: {}, 최종: {}", feedId, feed.getParticipantVoteCount());
             }
         } catch (Exception e) {
             log.error("투표 수 동기화 중 오류 발생 - 피드ID: {}", feedId, e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -150,29 +155,46 @@ public class FeedVoteService {
     public void syncAllVoteCounts() {
         try {
             List<Object[]> voteCounts = feedVoteRepository.getAllFeedVoteCounts();
+            int processedCount = 0;
+            int syncedCount = 0;
             
             for (Object[] result : voteCounts) {
                 Long feedId = (Long) result[0];
                 Long actualVoteCount = (Long) result[1];
                 
                 Feed feed = feedRepository.findById(feedId).orElse(null);
-                if (feed != null && feed.getParticipantVoteCount() != actualVoteCount.intValue()) {
-                    log.info("배치 투표 수 동기화 - 피드ID: {}, 기존: {}, 실제: {}", 
-                            feedId, feed.getParticipantVoteCount(), actualVoteCount);
+                if (feed != null) {
+                    int currentVoteCount = feed.getParticipantVoteCount();
                     
-                    // Feed 엔티티의 투표 수를 실제 값으로 설정
-                    while (feed.getParticipantVoteCount() < actualVoteCount) {
-                        feed.incrementVoteCount();
+                    if (currentVoteCount != actualVoteCount.intValue()) {
+                        log.info("배치 투표 수 동기화 - 피드ID: {}, 기존: {}, 실제: {}", 
+                                feedId, currentVoteCount, actualVoteCount);
+                        
+                        // 🔧 개선: 무한 루프 방지를 위한 안전한 동기화
+                        int difference = actualVoteCount.intValue() - currentVoteCount;
+                        
+                        if (difference > 0) {
+                            // 증가가 필요한 경우
+                            for (int i = 0; i < difference; i++) {
+                                feed.incrementVoteCount();
+                            }
+                        } else if (difference < 0) {
+                            // 감소가 필요한 경우
+                            for (int i = 0; i < Math.abs(difference); i++) {
+                                feed.decrementVoteCount();
+                            }
+                        }
+                        
+                        syncedCount++;
                     }
-                    while (feed.getParticipantVoteCount() > actualVoteCount) {
-                        feed.decrementVoteCount();
-                    }
+                    processedCount++;
                 }
             }
             
-            log.info("전체 피드 투표 수 동기화 완료 - {}개 피드 처리", voteCounts.size());
+            log.info("전체 피드 투표 수 동기화 완료 - 처리: {}개, 동기화: {}개", processedCount, syncedCount);
         } catch (Exception e) {
             log.error("전체 투표 수 동기화 중 오류 발생", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 }

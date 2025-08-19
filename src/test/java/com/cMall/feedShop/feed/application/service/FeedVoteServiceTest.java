@@ -71,7 +71,7 @@ class FeedVoteServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
-        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(1L);
+        when(feed.getParticipantVoteCount()).thenReturn(0, 1); // 초기값 0, 증가 후 1
 
         // when
         FeedVoteResponseDto result = feedVoteService.voteFeed(feedId, userId);
@@ -82,7 +82,7 @@ class FeedVoteServiceTest {
         assertThat(result.getMessage()).isEqualTo("투표가 완료되었습니다!");
 
         verify(feedVoteRepository).save(any());
-        verify(feedVoteRepository).countByFeedId(feedId);
+        verify(feed).incrementVoteCount();
     }
 
     @Test
@@ -99,7 +99,7 @@ class FeedVoteServiceTest {
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
-        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(1L);
+        when(feed.getParticipantVoteCount()).thenReturn(1); // 이미 투표된 상태
 
         // when
         FeedVoteResponseDto result = feedVoteService.voteFeed(feedId, userId);
@@ -110,7 +110,7 @@ class FeedVoteServiceTest {
         assertThat(result.getMessage()).isEqualTo("이미 해당 이벤트에 투표했습니다.");
 
         verify(feedVoteRepository, never()).save(any());
-        verify(feedVoteRepository).countByFeedId(feedId);
+        verify(feed, never()).incrementVoteCount();
     }
 
     @Test
@@ -173,14 +173,13 @@ class FeedVoteServiceTest {
         // given
         Long feedId = 1L;
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(5L);
+        when(feed.getParticipantVoteCount()).thenReturn(5); // Feed 엔티티의 투표 수
 
         // when
         int result = feedVoteService.getVoteCount(feedId);
 
         // then
         assertThat(result).isEqualTo(5);
-        verify(feedVoteRepository).countByFeedId(feedId);
     }
 
     @Test
@@ -190,11 +189,10 @@ class FeedVoteServiceTest {
         Long feedId = 999L;
         when(feedRepository.findById(feedId)).thenReturn(Optional.empty());
 
-        // when
-        int result = feedVoteService.getVoteCount(feedId);
-
-        // then - 예외 처리 로직으로 인해 0을 반환
-        assertThat(result).isEqualTo(0);
+        // when & then
+        assertThatThrownBy(() -> feedVoteService.getVoteCount(feedId))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FEED_NOT_FOUND);
     }
 
     @Test
@@ -248,14 +246,13 @@ class FeedVoteServiceTest {
         Long feedId = 1L;
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(feed.getParticipantVoteCount()).thenReturn(3); // 현재 Feed 엔티티 값
-        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(5L); // 실제 투표 수
+        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(5L); // 실제 투표 수
 
         // when
         feedVoteService.syncVoteCount(feedId);
 
         // then
-        verify(feed).incrementVoteCount(); // 2번 호출되어야 함 (3 -> 5)
-        verify(feed, times(2)).incrementVoteCount();
+        verify(feed, times(2)).incrementVoteCount(); // 3 -> 5 (2번 증가)
     }
 
     @Test
@@ -265,14 +262,13 @@ class FeedVoteServiceTest {
         Long feedId = 1L;
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(feed.getParticipantVoteCount()).thenReturn(5); // 현재 Feed 엔티티 값
-        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
+        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
 
         // when
         feedVoteService.syncVoteCount(feedId);
 
         // then
-        verify(feed).decrementVoteCount(); // 2번 호출되어야 함 (5 -> 3)
-        verify(feed, times(2)).decrementVoteCount();
+        verify(feed, times(2)).decrementVoteCount(); // 5 -> 3 (2번 감소)
     }
 
     @Test
@@ -282,7 +278,7 @@ class FeedVoteServiceTest {
         Long feedId = 1L;
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(feed.getParticipantVoteCount()).thenReturn(3); // 현재 Feed 엔티티 값
-        when(feedVoteRepository.getActualVoteCountByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
+        when(feedVoteRepository.countByFeedId(feedId)).thenReturn(3L); // 실제 투표 수
 
         // when
         feedVoteService.syncVoteCount(feedId);
