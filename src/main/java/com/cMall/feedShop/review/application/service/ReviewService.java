@@ -19,6 +19,7 @@ import com.cMall.feedShop.review.domain.ReviewImage;
 import com.cMall.feedShop.review.domain.repository.ReviewRepository;
 import com.cMall.feedShop.review.domain.repository.ReviewImageRepository;
 import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
+import com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService;
 import com.cMall.feedShop.review.domain.enums.Cushion;
 import com.cMall.feedShop.review.domain.enums.SizeFit;
 import com.cMall.feedShop.review.domain.enums.Stability;
@@ -59,6 +60,7 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ReviewDuplicationValidator duplicationValidator;
+    private final ReviewPurchaseVerificationService purchaseVerificationService;
     private final ReviewImageService reviewImageService;
     private final ReviewImageRepository reviewImageRepository;
 
@@ -72,6 +74,7 @@ public class ReviewService {
             UserRepository userRepository,
             ProductRepository productRepository,
             ReviewDuplicationValidator duplicationValidator,
+            ReviewPurchaseVerificationService purchaseVerificationService,
             ReviewImageService reviewImageService,
             ReviewImageRepository reviewImageRepository) {
 
@@ -79,6 +82,7 @@ public class ReviewService {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.duplicationValidator = duplicationValidator;
+        this.purchaseVerificationService = purchaseVerificationService;
         this.reviewImageService = reviewImageService;
         this.reviewImageRepository = reviewImageRepository;
 
@@ -103,6 +107,9 @@ public class ReviewService {
 
         // 중복 리뷰 검증
         duplicationValidator.validateNoDuplicateActiveReview(user.getId(), product.getProductId());
+        
+        // 구매이력 검증
+        purchaseVerificationService.validateUserPurchasedProduct(user, product.getProductId());
 
         // ✅ DTO에서 직접 값 추출 (불변 필드)
         Review review = Review.builder()
