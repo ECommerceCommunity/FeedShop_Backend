@@ -2,7 +2,7 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.feed.application.dto.request.FeedVoteRequestDto;
+
 import com.cMall.feedShop.feed.application.dto.response.FeedVoteResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedVote;
@@ -44,11 +44,12 @@ public class FeedVoteService {
         }
 
         // 이미 투표했는지 확인
-        if (feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)) {
-            log.info("이미 투표한 피드 - 피드ID: {}, 사용자ID: {}", feedId, userId);
-            int voteCount = (int) feedVoteRepository.countByFeedId(feedId);
-            return FeedVoteResponseDto.success(false, voteCount);
-        }
+                       // 같은 이벤트에서 이미 다른 피드에 투표했는지 확인
+               if (feedVoteRepository.existsByEventIdAndUserId(feed.getEvent().getId(), userId)) {
+                   log.info("이미 해당 이벤트에 투표함 - 이벤트ID: {}, 사용자ID: {}", feed.getEvent().getId(), userId);
+                   int voteCount = (int) feedVoteRepository.countByFeedId(feedId);
+                   return FeedVoteResponseDto.success(false, voteCount);
+               }
 
         // 투표 생성
                        FeedVote vote = FeedVote.builder()
@@ -86,21 +87,25 @@ public class FeedVoteService {
     }
 
     /**
-     * 사용자가 특정 피드에 투표했는지 확인
+     * 사용자가 특정 피드의 이벤트에 투표했는지 확인
      */
     public boolean hasVoted(Long feedId, Long userId) {
         try {
             // 피드 존재 확인
-            if (!feedRepository.findById(feedId).isPresent()) {
-                throw new BusinessException(ErrorCode.FEED_NOT_FOUND);
-            }
+            Feed feed = feedRepository.findById(feedId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.FEED_NOT_FOUND));
 
             // 사용자 존재 확인
             if (!userRepository.findById(userId).isPresent()) {
                 throw new BusinessException(ErrorCode.USER_NOT_FOUND);
             }
 
-            return feedVoteRepository.existsByFeedIdAndUserId(feedId, userId);
+            // 이벤트가 있는 경우에만 이벤트별 투표 확인
+            if (feed.getEvent() != null) {
+                return feedVoteRepository.existsByEventIdAndUserId(feed.getEvent().getId(), userId);
+            }
+            
+            return false;
         } catch (Exception e) {
             log.error("투표 여부 확인 중 오류 발생 - 피드ID: {}, 사용자ID: {}", feedId, userId, e);
             // 테이블이 존재하지 않는 경우 false 반환

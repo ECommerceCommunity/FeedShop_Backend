@@ -15,7 +15,7 @@ public class FeedVoteResponseDto {
         return FeedVoteResponseDto.builder()
                 .voted(voted)
                 .voteCount(voteCount)
-                .message(voted ? "투표가 완료되었습니다!" : "이미 투표한 피드입니다.")
+                .message(voted ? "투표가 완료되었습니다!" : "이미 해당 이벤트에 투표했습니다.")
                 .build();
     }
 }

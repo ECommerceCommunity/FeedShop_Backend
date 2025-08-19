@@ -5,6 +5,7 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.response.FeedVoteResponseDto;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedVoteRepository;
 import com.cMall.feedShop.user.domain.model.User;
@@ -44,6 +45,9 @@ class FeedVoteServiceTest {
     @Mock
     private User user;
 
+    @Mock
+    private Event event;
+
     @InjectMocks
     private FeedVoteService feedVoteService;
 
@@ -58,11 +62,14 @@ class FeedVoteServiceTest {
         // given
         Long feedId = 1L;
         Long userId = 1L;
+        Long eventId = 1L;
 
         when(feed.getFeedType()).thenReturn(FeedType.EVENT);
+        when(feed.getEvent()).thenReturn(event);
+        when(event.getId()).thenReturn(eventId);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(false);
+        when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
         when(feedVoteRepository.countByFeedId(feedId)).thenReturn(1L);
 
         // when
@@ -78,16 +85,19 @@ class FeedVoteServiceTest {
     }
 
     @Test
-    @DisplayName("피드 투표 실패 - 이미 투표한 피드")
+    @DisplayName("피드 투표 실패 - 이미 해당 이벤트에 투표함")
     void voteFeed_alreadyVoted() {
         // given
         Long feedId = 1L;
         Long userId = 1L;
+        Long eventId = 1L;
 
         when(feed.getFeedType()).thenReturn(FeedType.EVENT);
+        when(feed.getEvent()).thenReturn(event);
+        when(event.getId()).thenReturn(eventId);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(true);
+        when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
         when(feedVoteRepository.countByFeedId(feedId)).thenReturn(1L);
 
         // when
@@ -96,7 +106,7 @@ class FeedVoteServiceTest {
         // then
         assertThat(result.isVoted()).isFalse();
         assertThat(result.getVoteCount()).isEqualTo(1);
-        assertThat(result.getMessage()).isEqualTo("이미 투표한 피드입니다.");
+        assertThat(result.getMessage()).isEqualTo("이미 해당 이벤트에 투표했습니다.");
 
         verify(feedVoteRepository, never()).save(any());
         verify(feedVoteRepository).countByFeedId(feedId);
@@ -192,17 +202,20 @@ class FeedVoteServiceTest {
         // given
         Long feedId = 1L;
         Long userId = 1L;
+        Long eventId = 1L;
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(true);
+        when(feed.getEvent()).thenReturn(event);
+        when(event.getId()).thenReturn(eventId);
+        when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
 
         // when
         boolean result = feedVoteService.hasVoted(feedId, userId);
 
         // then
         assertThat(result).isTrue();
-        verify(feedVoteRepository).existsByFeedIdAndUserId(feedId, userId);
+        verify(feedVoteRepository).existsByEventIdAndUserId(eventId, userId);
     }
 
     @Test
@@ -211,16 +224,19 @@ class FeedVoteServiceTest {
         // given
         Long feedId = 1L;
         Long userId = 1L;
+        Long eventId = 1L;
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feedVoteRepository.existsByFeedIdAndUserId(feedId, userId)).thenReturn(false);
+        when(feed.getEvent()).thenReturn(event);
+        when(event.getId()).thenReturn(eventId);
+        when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
 
         // when
         boolean result = feedVoteService.hasVoted(feedId, userId);
 
         // then
         assertThat(result).isFalse();
-        verify(feedVoteRepository).existsByFeedIdAndUserId(feedId, userId);
+        verify(feedVoteRepository).existsByEventIdAndUserId(eventId, userId);
     }
 }

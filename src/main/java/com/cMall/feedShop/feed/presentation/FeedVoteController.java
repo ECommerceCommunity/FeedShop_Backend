@@ -4,7 +4,6 @@ import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.feed.application.dto.request.FeedVoteRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedVoteResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedVoteService;
 import com.cMall.feedShop.user.domain.model.User;
@@ -12,7 +11,7 @@ import com.cMall.feedShop.user.domain.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
