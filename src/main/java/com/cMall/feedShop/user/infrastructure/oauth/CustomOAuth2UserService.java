@@ -52,7 +52,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             oAuth2User.getAttributes()
         );
 
-        if (oAuth2UserInfo.getEmail() == null || oAuth2UserInfo.getEmail().isEmpty()) {
+        String email = oAuth2UserInfo.getEmail();
+        if (email == null || email.isEmpty()) {
             throw new OAuth2AuthenticationException("소셜 로그인 제공자에서 이메일을 가져올 수 없습니다.");
         }
 

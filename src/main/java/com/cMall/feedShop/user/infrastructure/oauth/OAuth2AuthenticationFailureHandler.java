@@ -13,6 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 /**
  * OAuth2 로그인 실패 시 처리하는 핸들러
@@ -28,8 +29,9 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
-        
-        String errorMessage = exception.getLocalizedMessage();
+
+        String errorMessage = Optional.ofNullable(exception.getLocalizedMessage())
+                .orElse("알 수 없는 OAuth2 로그인 오류가 발생했습니다.");
         log.error("OAuth2 로그인 실패: {}", errorMessage);
 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
