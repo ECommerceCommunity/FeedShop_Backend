@@ -1,6 +1,7 @@
 package com.cMall.feedShop.feed.domain;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -16,27 +17,39 @@ public class FeedVote extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "vote_id")
+    @Column(name = "feed_vote_id")
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id", nullable = false)
+    private Event event;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "feed_id", nullable = false)
     private Feed feed;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "voter_id", nullable = false)
+    private User voter;
 
     @Builder
-    public FeedVote(Feed feed, User user) {
+    public FeedVote(Event event, Feed feed, User voter) {
+        this.event = event;
         this.feed = feed;
-        this.user = user;
+        this.voter = voter;
     }
 
     /**
      * 투표 작성자 확인
      */
     public boolean isVotedBy(Long userId) {
-        return this.user.getId().equals(userId);
+        return this.voter.getId().equals(userId);
+    }
+
+    /**
+     * 피드 생성자 확인
+     */
+    public boolean isFeedCreatedBy(Long userId) {
+        return this.feed.getUser().getId().equals(userId);
     }
 } 

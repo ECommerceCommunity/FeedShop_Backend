@@ -20,7 +20,7 @@ public interface FeedVoteRepository extends JpaRepository<FeedVote, Long> {
     /**
      * 특정 사용자가 특정 피드에 투표했는지 확인
      */
-    @Query("select v from FeedVote v where v.feed.id = :feedId and v.user.id = :userId")
+    @Query("select v from FeedVote v where v.feed.id = :feedId and v.voter.id = :userId")
     Optional<FeedVote> findByFeedIdAndUserId(@Param("feedId") Long feedId, @Param("userId") Long userId);
 
     /**

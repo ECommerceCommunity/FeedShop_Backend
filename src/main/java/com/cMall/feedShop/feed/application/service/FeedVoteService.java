@@ -51,10 +51,11 @@ public class FeedVoteService {
         }
 
         // 투표 생성
-        FeedVote vote = FeedVote.builder()
-                .feed(feed)
-                .user(user)
-                .build();
+                       FeedVote vote = FeedVote.builder()
+                       .event(feed.getEvent())
+                       .feed(feed)
+                       .voter(user)
+                       .build();
 
         feedVoteRepository.save(vote);
         
