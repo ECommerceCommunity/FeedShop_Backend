@@ -145,7 +145,10 @@ public class ProductService {
         // 4. 주문에 포함된 상품인지 확인
         validateProductNotInOrder(product);
 
-        // 5. DB 에서 삭제 (CASCADE DELETE)
+        // 5. 소프트 딜리트
+        product.delete();
+
+        // 6. DB 에서 삭제 (CASCADE DELETE)
         productRepository.delete(product);
     }
 
@@ -228,6 +231,11 @@ public class ProductService {
 
     // 상품 필드 업데이트
     private void updateBasicInfo(Product product, ProductUpdateRequest request, Category category) {
+        // 상품이 삭제된 상태인지 확인
+        if (product.isDeleted()) {
+            throw new ProductException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
         // 기본 필드 업데이트
         product.updateInfo(request.getName(), request.getPrice(), request.getDescription());
 
