@@ -2,6 +2,7 @@ package com.cMall.feedShop.user.application.service;
 
 import com.cMall.feedShop.user.domain.model.*;
 import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
+import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.domain.repository.UserStatsRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class UserLevelService {
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
     private final UserActivityRepository userActivityRepository;
+    private final UserLevelRepository userLevelRepository;
     private final BadgeService badgeService;
     
     /**
@@ -56,7 +58,8 @@ public class UserLevelService {
             
             // 사용자 통계 업데이트
             UserStats userStats = getOrCreateUserStats(user);
-            boolean levelUp = userStats.addPoints(activityType.getPoints());
+            java.util.List<UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
+            boolean levelUp = userStats.addPoints(activityType.getPoints(), allLevels);
             userStatsRepository.save(userStats);
             
             log.info("Activity recorded: userId={}, activityType={}, points={}, levelUp={}", 
@@ -92,28 +95,22 @@ public class UserLevelService {
      */
     private void checkAndAwardLevelBadges(User user, UserLevel level) {
         try {
-            // 특정 레벨 달성 시 뱃지 수여
-            switch (level) {
-                case LEVEL_2:
-                    // 첫 레벨업 기념 뱃지 (기존 뱃지 활용)
-                    badgeService.awardBadge(user.getId(), BadgeType.EARLY_ADOPTER);
-                    break;
-                case LEVEL_5:
-                    // VIP 등급 달성
-                    badgeService.awardBadge(user.getId(), BadgeType.VIP);
-                    break;
-                case LEVEL_7:
-                    // SNS 연계 권한 부여
-                    badgeService.awardBadge(user.getId(), BadgeType.SNS_CONNECTOR);
-                    break;
-                case LEVEL_9:
-                    // 인플루언서 자격 부여
-                    badgeService.awardBadge(user.getId(), BadgeType.INFLUENCER);
-                    break;
-                case LEVEL_10:
-                    // 최고 레벨 달성
-                    badgeService.awardBadge(user.getId(), BadgeType.LOYAL_CUSTOMER);
-                    break;
+            // 특정 레벨 달성 시 뱃지 수여 (레벨 ID로 판단)
+            if (level.getLevelId() == 2) {
+                // 첫 레벨업 기념 뱃지 (기존 뱃지 활용)
+                badgeService.awardBadge(user.getId(), BadgeType.EARLY_ADOPTER);
+            } else if (level.getLevelId() == 5) {
+                // VIP 등급 달성
+                badgeService.awardBadge(user.getId(), BadgeType.VIP);
+            } else if (level.getLevelId() == 7) {
+                // SNS 연계 권한 부여
+                badgeService.awardBadge(user.getId(), BadgeType.SNS_CONNECTOR);
+            } else if (level.getLevelId() == 9) {
+                // 인플루언서 자격 부여
+                badgeService.awardBadge(user.getId(), BadgeType.INFLUENCER);
+            } else if (level.getLevelId() == 10) {
+                // 최고 레벨 달성
+                badgeService.awardBadge(user.getId(), BadgeType.LOYAL_CUSTOMER);
             }
         } catch (Exception e) {
             log.error("Failed to award level badges: userId={}, level={}", user.getId(), level, e);
@@ -139,7 +136,10 @@ public class UserLevelService {
     public UserStats getOrCreateUserStats(User user) {
         return userStatsRepository.findByUser(user)
                 .orElseGet(() -> {
-                    UserStats newStats = UserStats.builder().user(user).build();
+                    // 기본 레벨 1을 가져와서 사용자 통계 생성
+                    UserLevel defaultLevel = userLevelRepository.findByMinPointsRequired(0)
+                            .orElseThrow(() -> new IllegalStateException("기본 레벨을 찾을 수 없습니다."));
+                    UserStats newStats = UserStats.builder().user(user).currentLevel(defaultLevel).build();
                     return userStatsRepository.save(newStats);
                 });
     }

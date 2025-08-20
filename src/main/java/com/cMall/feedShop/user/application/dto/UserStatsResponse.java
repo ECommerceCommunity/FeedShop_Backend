@@ -21,7 +21,7 @@ public class UserStatsResponse {
     private Long userRank;
     private LocalDateTime levelUpdatedAt;
     
-    public static UserStatsResponse from(UserStats userStats, Long userRank) {
+    public static UserStatsResponse from(UserStats userStats, Long userRank, java.util.List<com.cMall.feedShop.user.domain.model.UserLevel> allLevels) {
         return UserStatsResponse.builder()
                 .userId(userStats.getUser().getId())
                 .totalPoints(userStats.getTotalPoints())
@@ -29,8 +29,8 @@ public class UserStatsResponse {
                 .levelDisplayName(userStats.getCurrentLevel().getDisplayName())
                 .levelEmoji(userStats.getCurrentLevel().getEmoji())
                 .rewardDescription(userStats.getCurrentLevel().getRewardDescription())
-                .pointsToNextLevel(userStats.getPointsToNextLevel())
-                .levelProgress(userStats.getLevelProgress())
+                .pointsToNextLevel(userStats.getPointsToNextLevel(allLevels))
+                .levelProgress(userStats.getLevelProgress(allLevels))
                 .userRank(userRank)
                 .levelUpdatedAt(userStats.getLevelUpdatedAt())
                 .build();

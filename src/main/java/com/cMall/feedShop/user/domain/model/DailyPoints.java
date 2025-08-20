@@ -4,9 +4,9 @@ import java.time.LocalDate;
 
 public class DailyPoints {
     private LocalDate date;
-    private Long totalPoints;
+    private Integer totalPoints;
 
-    public DailyPoints(LocalDate date, Long totalPoints) {
+    public DailyPoints(LocalDate date, Integer totalPoints) {
         this.date = date;
         this.totalPoints = totalPoints;
     }
@@ -16,7 +16,7 @@ public class DailyPoints {
         return date;
     }
 
-    public Long getTotalPoints() {
+    public Integer getTotalPoints() {
         return totalPoints;
     }
 }

@@ -9,6 +9,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserActivity;
 import com.cMall.feedShop.user.domain.model.UserStats;
 import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
+import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
 import com.cMall.feedShop.user.domain.repository.UserStatsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ public class UserLevelController {
     private final UserLevelService userLevelService;
     private final UserStatsRepository userStatsRepository;
     private final UserActivityRepository userActivityRepository;
+    private final UserLevelRepository userLevelRepository;
     
     /**
      * 현재 사용자의 레벨 및 점수 정보 조회
@@ -42,7 +44,8 @@ public class UserLevelController {
         UserStats userStats = userLevelService.getUserStats(user.getId());
         Long userRank = userLevelService.getUserRank(user.getId());
         
-        UserStatsResponse response = UserStatsResponse.from(userStats, userRank);
+        java.util.List<com.cMall.feedShop.user.domain.model.UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
+        UserStatsResponse response = UserStatsResponse.from(userStats, userRank, allLevels);
         return ResponseEntity.ok(response);
     }
     
@@ -72,7 +75,8 @@ public class UserLevelController {
         UserStats userStats = userLevelService.getUserStats(userId);
         Long userRank = userLevelService.getUserRank(userId);
         
-        UserStatsResponse response = UserStatsResponse.from(userStats, userRank);
+        java.util.List<com.cMall.feedShop.user.domain.model.UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
+        UserStatsResponse response = UserStatsResponse.from(userStats, userRank, allLevels);
         return ResponseEntity.ok(response);
     }
     

@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -307,11 +308,21 @@ public class UserServiceImpl implements UserService{
     @Transactional(readOnly = true)
     public List<DailyPoints> getDailyPointsStatisticsForUser(User user, LocalDateTime startDate) {
 
-        List<DailyPoints> dailyStats = userActivityRepository.getDailyPointsStatistics(user, startDate);
+        // LocalDateTime을 LocalDate로 변환
+        LocalDate startLocalDate = startDate.toLocalDate();
+        List<Object[]> rawStats = userActivityRepository.getDailyPointsStatistics(user, startLocalDate);
 
-        if (dailyStats.isEmpty()) {
+        if (rawStats.isEmpty()) {
             // 조회 결과가 비어있다면 비즈니스 예외를 던집니다.
             throw new UserException(NO_ACTIVITY_DATA, "해당 기간의 활동 내역이 없습니다.");
+        }
+
+        // Object[]를 DailyPoints로 변환
+        List<DailyPoints> dailyStats = new ArrayList<>();
+        for (Object[] row : rawStats) {
+            LocalDate date = (LocalDate) row[0];
+            Integer totalPoints = (Integer) row[1];
+            dailyStats.add(new DailyPoints(date, totalPoints));
         }
 
         return dailyStats;

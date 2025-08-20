@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -38,11 +39,11 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
     @Query("SELECT ua FROM UserActivity ua ORDER BY ua.createdAt DESC")
     Page<UserActivity> findRecentActivities(Pageable pageable);
     
-    // 특정 사용자의 일별 점수 통계
-    @Query("SELECT new com.cMall.feedShop.user.domain.model.DailyPoints(DATE(ua.createdAt), SUM(ua.pointsEarned)) " +
+    // 특정 사용자의 일별 점수 통계 (Object[] 반환)
+    @Query("SELECT CAST(ua.createdAt AS date) as date, SUM(ua.pointsEarned) as totalPoints " +
             "FROM UserActivity ua WHERE ua.user = :user " +
             "AND ua.createdAt >= :startDate " +
-            "GROUP BY DATE(ua.createdAt) " +
-            "ORDER BY DATE(ua.createdAt) DESC")
-    List<DailyPoints> getDailyPointsStatistics(@Param("user") User user, @Param("startDate") LocalDateTime startDate);
+            "GROUP BY CAST(ua.createdAt AS date) " +
+            "ORDER BY CAST(ua.createdAt AS date) DESC")
+    List<Object[]> getDailyPointsStatistics(@Param("user") User user, @Param("startDate") LocalDate startDate);
 }

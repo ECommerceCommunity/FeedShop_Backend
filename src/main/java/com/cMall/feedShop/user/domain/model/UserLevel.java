@@ -1,77 +1,77 @@
 package com.cMall.feedShop.user.domain.model;
 
-public enum UserLevel {
-    LEVEL_1(0, 0, "새싹", "🌱", "새로운 시작"),
-    LEVEL_2(1, 100, "성장", "🌿", "포인트 1,000 지급"),
-    LEVEL_3(2, 300, "발전", "🌳", "경험치 2배 이벤트 참여권"),
-    LEVEL_4(3, 600, "도전", "🏅", "할인 쿠폰 제공"),
-    LEVEL_5(4, 1000, "전문가", "👑", "이벤트 우선 참여권 + 인기 상품 우선 구매권"),
-    LEVEL_6(5, 1500, "마스터", "💎", "VIP 혜택 + 전용 상품 접근권"),
-    LEVEL_7(6, 2200, "레전드", "⭐", "개인 맞춤 서비스 + 특별 할인"),
-    LEVEL_8(7, 3000, "챔피언", "🔥", "최고급 혜택 + 신상품 우선 체험"),
-    LEVEL_9(8, 4000, "슈퍼스타", "✨", "인플루언서 프로그램 참여권"),
-    LEVEL_10(9, 5500, "갓", "🚀", "모든 혜택 + 브랜드 앰버서더 자격");
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "user_levels")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UserLevel {
     
-    private final int levelNumber;
-    private final int requiredPoints;
-    private final String name;
-    private final String emoji;
-    private final String rewardDescription;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "level_id")
+    private Integer levelId;
     
-    UserLevel(int levelNumber, int requiredPoints, String name, String emoji, String rewardDescription) {
-        this.levelNumber = levelNumber;
-        this.requiredPoints = requiredPoints;
-        this.name = name;
+    @Column(name = "level_name", nullable = false, length = 20)
+    private String levelName;
+    
+    @Column(name = "min_points_required", nullable = false)
+    private Integer minPointsRequired;
+    
+    @Column(name = "discount_rate", nullable = false)
+    private Double discountRate;
+    
+    @Column(name = "emoji", length = 10)
+    private String emoji;
+    
+    @Column(name = "reward_description", length = 200)
+    private String rewardDescription;
+    
+    @Builder
+    public UserLevel(String levelName, Integer minPointsRequired, Double discountRate, 
+                    String emoji, String rewardDescription) {
+        this.levelName = levelName;
+        this.minPointsRequired = minPointsRequired;
+        this.discountRate = discountRate;
         this.emoji = emoji;
         this.rewardDescription = rewardDescription;
     }
     
-    public int getLevelNumber() {
-        return levelNumber;
-    }
-    
-    public int getRequiredPoints() {
-        return requiredPoints;
-    }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public String getEmoji() {
-        return emoji;
-    }
-    
-    public String getRewardDescription() {
-        return rewardDescription;
-    }
-    
     public String getDisplayName() {
-        return String.format("Lv.%d %s %s", levelNumber + 1, emoji, name);
+        return String.format("Lv.%d %s %s", levelId, emoji != null ? emoji : "", levelName);
     }
     
     /**
-     * 점수에 따른 레벨 계산
+     * 점수에 따른 레벨 계산 (정적 메서드로 유지)
      */
-    public static UserLevel fromPoints(int totalPoints) {
-        for (int i = UserLevel.values().length - 1; i >= 0; i--) {
-            UserLevel level = UserLevel.values()[i];
-            if (totalPoints >= level.getRequiredPoints()) {
-                return level;
+    public static UserLevel fromPoints(int totalPoints, java.util.List<UserLevel> levels) {
+        UserLevel result = null;
+        for (UserLevel level : levels) {
+            if (totalPoints >= level.getMinPointsRequired()) {
+                if (result == null || level.getMinPointsRequired() > result.getMinPointsRequired()) {
+                    result = level;
+                }
             }
         }
-        return LEVEL_1;
+        return result != null ? result : levels.stream()
+                .filter(level -> level.getMinPointsRequired() == 0)
+                .findFirst()
+                .orElse(null);
     }
     
     /**
      * 다음 레벨까지 필요한 점수
      */
-    public int getPointsToNextLevel(int currentPoints) {
-        UserLevel[] levels = UserLevel.values();
-        if (this.ordinal() < levels.length - 1) {
-            UserLevel nextLevel = levels[this.ordinal() + 1];
-            return nextLevel.getRequiredPoints() - currentPoints;
-        }
-        return 0; // 최고 레벨
+    public int getPointsToNextLevel(int currentPoints, java.util.List<UserLevel> levels) {
+        return levels.stream()
+                .filter(level -> level.getMinPointsRequired() > this.minPointsRequired)
+                .mapToInt(level -> level.getMinPointsRequired() - currentPoints)
+                .min()
+                .orElse(0);
     }
 }
