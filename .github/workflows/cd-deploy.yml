@@ -83,15 +83,15 @@ jobs:
             --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
             --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
             --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-            --set-env-vars="DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
-            --set-env-vars="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" \
-            --set-env-vars="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}" \
-            --set-env-vars="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}" \
-            --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
-            --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
-            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
-            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
+            --set-secrets="DB_PASSWORD=shopchat-db-password:latest" \
+            --set-secrets="JWT_SECRET=feedshop-jwt-secret-key:latest" \
+            --set-secrets="MAILGUN_API_KEY=mailgun_api_key:latest" \
+            --set-secrets="MAILGUN_DOMAIN=mailgun_domain:latest" \
+            --set-secrets="MAILGUN_EMAIL=mailgun_email:latest" \
+            --set-secrets="GCS_ID=gcs_id:latest" \
+            --set-secrets="GCS_BUCKET=gcs_prod_bucket:latest" \
+            --set-secrets="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
+            --set-secrets="RECAPTCHA_SECRET_KEY=recaptcha_secret_key:latest" \
             --timeout 900s
 
       - name: Get Service URL
