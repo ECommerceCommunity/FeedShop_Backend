@@ -1,16 +1,16 @@
 package com.cMall.feedShop.event.application.service;
 
-import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
-import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
-import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
-import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
-import com.cMall.feedShop.event.application.exception.EventNotFoundException;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
+import com.cMall.feedShop.event.application.dto.request.EventListRequestDto;
+import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
+import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
+import com.cMall.feedShop.event.application.dto.response.EventSummaryDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -88,13 +89,23 @@ public class EventReadService {
     public List<EventSummaryDto> getFeedAvailableEvents() {
         LocalDate currentDate = LocalDate.now();
         
-        // DB에서 필터링된 이벤트만 가져옴
+        // DB에서 필터링된 이벤트만 가져옴 (종료일이 현재 날짜보다 미래인 이벤트)
         List<Event> availableEvents = eventRepository.findAvailableEvents(currentDate);
         
-        return availableEvents.stream()
-                // 이 부분은 calculateStatus()가 DB에서 처리할 수 없는 비즈니스 로직이라면 유지
-                .filter(event -> event.calculateStatus() == EventStatus.ONGOING)
+        // 실시간 상태 계산으로 진행중인 이벤트만 필터링
+        List<EventSummaryDto> result = availableEvents.stream()
+                .filter(event -> {
+                    EventStatus calculatedStatus = event.calculateStatus();
+                    boolean isOngoing = calculatedStatus == EventStatus.ONGOING;
+                    if (!isOngoing) {
+                        log.debug("이벤트 {} 제외됨 - 상태: {}", event.getId(), calculatedStatus);
+                    }
+                    return isOngoing;
+                })
                 .map(eventMapper::toSummaryDto)
                 .toList();
+        
+        log.info("피드 생성 가능한 이벤트 수: {}", result.size());
+        return result;
     }
 } 

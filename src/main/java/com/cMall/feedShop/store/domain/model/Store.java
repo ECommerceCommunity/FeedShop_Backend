@@ -37,9 +37,6 @@ public class Store extends BaseTimeEntity {
     @Column(name = "logo")
     private String logo;
 
-    @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
-
     @Builder
     public Store(String storeName, Long sellerId, String description, String logo) {
         this.storeName = storeName;

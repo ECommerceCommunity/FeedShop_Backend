@@ -25,4 +25,10 @@ public interface OrderQueryRepository {
 
     // 주문 ID와 판매자 ID로 주문 조회
     Optional<Order> findByOrderIdAndSellerId(Long orderId, Long sellerId);
+    
+    // 특정 사용자의 특정 상태 주문 개수 조회
+    Long countByUserIdAndOrderStatus(Long userId, OrderStatus orderStatus);
+    
+    // 특정 사용자의 총 주문 금액 조회 (DELIVERED 상태만)
+    Long findTotalOrderAmountByUserId(Long userId);
 }

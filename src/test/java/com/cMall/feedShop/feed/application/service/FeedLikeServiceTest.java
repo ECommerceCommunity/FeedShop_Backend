@@ -1,5 +1,6 @@
 package com.cMall.feedShop.feed.application.service;
 
+import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.response.LikeToggleResponseDto;
@@ -8,11 +9,13 @@ import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedsResponseDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedLike;
+import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedLikeRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.order.domain.model.OrderItem;
+import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
-import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,10 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import com.cMall.feedShop.order.domain.model.OrderItem;
-import com.cMall.feedShop.common.dto.PaginatedResponse;
-import com.cMall.feedShop.feed.domain.FeedType;
 
 @ExtendWith(MockitoExtension.class)
 class FeedLikeServiceTest {
@@ -50,6 +52,9 @@ class FeedLikeServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserDetails userDetails;
 
     @InjectMocks
     private FeedLikeService feedLikeService;

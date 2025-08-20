@@ -5,6 +5,8 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.LikeToggleResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.LikeUserResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedsResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedItemDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedLike;
@@ -23,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedsResponseDto;
-import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedItemDto;
 
 @Slf4j
 @Service
@@ -147,60 +147,6 @@ public class FeedLikeService {
     }
     
     /**
-     * FeedLike 엔티티를 LikeUserResponseDto로 변환
-     */
-    private LikeUserResponseDto toLikeUserResponseDto(FeedLike feedLike) {
-        User user = feedLike.getUser();
-        return LikeUserResponseDto.builder()
-                .userId(user.getId())
-                .nickname(getUserNickname(user))
-                .profileImageUrl(getUserProfileImageUrl(user))
-                .level(getUserLevel(user))
-                .likedAt(feedLike.getCreatedAt())
-                .build();
-    }
-    
-    /**
-     * 사용자 닉네임 조회
-     */
-    private String getUserNickname(User user) {
-        if (user.getUserProfile() != null) {
-            return user.getUserProfile().getNickname();
-        }
-        return null;
-    }
-    
-    /**
-     * 사용자 프로필 이미지 URL 조회
-     */
-    private String getUserProfileImageUrl(User user) {
-        // TODO: 추후 UserProfile에 profileImageUrl 필드 추가 시 구현
-        return null;
-    }
-    
-    /**
-     * 사용자 레벨 조회
-     */
-    private Integer getUserLevel(User user) {
-        // TODO: 추후 UserProfile에 level 필드 추가 시 구현
-        return null;
-    }
-    
-    /**
-     * 사용자별 좋아요 상태 확인
-     * - 공통으로 사용되는 좋아요 상태 확인 로직
-     * - 다른 서비스에서 호출하여 사용
-     */
-    public boolean isLikedByUser(Long feedId, Long userId) {
-        try {
-            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, userId);
-        } catch (Exception e) {
-            log.warn("사용자별 좋아요 상태 확인 실패 - feedId: {}, userId: {}, error: {}", feedId, userId, e.getMessage());
-            return false;
-        }
-    }
-    
-    /**
      * 사용자가 좋아요한 피드 목록 조회 (페이징)
      * - 로그인한 사용자가 좋아요를 누른 피드들을 페이징으로 조회
      * - 좋아요를 누른 시간순으로 정렬 (최신순)
@@ -242,6 +188,20 @@ public class FeedLikeService {
     }
     
     /**
+     * FeedLike 엔티티를 LikeUserResponseDto로 변환
+     */
+    private LikeUserResponseDto toLikeUserResponseDto(FeedLike feedLike) {
+        User user = feedLike.getUser();
+        return LikeUserResponseDto.builder()
+                .userId(user.getId())
+                .nickname(getUserNickname(user))
+                .profileImageUrl(getUserProfileImageUrl(user))
+                .level(getUserLevel(user))
+                .likedAt(feedLike.getCreatedAt())
+                .build();
+    }
+    
+    /**
      * FeedLike 엔티티를 MyLikedFeedItemDto로 변환
      */
     private MyLikedFeedItemDto toMyLikedFeedItemDto(FeedLike feedLike) {
@@ -263,11 +223,51 @@ public class FeedLikeService {
     }
     
     /**
+     * 사용자 닉네임 조회
+     */
+    private String getUserNickname(User user) {
+        if (user.getUserProfile() != null) {
+            return user.getUserProfile().getNickname();
+        }
+        return null;
+    }
+    
+    /**
+     * 사용자 프로필 이미지 URL 조회
+     */
+    private String getUserProfileImageUrl(User user) {
+        // TODO: 추후 UserProfile에 profileImageUrl 필드 추가 시 구현
+        return null;
+    }
+    
+    /**
+     * 사용자 레벨 조회
+     */
+    private Integer getUserLevel(User user) {
+        // TODO: 추후 UserProfile에 level 필드 추가 시 구현
+        return null;
+    }
+    
+    /**
      * 피드의 첫 번째 이미지 URL 조회
      */
     private String getFirstImageUrl(Feed feed) {
         // TODO: Feed 엔티티에 images 관계가 있다면 첫 번째 이미지 URL 반환
         // 현재는 null 반환
         return null;
+    }
+    
+    /**
+     * 사용자별 좋아요 상태 확인
+     * - 공통으로 사용되는 좋아요 상태 확인 로직
+     * - 다른 서비스에서 호출하여 사용
+     */
+    public boolean isLikedByUser(Long feedId, Long userId) {
+        try {
+            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, userId);
+        } catch (Exception e) {
+            log.warn("사용자별 좋아요 상태 확인 실패 - feedId: {}, userId: {}, error: {}", feedId, userId, e.getMessage());
+            return false;
+        }
     }
 }
