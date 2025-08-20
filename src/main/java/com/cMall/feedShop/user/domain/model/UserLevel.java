@@ -43,7 +43,8 @@ public class UserLevel {
     }
     
     public String getDisplayName() {
-        return String.format("Lv.%d %s %s", levelId, emoji != null ? emoji : "", levelName);
+        String levelIdStr = levelId != null ? String.valueOf(levelId) : "?";
+        return String.format("Lv.%s %s %s", levelIdStr, emoji != null ? emoji : "", levelName);
     }
     
     /**

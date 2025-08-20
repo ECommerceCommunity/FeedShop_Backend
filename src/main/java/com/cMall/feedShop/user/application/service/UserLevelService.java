@@ -5,6 +5,8 @@ import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
 import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.domain.repository.UserStatsRepository;
+import com.cMall.feedShop.user.domain.exception.UserException;
+import com.cMall.feedShop.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,6 +72,9 @@ public class UserLevelService {
                 handleLevelUp(user, userStats);
             }
             
+        } catch (UserException e) {
+            log.error("Failed to record activity: userId={}, activityType={}", userId, activityType, e);
+            throw e; // 사용자 관련 예외는 다시 던짐
         } catch (Exception e) {
             log.error("Failed to record activity: userId={}, activityType={}", userId, activityType, e);
             // 점수 시스템 오류가 다른 비즈니스 로직에 영향주지 않도록 예외를 던지지 않음
@@ -162,6 +167,6 @@ public class UserLevelService {
     
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
     }
 }

@@ -26,6 +26,6 @@ public interface UserLevelRepository extends JpaRepository<UserLevel, Integer> {
     Optional<UserLevel> findByLevelName(String levelName);
     
     // 최고 레벨 조회
-    @Query("SELECT ul FROM UserLevel ul ORDER BY ul.minPointsRequired DESC LIMIT 1")
+    @Query("SELECT ul FROM UserLevel ul ORDER BY ul.minPointsRequired DESC")
     Optional<UserLevel> findTopLevel();
 }

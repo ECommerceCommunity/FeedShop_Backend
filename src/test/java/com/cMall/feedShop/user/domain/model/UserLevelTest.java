@@ -130,6 +130,84 @@ class UserLevelTest {
         assertThat(level5.getEmoji()).isEqualTo("👑");
     }
     
+    @Test
+    @DisplayName("레벨이 없을 때 fromPoints는 null을 반환한다")
+    void fromPoints_EmptyLevels_ReturnsNull() {
+        // given
+        List<UserLevel> emptyLevels = Arrays.asList();
+        
+        // when
+        UserLevel result = UserLevel.fromPoints(100, emptyLevels);
+        
+        // then
+        assertThat(result).isNull();
+    }
+    
+    @Test
+    @DisplayName("레벨 목록에 기본 레벨이 없을 때 fromPoints는 null을 반환한다")
+    void fromPoints_NoDefaultLevel_ReturnsNull() {
+        // given
+        List<UserLevel> levels = Arrays.asList(
+            createLevel("성장", 100, 0.02, "🌿"),
+            createLevel("발전", 300, 0.05, "🌳")
+        );
+        
+        // when
+        UserLevel result = UserLevel.fromPoints(50, levels);
+        
+        // then
+        assertThat(result).isNull();
+    }
+    
+    @Test
+    @DisplayName("할인율이 올바르게 설정되어 있다")
+    void discountRate_IsCorrect() {
+        // given
+        UserLevel level = UserLevel.builder()
+                .levelName("전문가")
+                .minPointsRequired(1000)
+                .discountRate(0.15)
+                .emoji("👑")
+                .rewardDescription("이벤트 우선 참여권")
+                .build();
+        
+        // when & then
+        assertThat(level.getDiscountRate()).isEqualTo(0.15);
+    }
+    
+    @Test
+    @DisplayName("보상 설명이 올바르게 설정되어 있다")
+    void rewardDescription_IsCorrect() {
+        // given
+        String rewardDesc = "특별한 혜택과 우선권을 제공합니다";
+        UserLevel level = UserLevel.builder()
+                .levelName("VIP")
+                .minPointsRequired(2000)
+                .discountRate(0.20)
+                .emoji("💎")
+                .rewardDescription(rewardDesc)
+                .build();
+        
+        // when & then
+        assertThat(level.getRewardDescription()).isEqualTo(rewardDesc);
+    }
+    
+    @Test
+    @DisplayName("이모지가 없는 레벨의 표시 이름이 올바르게 생성된다")
+    void getDisplayName_WithoutEmoji_FormatsCorrectly() {
+        // given
+        UserLevel level = UserLevel.builder()
+                .levelName("특별")
+                .minPointsRequired(500)
+                .discountRate(0.05)
+                .rewardDescription("특별한 혜택")
+                .build();
+        
+        // when & then
+        assertThat(level.getDisplayName()).contains("특별");
+        assertThat(level.getDisplayName()).doesNotContain("null");
+    }
+    
     private List<UserLevel> createTestLevels() {
         return Arrays.asList(
             createLevel("새싹", 0, 0.0, "🌱"),

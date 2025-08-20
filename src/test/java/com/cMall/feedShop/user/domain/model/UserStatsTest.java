@@ -128,6 +128,67 @@ class UserStatsTest {
         assertThat(userStats.getTotalPoints()).isEqualTo(1200);
     }
     
+    @Test
+    @DisplayName("레벨업 시 levelUpdatedAt이 업데이트된다")
+    void addPoints_LevelUp_UpdatesLevelUpdatedAt() throws InterruptedException {
+        // given
+        java.time.LocalDateTime beforeLevelUp = java.time.LocalDateTime.now();
+        java.lang.Thread.sleep(1); // 1ms 대기
+        
+        // when
+        userStats.addPoints(100, testLevels); // 레벨업 발생
+        
+        // then
+        assertThat(userStats.getLevelUpdatedAt()).isNotNull();
+        assertThat(userStats.getLevelUpdatedAt()).isAfter(beforeLevelUp);
+    }
+    
+    @Test
+    @DisplayName("레벨업이 발생하지 않으면 levelUpdatedAt이 변경되지 않는다")
+    void addPoints_NoLevelUp_LevelUpdatedAtUnchanged() {
+        // given
+        userStats.addPoints(50, testLevels); // 레벨업 없음 (50점)
+        java.time.LocalDateTime beforeAddPoints = userStats.getLevelUpdatedAt();
+        
+        // when
+        userStats.addPoints(20, testLevels); // 여전히 레벨업 없음 (총 70점)
+        
+        // then
+        assertThat(userStats.getLevelUpdatedAt()).isEqualTo(beforeAddPoints);
+    }
+    
+    @Test
+    @DisplayName("연속 레벨업이 발생할 수 있다")
+    void addPoints_ConsecutiveLevelUps() {
+        // given
+        userStats.addPoints(50, testLevels); // 레벨 1, 50점
+        
+        // when
+        boolean levelUp1 = userStats.addPoints(50, testLevels); // 레벨 2 달성
+        boolean levelUp2 = userStats.addPoints(200, testLevels); // 레벨 3 달성
+        
+        // then
+        assertThat(levelUp1).isTrue();
+        assertThat(levelUp2).isTrue();
+        assertThat(userStats.getCurrentLevel().getLevelName()).isEqualTo("발전");
+        assertThat(userStats.getTotalPoints()).isEqualTo(300);
+    }
+    
+    @Test
+    @DisplayName("현재 레벨 정보가 올바르게 반환된다")
+    void getCurrentLevel_ReturnsCorrectLevel() {
+        // given
+        userStats.addPoints(150, testLevels); // 레벨 2 달성
+        
+        // when
+        UserLevel currentLevel = userStats.getCurrentLevel();
+        
+        // then
+        assertThat(currentLevel.getLevelName()).isEqualTo("성장");
+        assertThat(currentLevel.getMinPointsRequired()).isEqualTo(100);
+        assertThat(currentLevel.getDiscountRate()).isEqualTo(0.02);
+    }
+    
     private UserLevel createLevel(String name, int minPoints, double discountRate, String emoji) {
         return UserLevel.builder()
                 .levelName(name)

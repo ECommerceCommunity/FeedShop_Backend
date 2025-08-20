@@ -80,6 +80,62 @@ class UserLevelControllerTest {
     }
     
     @Test
+    @DisplayName("내 통계 정보를 조회할 수 있다")
+    void getMyStats_Success() {
+        // given
+        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(1L)).willReturn(5L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+        
+        // then
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
+        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getBody().getUserRank()).isEqualTo(5L);
+    }
+    
+    @Test
+    @DisplayName("특정 사용자의 통계 정보를 조회할 수 있다")
+    void getUserStats_Success() {
+        // given
+        given(userLevelService.getUserStats(2L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(2L)).willReturn(3L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getUserStats(2L);
+        
+        // then
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
+        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getBody().getUserRank()).isEqualTo(3L);
+    }
+    
+    @Test
+    @DisplayName("사용자 통계 정보에 레벨 진행률이 포함된다")
+    void userStatsResponse_ContainsLevelProgress() {
+        // given
+        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(1L)).willReturn(10L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+        
+        // then
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getLevelProgress()).isGreaterThanOrEqualTo(0.0);
+        assertThat(response.getBody().getLevelProgress()).isLessThanOrEqualTo(1.0);
+        assertThat(response.getBody().getPointsToNextLevel()).isGreaterThanOrEqualTo(0);
+    }
+    
+    @Test
     @DisplayName("포인트 부여 서비스가 정상적으로 호출되는지 확인")
     void awardPoints_Success() {
         // given & when

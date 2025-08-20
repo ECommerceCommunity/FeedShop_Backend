@@ -208,4 +208,71 @@ class UserLevelServiceTest {
         assertThat(testUserStats.getCurrentLevel().getLevelName()).isEqualTo("성장");
         verify(badgeService).awardBadge(1L, BadgeType.EARLY_ADOPTER);
     }
+    
+    @Test
+    @DisplayName("다양한 레벨에서 뱃지가 올바르게 수여된다")
+    void recordActivity_DifferentLevels_AwardCorrectBadges() {
+        // given
+        UserLevel level1 = UserLevel.builder().levelName("새싹").minPointsRequired(0).discountRate(0.0).emoji("🌱").rewardDescription("새로운 시작").build();
+        UserLevel level2 = UserLevel.builder().levelName("성장").minPointsRequired(100).discountRate(0.02).emoji("🌿").rewardDescription("포인트 지급").build();
+        UserLevel level5 = UserLevel.builder().levelName("전문가").minPointsRequired(1000).discountRate(0.10).emoji("👑").rewardDescription("이벤트 우선 참여권").build();
+        UserLevel level7 = UserLevel.builder().levelName("레전드").minPointsRequired(2200).discountRate(0.15).emoji("⭐").rewardDescription("개인 맞춤 서비스").build();
+        UserLevel level10 = UserLevel.builder().levelName("갓").minPointsRequired(5500).discountRate(0.25).emoji("🚀").rewardDescription("모든 혜택").build();
+        
+        // Reflection을 사용하여 levelId 설정
+        try {
+            java.lang.reflect.Field levelIdField = UserLevel.class.getDeclaredField("levelId");
+            levelIdField.setAccessible(true);
+            levelIdField.set(level1, 1);
+            levelIdField.set(level2, 2);
+            levelIdField.set(level5, 5);
+            levelIdField.set(level7, 7);
+            levelIdField.set(level10, 10);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set levelId", e);
+        }
+        
+        java.util.List<UserLevel> allLevels = java.util.Arrays.asList(level1, level2, level5, level7, level10);
+        
+        // 레벨 5 달성 테스트
+        testUserStats.addPoints(995, allLevels); // 레벨 5 직전 (995점)
+        given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(allLevels);
+        given(userStatsRepository.findByUser(testUser)).willReturn(Optional.of(testUserStats));
+        
+        // when - 레벨 5 달성 (5점 추가로 총 1000점)
+        userLevelService.recordActivity(1L, ActivityType.PURCHASE_COMPLETION, 
+                "구매 완료", 200L, "ORDER");
+        
+        // then
+        assertThat(testUserStats.getCurrentLevel().getLevelName()).isEqualTo("전문가");
+        verify(badgeService).awardBadge(1L, BadgeType.VIP);
+    }
+    
+    @Test
+    @DisplayName("사용자가 존재하지 않으면 예외가 발생한다")
+    void recordActivity_UserNotFound_ThrowsException() {
+        // given
+        given(userRepository.findById(999L)).willReturn(Optional.empty());
+        
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> 
+            userLevelService.recordActivity(999L, ActivityType.PURCHASE_COMPLETION, 
+                    "구매 완료", 100L, "ORDER"))
+            .isInstanceOf(com.cMall.feedShop.user.domain.exception.UserException.class);
+    }
+    
+    @Test
+    @DisplayName("기본 레벨이 없으면 예외가 발생한다")
+    void getOrCreateUserStats_NoDefaultLevel_ThrowsException() {
+        // given
+        given(userStatsRepository.findByUser(testUser)).willReturn(Optional.empty());
+        given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.empty());
+        
+        // when & then
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> 
+            userLevelService.getOrCreateUserStats(testUser))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessage("기본 레벨을 찾을 수 없습니다.");
+    }
 }
