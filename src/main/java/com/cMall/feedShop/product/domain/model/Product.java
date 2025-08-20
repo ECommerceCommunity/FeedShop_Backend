@@ -1,5 +1,6 @@
 package com.cMall.feedShop.product.domain.model;
 
+import com.cMall.feedShop.cart.domain.model.WishList;
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
@@ -61,6 +62,9 @@ public class Product extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "product", cascade =  CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<WishList> wishlist = new ArrayList<>();
 
     @Builder
     public Product(String name, BigDecimal price, Store store, Category category,
@@ -128,4 +132,5 @@ public class Product extends BaseTimeEntity {
         return productOptions.stream()
                 .anyMatch(ProductOption::isInStock);
     }
+
 }
