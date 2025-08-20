@@ -7,6 +7,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserLevel;
 import com.cMall.feedShop.user.domain.model.UserStats;
 import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -28,20 +31,35 @@ class UserLevelControllerTest {
     @Mock
     private UserLevelService userLevelService;
     
+    @Mock
+    private UserLevelRepository userLevelRepository;
+    
     @InjectMocks
     private UserLevelController userLevelController;
     
     private User testUser;
     private UserStats testUserStats;
+    private List<UserLevel> testLevels;
     
     @BeforeEach
     void setUp() {
         testUser = new User(1L, "testuser", "password", "test@example.com", UserRole.USER);
         
+        // 테스트용 레벨 데이터 생성
+        testLevels = Arrays.asList(
+            createLevel("새싹", 0, 0.0, "🌱"),
+            createLevel("성장", 100, 0.02, "🌿"),
+            createLevel("발전", 300, 0.05, "🌳")
+        );
+        
+        UserLevel defaultLevel = testLevels.get(0);
+        UserLevel level2 = testLevels.get(1);
+        
         testUserStats = UserStats.builder()
                 .user(testUser)
+                .currentLevel(level2)
                 .build();
-        testUserStats.addPoints(150); // 레벨 2, 150점
+        testUserStats.addPoints(150, testLevels); // 레벨 2, 150점
     }
     
     @Test
@@ -62,6 +80,62 @@ class UserLevelControllerTest {
     }
     
     @Test
+    @DisplayName("내 통계 정보를 조회할 수 있다")
+    void getMyStats_Success() {
+        // given
+        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(1L)).willReturn(5L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+        
+        // then
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
+        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getBody().getUserRank()).isEqualTo(5L);
+    }
+    
+    @Test
+    @DisplayName("특정 사용자의 통계 정보를 조회할 수 있다")
+    void getUserStats_Success() {
+        // given
+        given(userLevelService.getUserStats(2L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(2L)).willReturn(3L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getUserStats(2L);
+        
+        // then
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
+        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getBody().getUserRank()).isEqualTo(3L);
+    }
+    
+    @Test
+    @DisplayName("사용자 통계 정보에 레벨 진행률이 포함된다")
+    void userStatsResponse_ContainsLevelProgress() {
+        // given
+        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
+        given(userLevelService.getUserRank(1L)).willReturn(10L);
+        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        
+        // when
+        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+        
+        // then
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getLevelProgress()).isGreaterThanOrEqualTo(0.0);
+        assertThat(response.getBody().getLevelProgress()).isLessThanOrEqualTo(1.0);
+        assertThat(response.getBody().getPointsToNextLevel()).isGreaterThanOrEqualTo(0);
+    }
+    
+    @Test
     @DisplayName("포인트 부여 서비스가 정상적으로 호출되는지 확인")
     void awardPoints_Success() {
         // given & when
@@ -75,5 +149,15 @@ class UserLevelControllerTest {
         
         // then - 예외가 발생하지 않으면 성공
         assertThat(true).isTrue();
+    }
+    
+    private UserLevel createLevel(String name, int minPoints, double discountRate, String emoji) {
+        return UserLevel.builder()
+                .levelName(name)
+                .minPointsRequired(minPoints)
+                .discountRate(discountRate)
+                .emoji(emoji)
+                .rewardDescription("테스트 보상")
+                .build();
     }
 }

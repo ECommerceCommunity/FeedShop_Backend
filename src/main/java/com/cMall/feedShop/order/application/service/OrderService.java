@@ -346,20 +346,7 @@ public class OrderService {
         }
     }
 
-    // 재고 복구 처리가 필요한 상태인지 확인한다.
-    private boolean isStockRestoreRequired(OrderStatus newStatus) {
-        return newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED;
-    }
-
-    // 주문 취소/반품 시 재고를 복구한다.
-    private void restoreStock(Order order) {
-        for (OrderItem item : order.getOrderItems()) {
-            ProductOption option = item.getProductOption();
-            option.increaseStock(item.getQuantity());
-        }
-    }
-
-    /**
+  /**
      * 주문 완료 후 뱃지 자동 수여 체크
      */
     private void checkAndAwardBadgesAfterOrder(Long userId) {
@@ -389,4 +376,18 @@ public class OrderService {
             log.error("뱃지 자동 수여 중 오류 발생 - userId: {}, error: {}", userId, e.getMessage());
         }
     }
+
+    // 재고 복구 처리가 필요한 상태인지 확인한다.
+    private boolean isStockRestoreRequired(OrderStatus newStatus) {
+        return newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED;
+    }
+
+    // 주문 취소/반품 시 재고를 복구한다.
+    private void restoreStock(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            ProductOption option = item.getProductOption();
+            option.increaseStock(item.getQuantity());
+        }
+    }
+
 }
