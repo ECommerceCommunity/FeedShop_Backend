@@ -7,9 +7,9 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: feedshop-backend
+  SERVICE_NAME: feedshop-springboot
   REGION: asia-northeast3
-  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feedshop-backend
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feedshop-springboot
 
 jobs:
   deploy:
