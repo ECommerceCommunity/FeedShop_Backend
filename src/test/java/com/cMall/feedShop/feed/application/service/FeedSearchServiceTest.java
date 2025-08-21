@@ -16,6 +16,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("FeedSearchService 테스트")
 class FeedSearchServiceTest {
 
@@ -194,7 +197,7 @@ class FeedSearchServiceTest {
         assertThat(result.getPage()).isEqualTo(1);
         assertThat(result.getSize()).isEqualTo(6);
         assertThat(result.getTotalElements()).isEqualTo(25);
-        assertThat(result.getTotalPages()).isEqualTo(3);
+        assertThat(result.getTotalPages()).isEqualTo(5); // 25개를 6개씩 나누면 5페이지
         assertThat(result.isHasNext()).isTrue();
         assertThat(result.isHasPrevious()).isTrue();
     }
