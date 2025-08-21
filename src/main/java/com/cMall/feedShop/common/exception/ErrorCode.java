@@ -31,6 +31,8 @@ public enum ErrorCode {
     USER_ACCOUNT_NOT_ACTIVE(403, "U012", "계정이 활성화되어 있지 않습니다. 이메일 인증을 완료해주세요."),
     ADDRESS_NOT_FOUND(404, "A001", "주소 정보를 찾을 수 없습니다."),
 
+    // 사용자 활동
+    NO_ACTIVITY_DATA(404, "UA001", "해당 기간의 활동 내역이 없습니다."),
 
     // 비밀번호 재설정 관련 추가
     INVALID_TOKEN(400, "U100", "유효하지 않거나 찾을 수 없는 토큰입니다."), // 일반적인 토큰 유효성 검사 실패 (찾을 수 없거나 잘못된 형식)
@@ -63,6 +65,8 @@ public enum ErrorCode {
     // 장바구니
     ZERO_QUANTITY(400, "CA001", "수량은 1개 이상이어야 합니다."),
     CART_ITEM_NOT_FOUND(404, "CA002", "장바구니 아이템을 찾을 수 없습니다."),
+    ALREADY_WISHED_PRODUCT(409, "CA003", "이미 찜한 상품입니다."),
+    WISHLIST_ITEM_NOT_FOUND(404, "CA004", "찜한 상품을 찾을 수 없습니다."),
 
     // 주문
     ORDER_NOT_FOUND(404, "O001", "주문을 찾을 수 없습니다."),

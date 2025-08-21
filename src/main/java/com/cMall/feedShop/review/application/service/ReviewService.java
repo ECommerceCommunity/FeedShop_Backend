@@ -21,6 +21,9 @@ import com.cMall.feedShop.review.domain.repository.ReviewImageRepository;
 import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.application.service.BadgeService;
+import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.domain.model.ActivityType;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +61,8 @@ public class ReviewService {
     private final ReviewDuplicationValidator duplicationValidator;
     private final ReviewImageService reviewImageService;
     private final ReviewImageRepository reviewImageRepository;
+    private final BadgeService badgeService;
+    private final UserLevelService userLevelService;
 
     // 선택적 의존성 주입으로 변경 (GCP만)
     @Autowired(required = false)
@@ -70,7 +75,9 @@ public class ReviewService {
             ProductRepository productRepository,
             ReviewDuplicationValidator duplicationValidator,
             ReviewImageService reviewImageService,
-            ReviewImageRepository reviewImageRepository) {
+            ReviewImageRepository reviewImageRepository,
+            BadgeService badgeService,
+            UserLevelService userLevelService) {
 
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
@@ -78,6 +85,8 @@ public class ReviewService {
         this.duplicationValidator = duplicationValidator;
         this.reviewImageService = reviewImageService;
         this.reviewImageRepository = reviewImageRepository;
+        this.badgeService = badgeService;
+        this.userLevelService = userLevelService;
 
     }
 
@@ -211,6 +220,9 @@ public class ReviewService {
             log.info("리뷰 이미지 업로드 완료 (기존 방식): reviewId={}, imageCount={}",
                     savedReview.getReviewId(), images.size());
         }
+
+        // 뱃지 자동 수여 체크
+        checkAndAwardBadgesAfterReview(user.getId());
 
         return ReviewCreateResponse.builder()
                 .reviewId(savedReview.getReviewId())
@@ -1024,6 +1036,31 @@ public class ReviewService {
             private Integer rating;
             private String title;
             private LocalDateTime deletedAt;
+        }
+    }
+
+    /**
+     * 리뷰 작성 후 뱃지 자동 수여 체크
+     */
+    private void checkAndAwardBadgesAfterReview(Long userId) {
+        try {
+            // 1. 리뷰 작성 점수 부여
+            userLevelService.recordActivity(
+                userId, 
+                ActivityType.REVIEW_CREATION, 
+                "리뷰 작성", 
+                null, 
+                "REVIEW"
+            );
+            
+            // 2. 사용자의 총 리뷰 수 조회
+            Long totalReviews = reviewRepository.countByUserId(userId);
+            
+            // 3. 뱃지 자동 수여 체크 (뱃지 획득 시 보너스 점수도 자동 부여됨)
+            badgeService.checkAndAwardReviewBadges(userId, totalReviews);
+        } catch (Exception e) {
+            // 뱃지 수여 실패가 리뷰 프로세스에 영향을 주지 않도록 예외 처리
+            log.error("뱃지 자동 수여 중 오류 발생 - userId: {}, error: {}", userId, e.getMessage());
         }
     }
 }

@@ -111,4 +111,35 @@ public class MyFeedListResponseDto {
                 .isVoted(false)
                 .build();
     }
+    
+    /**
+     * Factory 메서드: 기존 DTO에서 isLiked 상태만 업데이트
+     * 서비스 레이어에서 사용자별 좋아요 상태를 설정할 때 사용
+     */
+    public static MyFeedListResponseDto from(MyFeedListResponseDto original, Boolean isLiked) {
+        return MyFeedListResponseDto.builder()
+                .feedId(original.getFeedId())
+                .title(original.getTitle())
+                .content(original.getContent())
+                .feedType(original.getFeedType())
+                .instagramId(original.getInstagramId())
+                .createdAt(original.getCreatedAt())
+                .likeCount(original.getLikeCount())
+                .commentCount(original.getCommentCount())
+                .participantVoteCount(original.getParticipantVoteCount())
+                .userId(original.getUserId())
+                .userNickname(original.getUserNickname())
+                .userProfileImg(original.getUserProfileImg())
+                .userLevel(original.getUserLevel())
+                .orderItemId(original.getOrderItemId())
+                .productName(original.getProductName())
+                .productSize(original.getProductSize())
+                .eventId(original.getEventId())
+                .eventTitle(original.getEventTitle())
+                .hashtags(original.getHashtags())
+                .imageUrls(original.getImageUrls())
+                .isLiked(isLiked)
+                .isVoted(original.getIsVoted())
+                .build();
+    }
 } 

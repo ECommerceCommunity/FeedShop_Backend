@@ -261,4 +261,18 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
         
         return count != null ? count : 0L;
     }
+
+    @Override
+    public Long countByUserId(Long userId) {
+        Long count = queryFactory
+                .select(review.count())
+                .from(review)
+                .where(
+                        review.user.id.eq(userId),
+                        review.status.eq(ReviewStatus.ACTIVE)
+                )
+                .fetchOne();
+        
+        return count != null ? count : 0L;
+    }
 }
