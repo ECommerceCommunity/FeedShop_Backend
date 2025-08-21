@@ -80,18 +80,20 @@ jobs:
             --max-instances 10 \
             --min-instances 1 \
             --port 8080 \
-            --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
             --add-cloudsql-instances="feedshop-db" \
-            --timeout 900s \
-            --update-secrets="DB_PASSWORD=${{ secrets.DB_PASSWORD }}:latest" \
-            --update-secrets="JWT_SECRET=${{ secrets.JWT_SECRET }}:latest" \
-            --update-secrets="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}:latest" \
-            --update-secrets="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}:latest" \
-            --update-secrets="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}:latest" \
-            --update-secrets="GCS_ID=${{ secrets.GCS_ID }}:latest" \
-            --update-secrets="GCS_BUCKET=${{ secrets.GCS_BUCKET }}:latest" \
-            --update-secrets="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}:latest" \
-            --update-secrets="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}:latest"
+            --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
+            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
+            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
+            --set-env-vars="DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+            --set-env-vars="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" \
+            --set-env-vars="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}" \
+            --set-env-vars="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}" \
+            --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
+            --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
+            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
+            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
+            --timeout 900s
 
       - name: Get Service URL
         run: |
