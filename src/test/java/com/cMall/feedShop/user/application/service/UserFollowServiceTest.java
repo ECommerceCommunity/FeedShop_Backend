@@ -19,9 +19,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
@@ -31,10 +32,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UserFollowServiceTest {
 
     @Mock
@@ -48,41 +50,29 @@ class UserFollowServiceTest {
 
     private User follower;
     private User following;
-    private UserProfile followerProfile;
-    private UserProfile followingProfile;
     private UserFollow userFollow;
+    private UserProfile userProfile;
 
     @BeforeEach
     void setUp() {
         // UserProfile 설정
-        followerProfile = UserProfile.builder()
-                .nickname("팔로워")
-                .build();
-
-        followingProfile = UserProfile.builder()
-                .nickname("팔로잉")
-                .build();
+        userProfile = mock(UserProfile.class);
+        when(userProfile.getNickname()).thenReturn("테스트유저");
 
         // User 설정
         follower = mock(User.class);
-        when(follower.getId()).thenReturn(1L);
-        when(follower.getUserProfile()).thenReturn(followerProfile);
-
         following = mock(User.class);
-        when(following.getId()).thenReturn(2L);
-        when(following.getUserProfile()).thenReturn(followingProfile);
-
+        
         // UserFollow 설정
-        userFollow = UserFollow.builder()
-                .follower(follower)
-                .following(following)
-                .build();
+        userFollow = mock(UserFollow.class);
     }
 
     @Test
     @DisplayName("팔로우 토글 - 팔로우 추가 성공")
     void toggleFollow_addFollow_success() {
         // given
+        when(follower.getId()).thenReturn(1L);
+        when(following.getId()).thenReturn(2L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(follower));
         when(userRepository.findById(2L)).thenReturn(Optional.of(following));
         when(userFollowRepository.existsByFollower_IdAndFollowing_Id(1L, 2L)).thenReturn(false);
@@ -205,10 +195,14 @@ class UserFollowServiceTest {
         // given
         when(userRepository.existsById(1L)).thenReturn(true);
         
-        Page<UserFollow> followersPage = new PageImpl<>(List.of(userFollow));
-        when(userFollowRepository.findFollowersByUserId(1L, any(Pageable.class))).thenReturn(followersPage);
-        
+        // UserFollow mock 설정
+        when(userFollow.getFollower()).thenReturn(following);
+        when(following.getId()).thenReturn(2L);
+        when(following.getUserProfile()).thenReturn(userProfile);
         when(userFollow.getCreatedAt()).thenReturn(LocalDateTime.now());
+        
+        Page<UserFollow> followersPage = new PageImpl<>(List.of(userFollow));
+        when(userFollowRepository.findFollowersByUserId(eq(1L), any(Pageable.class))).thenReturn(followersPage);
 
         // when
         UserFollowListResponseDto result = userFollowService.getFollowers(1L, 0, 20);
@@ -220,7 +214,7 @@ class UserFollowServiceTest {
         assertThat(result.getPagination().getTotalElements()).isEqualTo(1L);
         
         verify(userRepository).existsById(1L);
-        verify(userFollowRepository).findFollowersByUserId(1L, any(Pageable.class));
+        verify(userFollowRepository).findFollowersByUserId(eq(1L), any(Pageable.class));
     }
 
     @Test
@@ -229,10 +223,14 @@ class UserFollowServiceTest {
         // given
         when(userRepository.existsById(1L)).thenReturn(true);
         
-        Page<UserFollow> followingsPage = new PageImpl<>(List.of(userFollow));
-        when(userFollowRepository.findFollowingsByUserId(1L, any(Pageable.class))).thenReturn(followingsPage);
-        
+        // UserFollow mock 설정
+        when(userFollow.getFollowing()).thenReturn(following);
+        when(following.getId()).thenReturn(2L);
+        when(following.getUserProfile()).thenReturn(userProfile);
         when(userFollow.getCreatedAt()).thenReturn(LocalDateTime.now());
+        
+        Page<UserFollow> followingsPage = new PageImpl<>(List.of(userFollow));
+        when(userFollowRepository.findFollowingsByUserId(eq(1L), any(Pageable.class))).thenReturn(followingsPage);
 
         // when
         UserFollowListResponseDto result = userFollowService.getFollowings(1L, 0, 20);
@@ -244,7 +242,7 @@ class UserFollowServiceTest {
         assertThat(result.getPagination().getTotalElements()).isEqualTo(1L);
         
         verify(userRepository).existsById(1L);
-        verify(userFollowRepository).findFollowingsByUserId(1L, any(Pageable.class));
+        verify(userFollowRepository).findFollowingsByUserId(eq(1L), any(Pageable.class));
     }
 
     @Test
