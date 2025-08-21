@@ -91,7 +91,7 @@ jobs:
             --set-secrets="MAILGUN_EMAIL=mailgun_email:latest" \
             --set-secrets="GCS_ID=gcs_id:latest" \
             --set-secrets="GCS_BUCKET=gcs_prod_bucket:latest" \
-            --set-secrets="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
+            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
             --set-secrets="RECAPTCHA_SECRET_KEY=recaptcha_secret_key:latest" \
             --timeout 900s
 
