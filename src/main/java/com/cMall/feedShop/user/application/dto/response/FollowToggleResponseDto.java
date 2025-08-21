@@ -17,7 +17,7 @@ public class FollowToggleResponseDto {
     /**
      * 팔로우 상태 (true: 팔로우됨, false: 언팔로우됨)
      */
-    private boolean isFollowing;
+    private boolean following;
 
     /**
      * 팔로워 수

@@ -90,7 +90,7 @@ public class UserFollowService {
         String message = isFollowing ? "팔로우가 완료되었습니다." : "언팔로우가 완료되었습니다.";
 
         return FollowToggleResponseDto.builder()
-                .isFollowing(isFollowing)
+                .following(isFollowing)
                 .followerCount(followerCount)
                 .followingCount(followingCount)
                 .message(message)
