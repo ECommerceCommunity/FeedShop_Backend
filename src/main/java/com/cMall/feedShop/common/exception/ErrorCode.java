@@ -105,6 +105,10 @@ public enum ErrorCode {
     DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
     ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다."),
 
+    // 댓글
+    COMMENT_NOT_FOUND(404, "C001", "댓글을 찾을 수 없습니다."),
+    COMMENT_ACCESS_DENIED(403, "C002", "해당 댓글에 대한 권한이 없습니다."),
+
     // 리워드
     REWARD_POLICY_NOT_FOUND(404, "RW001", "리워드 정책을 찾을 수 없습니다."),
     DAILY_REWARD_LIMIT_EXCEEDED(409, "RW002", "일일 리워드 획득 한도를 초과했습니다."),
