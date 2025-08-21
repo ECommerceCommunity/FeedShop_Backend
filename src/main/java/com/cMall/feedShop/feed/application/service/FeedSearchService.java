@@ -60,30 +60,30 @@ public class FeedSearchService {
                          responsePage = responsePage.map(dto -> {
                  boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userId);
                 
-                return FeedListResponseDto.builder()
-                        .feedId(dto.getFeedId())
-                        .title(dto.getTitle())
-                        .content(dto.getContent())
-                        .feedType(dto.getFeedType())
-                        .instagramId(dto.getInstagramId())
-                        .createdAt(dto.getCreatedAt())
-                        .likeCount(dto.getLikeCount())
-                        .commentCount(dto.getCommentCount())
-                        .participantVoteCount(dto.getParticipantVoteCount())
-                        .userId(dto.getUserId())
-                        .userNickname(dto.getUserNickname())
-                        .userProfileImg(dto.getUserProfileImg())
-                        .userLevel(dto.getUserLevel())
-                        .orderItemId(dto.getOrderItemId())
-                        .productName(dto.getProductName())
-                        .productSize(dto.getProductSize())
-                        .eventId(dto.getEventId())
-                        .eventTitle(dto.getEventTitle())
-                        .hashtags(dto.getHashtags())
-                        .imageUrls(dto.getImageUrls())
-                                                 .isLiked(isLiked)
+                                 return FeedListResponseDto.builder()
+                         .feedId(dto.getFeedId())
+                         .title(dto.getTitle())
+                         .content(dto.getContent())
+                         .feedType(dto.getFeedType())
+                         .instagramId(dto.getInstagramId())
+                         .createdAt(dto.getCreatedAt())
+                         .likeCount(dto.getLikeCount())
+                         .commentCount(dto.getCommentCount())
+                         .participantVoteCount(dto.getParticipantVoteCount())
+                         .userId(dto.getUserId())
+                         .userNickname(dto.getUserNickname())
+                         .userProfileImg(dto.getUserProfileImg())
+                         .userLevel(null) // 프론트엔드에서 사용하지 않음
+                         .orderItemId(null) // 프론트엔드에서 사용하지 않음
+                         .productName(dto.getProductName())
+                         .productSize(null) // 프론트엔드에서 사용하지 않음
+                         .eventId(dto.getEventId())
+                         .eventTitle(dto.getEventTitle())
+                         .hashtags(dto.getHashtags())
+                         .imageUrls(dto.getImageUrls())
+                         .isLiked(isLiked)
                          .isVoted(false) // 검색에서는 투표 상태 불필요
-                        .build();
+                         .build();
             });
         }
         
