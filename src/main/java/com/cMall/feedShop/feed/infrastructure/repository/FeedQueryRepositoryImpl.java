@@ -21,6 +21,7 @@ import static com.cMall.feedShop.event.domain.QEvent.event;
 import static com.cMall.feedShop.event.domain.QEventDetail.eventDetail;
 import static com.cMall.feedShop.order.domain.model.QOrderItem.orderItem;
 import static com.cMall.feedShop.product.domain.model.QProduct.product;
+import static com.cMall.feedShop.product.domain.model.QProductOption.productOption;
 import static com.cMall.feedShop.user.domain.model.QUser.user;
 
 /**
@@ -41,7 +42,8 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 .from(feed)
                 .leftJoin(feed.hashtags, feedHashtag)
                 .leftJoin(feed.orderItem, orderItem)
-                .leftJoin(orderItem.productOption, product)
+                .leftJoin(orderItem.productOption, productOption)
+                .leftJoin(productOption.product, product)
                 .leftJoin(feed.event, event)
                 .leftJoin(event.eventDetail, eventDetail)
                 .where(whereClause)
@@ -62,7 +64,8 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 .leftJoin(feed.user, user).fetchJoin()
                 .leftJoin(feed.hashtags, feedHashtag)
                 .leftJoin(feed.orderItem, orderItem)
-                .leftJoin(orderItem.productOption, product)
+                .leftJoin(orderItem.productOption, productOption)
+                .leftJoin(productOption.product, product)
                 .leftJoin(feed.event, event)
                 .leftJoin(event.eventDetail, eventDetail)
                 .where(whereClause)
@@ -77,7 +80,8 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
                 .from(feed)
                 .leftJoin(feed.hashtags, feedHashtag)
                 .leftJoin(feed.orderItem, orderItem)
-                .leftJoin(orderItem.productOption, product)
+                .leftJoin(orderItem.productOption, productOption)
+                .leftJoin(productOption.product, product)
                 .leftJoin(feed.event, event)
                 .leftJoin(event.eventDetail, eventDetail)
                 .where(whereClause)
@@ -92,12 +96,13 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
     private BooleanBuilder createSearchConditions(FeedSearchRequest request) {
         BooleanBuilder builder = new BooleanBuilder();
         
-        // 1. 키워드 검색 (제목, 내용, 해시태그)
+        // 1. 키워드 검색 (제목 우선 매칭)
         if (request.hasKeyword()) {
+            String keyword = request.getKeyword().trim();
             builder.and(
-                feed.title.containsIgnoreCase(request.getKeyword().trim())
-                .or(feed.content.containsIgnoreCase(request.getKeyword().trim()))
-                .or(feedHashtag.tag.containsIgnoreCase(request.getKeyword().trim()))
+                feed.title.containsIgnoreCase(keyword)
+                .or(feed.content.containsIgnoreCase(keyword))
+                .or(feedHashtag.tag.containsIgnoreCase(keyword))
             );
         }
         
