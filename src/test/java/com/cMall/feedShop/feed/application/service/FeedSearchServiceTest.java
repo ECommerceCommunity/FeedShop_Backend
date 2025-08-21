@@ -80,13 +80,13 @@ class FeedSearchServiceTest {
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .keyword("테스트")
                 .page(0)
-                .size(20)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 20), 1);
+        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 6), 1);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
-        when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
+        when(feedMapper.toFeedSearchResponseDto(testFeed)).thenReturn(testResponseDto);
 
         // when
         PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
