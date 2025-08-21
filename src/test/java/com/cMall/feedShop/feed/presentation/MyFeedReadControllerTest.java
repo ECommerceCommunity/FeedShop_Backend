@@ -22,8 +22,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.core.MethodParameter;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +54,6 @@ class MyFeedReadControllerTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
     private UserDetails userDetails;
 
     @InjectMocks
@@ -61,9 +68,32 @@ class MyFeedReadControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(myFeedReadController).build();
-        objectMapper = new ObjectMapper();
+        // Create UserDetails instance
+        userDetails = org.springframework.security.core.userdetails.User.withUsername("testuser")
+                .password("password")
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_USER")))
+                .build();
+
+        // Create custom ArgumentResolver for @AuthenticationPrincipal
+        HandlerMethodArgumentResolver authenticationPrincipalResolver = new HandlerMethodArgumentResolver() {
+            @Override
+            public boolean supportsParameter(MethodParameter parameter) {
+                return parameter.hasParameterAnnotation(AuthenticationPrincipal.class) &&
+                       UserDetails.class.isAssignableFrom(parameter.getParameterType());
+            }
+
+            @Override
+            public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
+                                        NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+                return userDetails;
+            }
+        };
+
+        mockMvc = MockMvcBuilders.standaloneSetup(myFeedReadController)
+                .setCustomArgumentResolvers(authenticationPrincipalResolver)
+                .build();
         
+        objectMapper = new ObjectMapper();
         testPageable = PageRequest.of(0, 10);
         
         testUser = new User(1L, "testuser", "password", "test@test.com", com.cMall.feedShop.user.domain.enums.UserRole.USER);
@@ -84,16 +114,15 @@ class MyFeedReadControllerTest {
         List<FeedListResponseDto> feeds = List.of(testFeedDto);
         Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeeds(1L, any(Pageable.class), userDetails)).thenReturn(feedPage);
+        when(myFeedReadService.getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my")
                         .param("page", "0")
                         .param("size", "10")
                         .param("sort", "latest")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -101,7 +130,7 @@ class MyFeedReadControllerTest {
                 .andExpect(jsonPath("$.data.content[0].feedId").value(1))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 피드"));
 
-        verify(myFeedReadService, times(1)).getMyFeeds(1L, any(Pageable.class), userDetails);
+        verify(myFeedReadService, times(1)).getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails));
     }
 
     @Test
@@ -111,23 +140,22 @@ class MyFeedReadControllerTest {
         List<FeedListResponseDto> feeds = List.of(testFeedDto);
         Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedsByType(1L, FeedType.EVENT, any(Pageable.class), userDetails)).thenReturn(feedPage);
+        when(myFeedReadService.getMyFeedsByType(eq(1L), eq(FeedType.EVENT), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my/type/EVENT")
                         .param("page", "0")
                         .param("size", "10")
                         .param("sort", "latest")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content[0].feedId").value(1));
 
-        verify(myFeedReadService, times(1)).getMyFeedsByType(1L, FeedType.EVENT, any(Pageable.class), userDetails);
+        verify(myFeedReadService, times(1)).getMyFeedsByType(eq(1L), eq(FeedType.EVENT), any(Pageable.class), eq(userDetails));
     }
 
     @Test
@@ -141,13 +169,12 @@ class MyFeedReadControllerTest {
                 .rankingCount(2L)
                 .build();
         
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedCounts(1L)).thenReturn(counts);
+        when(myFeedReadService.getMyFeedCounts(eq(1L))).thenReturn(counts);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my/count")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -156,39 +183,37 @@ class MyFeedReadControllerTest {
                 .andExpect(jsonPath("$.data.eventCount").value(3))
                 .andExpect(jsonPath("$.data.rankingCount").value(2));
 
-        verify(myFeedReadService, times(1)).getMyFeedCounts(1L);
+        verify(myFeedReadService, times(1)).getMyFeedCounts(eq(1L));
     }
 
     @Test
     @DisplayName("마이피드 타입별 개수 조회 - 성공")
     void getMyFeedCountByType_Success() throws Exception {
         // given
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedCountByType(1L, FeedType.DAILY)).thenReturn(5L);
+        when(myFeedReadService.getMyFeedCountByType(eq(1L), eq(FeedType.DAILY))).thenReturn(5L);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my/count/type/DAILY")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").value(5));
 
-        verify(myFeedReadService, times(1)).getMyFeedCountByType(1L, FeedType.DAILY);
+        verify(myFeedReadService, times(1)).getMyFeedCountByType(eq(1L), eq(FeedType.DAILY));
     }
 
     @Test
     @DisplayName("잘못된 피드 타입 - 에러 응답")
     void getMyFeeds_InvalidFeedType_ReturnsError() throws Exception {
         // given
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
 
         // when & then
         mockMvc.perform(get("/api/feeds/my")
                         .param("feedType", "INVALID")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -217,18 +242,17 @@ class MyFeedReadControllerTest {
         List<FeedListResponseDto> feeds = List.of(testFeedDto);
         Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
-        when(userDetails.getUsername()).thenReturn("testuser");
+
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeeds(1L, any(Pageable.class), userDetails)).thenReturn(feedPage);
+        when(myFeedReadService.getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my")
                         .param("sort", "popular")
-                        .requestAttr("userDetails", userDetails)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        verify(myFeedReadService, times(1)).getMyFeeds(1L, any(Pageable.class), userDetails);
+        verify(myFeedReadService, times(1)).getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails));
     }
 }

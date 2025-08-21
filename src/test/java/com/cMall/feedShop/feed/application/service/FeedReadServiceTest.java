@@ -337,7 +337,8 @@ class FeedReadServiceTest {
         Long userId = 1L;
         Pageable customPageable = PageRequest.of(1, 5);
         List<Feed> feeds = List.of(testFeed);
-        Page<Feed> feedPage = new PageImpl<>(feeds, customPageable, 1);
+        // PageImpl의 세 번째 생성자를 사용하여 totalElements를 명시적으로 설정
+        Page<Feed> feedPage = new PageImpl<>(feeds, customPageable, 6L);
         
         when(feedRepository.findByUserId(userId, customPageable)).thenReturn(feedPage);
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
@@ -349,7 +350,7 @@ class FeedReadServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getNumber()).isEqualTo(1);
         assertThat(result.getSize()).isEqualTo(5);
-        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getTotalElements()).isEqualTo(6L);
 
         verify(feedRepository, times(1)).findByUserId(userId, customPageable);
     }
