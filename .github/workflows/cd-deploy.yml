@@ -74,7 +74,6 @@ jobs:
             --platform managed \
             --region $REGION \
             --allow-unauthenticated \
-            --service-account=feedshop-prod-api-deployer@onyx-oxygen-462722-c0.iam.gserviceaccount.com \
             --memory 2Gi \
             --cpu 2 \
             --concurrency 1000 \
@@ -82,18 +81,17 @@ jobs:
             --min-instances 1 \
             --port 8080 \
             --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
-            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
-            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-            --set-secrets="DB_PASSWORD=shopchat-db-password:latest" \
-            --set-secrets="JWT_SECRET=feedshop-jwt-secret-key:latest" \
-            --set-secrets="MAILGUN_API_KEY=mailgun_api_key:latest" \
-            --set-secrets="MAILGUN_DOMAIN=mailgun_domain:latest" \
-            --set-secrets="MAILGUN_EMAIL=mailgun_email:latest" \
-            --set-secrets="GCS_ID=gcs_id:latest" \
-            --set-secrets="GCS_BUCKET=gcs_prod_bucket:latest" \
-            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
-            --set-secrets="RECAPTCHA_SECRET_KEY=recaptcha_secret_key:latest" \
-            --timeout 900s
+            --add-cloudsql-instances="feedshop-db" \
+            --timeout 900s \
+            --update-secrets="DB_PASSWORD=${{ secrets.DB_PASSWORD }}:latest" \
+            --update-secrets="JWT_SECRET=${{ secrets.JWT_SECRET }}:latest" \
+            --update-secrets="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}:latest" \
+            --update-secrets="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}:latest" \
+            --update-secrets="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}:latest" \
+            --update-secrets="GCS_ID=${{ secrets.GCS_ID }}:latest" \
+            --update-secrets="GCS_BUCKET=${{ secrets.GCS_BUCKET }}:latest" \
+            --update-secrets="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}:latest" \
+            --update-secrets="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}:latest"
 
       - name: Get Service URL
         run: |
