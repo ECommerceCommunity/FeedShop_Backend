@@ -74,7 +74,13 @@ class MyCommentServiceTest {
         Page<Comment> commentPage = new PageImpl<>(comments, pageable, 1);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(commentRepository.findByUserIdWithFeedAndAuthor(userId, pageable)).thenReturn(commentPage);
+        
+        // 페이징된 댓글 ID 목록 조회
+        Page<Long> commentIdsPage = new PageImpl<>(List.of(1L), pageable, 1);
+        when(commentRepository.findCommentIdsByUserId(userId, pageable)).thenReturn(commentIdsPage);
+        
+        // 댓글 ID 목록으로 fetch join하여 댓글 상세 정보 조회
+        when(commentRepository.findByIdsWithFeedAndAuthor(List.of(1L))).thenReturn(comments);
         
         // MyCommentItemDto.from()에서 사용하는 Mock 설정
         when(user.getUserProfile()).thenReturn(userProfile);
@@ -107,7 +113,8 @@ class MyCommentServiceTest {
         assertThat(result.getSize()).isEqualTo(20);
 
         verify(userRepository).findById(userId);
-        verify(commentRepository).findByUserIdWithFeedAndAuthor(userId, pageable);
+        verify(commentRepository).findCommentIdsByUserId(userId, pageable);
+        verify(commentRepository).findByIdsWithFeedAndAuthor(List.of(1L));
     }
 
     @Test
@@ -126,7 +133,8 @@ class MyCommentServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
         verify(userRepository).findById(userId);
-        verify(commentRepository, never()).findByUserIdWithFeedAndAuthor(anyLong(), any(Pageable.class));
+        verify(commentRepository, never()).findCommentIdsByUserId(anyLong(), any(Pageable.class));
+        verify(commentRepository, never()).findByIdsWithFeedAndAuthor(anyList());
     }
 
     @Test
@@ -141,7 +149,13 @@ class MyCommentServiceTest {
         Page<Comment> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(commentRepository.findByUserIdWithFeedAndAuthor(userId, pageable)).thenReturn(emptyPage);
+        
+        // 페이징된 댓글 ID 목록 조회 (빈 페이지)
+        Page<Long> emptyCommentIdsPage = new PageImpl<>(List.of(), pageable, 0);
+        when(commentRepository.findCommentIdsByUserId(userId, pageable)).thenReturn(emptyCommentIdsPage);
+        
+        // 댓글 ID 목록으로 fetch join하여 댓글 상세 정보 조회 (빈 리스트)
+        when(commentRepository.findByIdsWithFeedAndAuthor(List.of())).thenReturn(List.of());
 
         // when
         MyCommentListResponseDto result = myCommentService.getMyComments(userId, page, size);
@@ -154,6 +168,7 @@ class MyCommentServiceTest {
         assertThat(result.getSize()).isEqualTo(20);
 
         verify(userRepository).findById(userId);
-        verify(commentRepository).findByUserIdWithFeedAndAuthor(userId, pageable);
+        verify(commentRepository).findCommentIdsByUserId(userId, pageable);
+        verify(commentRepository).findByIdsWithFeedAndAuthor(List.of());
     }
 }
