@@ -178,10 +178,10 @@ class FeedSearchServiceTest {
         // given
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .page(1)
-                .size(10)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(1, 10), 25);
+        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(1, 6), 25);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
         when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
@@ -192,7 +192,7 @@ class FeedSearchServiceTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.getPage()).isEqualTo(1);
-        assertThat(result.getSize()).isEqualTo(10);
+        assertThat(result.getSize()).isEqualTo(6);
         assertThat(result.getTotalElements()).isEqualTo(25);
         assertThat(result.getTotalPages()).isEqualTo(3);
         assertThat(result.isHasNext()).isTrue();
