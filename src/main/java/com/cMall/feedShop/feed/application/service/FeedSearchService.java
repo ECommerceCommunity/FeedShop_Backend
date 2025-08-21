@@ -2,7 +2,7 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
-import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedSearchResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedLikeService;
 import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
 import com.cMall.feedShop.feed.domain.Feed;
@@ -38,7 +38,7 @@ public class FeedSearchService {
      * @param userDetails 사용자 정보 (선택적)
      * @return 검색 결과 (페이징)
      */
-    public PaginatedResponse<FeedListResponseDto> searchFeeds(FeedSearchRequest request, UserDetails userDetails) {
+    public PaginatedResponse<FeedSearchResponseDto> searchFeeds(FeedSearchRequest request, UserDetails userDetails) {
         log.info("피드 검색 요청 - keyword: {}, authorId: {}, feedType: {}, page: {}, size: {}", 
                 request.getKeyword(), request.getAuthorId(), request.getFeedType(), 
                 request.getPage(), request.getSize());
@@ -51,44 +51,41 @@ public class FeedSearchService {
         // 검색 실행
         Page<Feed> feedPage = feedRepository.findWithSearchConditions(request, pageable);
         
-        // Feed 엔티티를 DTO로 변환
-        Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
+        // Feed 엔티티를 검색용 DTO로 변환
+        Page<FeedSearchResponseDto> responsePage = feedPage.map(feedMapper::toFeedSearchResponseDto);
         
-        // 사용자별 좋아요/투표 상태 설정
+        // 사용자별 좋아요 상태 설정
         if (userDetails != null) {
             Long userId = feedServiceUtils.getUserIdFromUserDetails(userDetails);
-                         responsePage = responsePage.map(dto -> {
-                 boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userId);
+            responsePage = responsePage.map(dto -> {
+                boolean isLiked = feedLikeService.isLikedByUser(dto.getFeedId(), userId);
                 
-                                 return FeedListResponseDto.builder()
-                         .feedId(dto.getFeedId())
-                         .title(dto.getTitle())
-                         .content(dto.getContent())
-                         .feedType(dto.getFeedType())
-                         .instagramId(dto.getInstagramId())
-                         .createdAt(dto.getCreatedAt())
-                         .likeCount(dto.getLikeCount())
-                         .commentCount(dto.getCommentCount())
-                         .participantVoteCount(dto.getParticipantVoteCount())
-                         .userId(dto.getUserId())
-                         .userNickname(dto.getUserNickname())
-                         .userProfileImg(dto.getUserProfileImg())
-                         .userLevel(null) // 프론트엔드에서 사용하지 않음
-                         .orderItemId(null) // 프론트엔드에서 사용하지 않음
-                         .productName(dto.getProductName())
-                         .productSize(null) // 프론트엔드에서 사용하지 않음
-                         .eventId(dto.getEventId())
-                         .eventTitle(dto.getEventTitle())
-                         .hashtags(dto.getHashtags())
-                         .imageUrls(dto.getImageUrls())
-                         .isLiked(isLiked)
-                         .isVoted(false) // 검색에서는 투표 상태 불필요
-                         .build();
+                return FeedSearchResponseDto.builder()
+                        .feedId(dto.getFeedId())
+                        .title(dto.getTitle())
+                        .content(dto.getContent())
+                        .feedType(dto.getFeedType())
+                        .instagramId(dto.getInstagramId())
+                        .createdAt(dto.getCreatedAt())
+                        .likeCount(dto.getLikeCount())
+                        .commentCount(dto.getCommentCount())
+                        .participantVoteCount(dto.getParticipantVoteCount())
+                        .userId(dto.getUserId())
+                        .userNickname(dto.getUserNickname())
+                        .userProfileImg(dto.getUserProfileImg())
+                        .productName(dto.getProductName())
+                        .eventId(dto.getEventId())
+                        .eventTitle(dto.getEventTitle())
+                        .hashtags(dto.getHashtags())
+                        .imageUrls(dto.getImageUrls())
+                        .isLiked(isLiked)
+                        .isVoted(false) // 검색에서는 투표 상태 불필요
+                        .build();
             });
         }
         
         // PaginatedResponse 생성
-        PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()
+        PaginatedResponse<FeedSearchResponseDto> response = PaginatedResponse.<FeedSearchResponseDto>builder()
                 .content(responsePage.getContent())
                 .page(responsePage.getNumber())
                 .size(responsePage.getSize())

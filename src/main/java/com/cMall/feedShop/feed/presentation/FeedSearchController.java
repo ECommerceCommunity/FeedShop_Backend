@@ -4,7 +4,7 @@ import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
-import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedSearchResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedSearchService;
 import com.cMall.feedShop.feed.domain.FeedType;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class FeedSearchController {
      */
     @GetMapping("/search")
     @ApiResponseFormat(message = "피드 검색이 완료되었습니다.", status = 200)
-    public ResponseEntity<ApiResponse<PaginatedResponse<FeedListResponseDto>>> searchFeeds(
+    public ResponseEntity<ApiResponse<PaginatedResponse<FeedSearchResponseDto>>> searchFeeds(
             @RequestParam(value = "q", required = false) String q,
             @RequestParam(required = false) Long authorId,
             @RequestParam(required = false) String feedType,
@@ -127,7 +127,7 @@ public class FeedSearchController {
                 .build();
         
         // 검색 실행
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, userDetails);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, userDetails);
         
         log.info("피드 검색 완료 - 총 {}개, 현재 페이지 {}개", 
                 result.getTotalElements(), result.getContent().size());

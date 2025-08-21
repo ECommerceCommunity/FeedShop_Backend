@@ -2,7 +2,7 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
-import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedSearchResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedLikeService;
 import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
 import com.cMall.feedShop.feed.domain.Feed;
@@ -53,7 +53,7 @@ class FeedSearchServiceTest {
     private Feed testFeed;
 
     @Mock
-    private FeedListResponseDto testResponseDto;
+    private FeedSearchResponseDto testResponseDto;
 
     @InjectMocks
     private FeedSearchService feedSearchService;
@@ -89,7 +89,7 @@ class FeedSearchServiceTest {
         when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, null);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
 
         // then
         assertThat(result).isNotNull();
@@ -105,16 +105,16 @@ class FeedSearchServiceTest {
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .authorId(1L)
                 .page(0)
-                .size(20)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 20), 1);
+        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 6), 1);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
-        when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
+        when(feedMapper.toFeedSearchResponseDto(testFeed)).thenReturn(testResponseDto);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, null);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
 
         // then
         assertThat(result).isNotNull();
@@ -129,16 +129,16 @@ class FeedSearchServiceTest {
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .feedType(FeedType.EVENT)
                 .page(0)
-                .size(20)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 20), 1);
+        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 6), 1);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
-        when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
+        when(feedMapper.toFeedSearchResponseDto(testFeed)).thenReturn(testResponseDto);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, null);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
 
         // then
         assertThat(result).isNotNull();
@@ -153,18 +153,18 @@ class FeedSearchServiceTest {
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .keyword("테스트")
                 .page(0)
-                .size(20)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 20), 1);
+        Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(0, 6), 1);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
-        when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
+        when(feedMapper.toFeedSearchResponseDto(testFeed)).thenReturn(testResponseDto);
         when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
         when(feedLikeService.isLikedByUser(anyLong(), anyLong())).thenReturn(true);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, userDetails);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, userDetails);
 
         // then
         assertThat(result).isNotNull();
@@ -184,10 +184,10 @@ class FeedSearchServiceTest {
         Page<Feed> feedPage = new PageImpl<>(List.of(testFeed), PageRequest.of(1, 6), 25);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
-        when(feedMapper.toFeedListResponseDto(testFeed)).thenReturn(testResponseDto);
+        when(feedMapper.toFeedSearchResponseDto(testFeed)).thenReturn(testResponseDto);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, null);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
 
         // then
         assertThat(result).isNotNull();
@@ -206,15 +206,15 @@ class FeedSearchServiceTest {
         FeedSearchRequest request = FeedSearchRequest.builder()
                 .keyword("존재하지않는키워드")
                 .page(0)
-                .size(20)
+                .size(6)
                 .build();
 
-        Page<Feed> feedPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
+        Page<Feed> feedPage = new PageImpl<>(List.of(), PageRequest.of(0, 6), 0);
         when(feedRepository.findWithSearchConditions(any(FeedSearchRequest.class), any(Pageable.class)))
                 .thenReturn(feedPage);
 
         // when
-        PaginatedResponse<FeedListResponseDto> result = feedSearchService.searchFeeds(request, null);
+        PaginatedResponse<FeedSearchResponseDto> result = feedSearchService.searchFeeds(request, null);
 
         // then
         assertThat(result).isNotNull();
