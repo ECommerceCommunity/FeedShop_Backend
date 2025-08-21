@@ -1,0 +1,126 @@
+name: Deploy to GCP Cloud Run
+
+on:
+  push:
+    branches: ["main"] # main 브랜치로 push될 때만 배포
+  workflow_dispatch: # 수동 배포도 가능하도록
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: feedshop-backend
+  REGION: asia-northeast3
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feedshop-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC 토큰 발급을 위해 필요
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "gradle"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Application
+        run: ./gradlew clean build -x test
+        env:
+          SPRING_PROFILES_ACTIVE: prod
+
+      # GCP 인증 (Service Account Key 방식)
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # 또는 Workload Identity Federation 사용 시 (더 안전함)
+      # - name: Authenticate to Google Cloud
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+      #     service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Build Docker Image
+        run: |
+          docker build -t $IMAGE_NAME:$GITHUB_SHA \
+                       -t $IMAGE_NAME:latest \
+                       .
+
+      - name: Push Docker Image to GCR
+        run: |
+          docker push $IMAGE_NAME:$GITHUB_SHA
+          docker push $IMAGE_NAME:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE_NAME:$GITHUB_SHA \
+            --platform managed \
+            --region $REGION \
+            --allow-unauthenticated \
+            --memory 2Gi \
+            --cpu 2 \
+            --concurrency 1000 \
+            --max-instances 10 \
+            --min-instances 1 \
+            --port 8080 \
+            --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
+            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
+            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
+            --set-env-vars="DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+            --set-env-vars="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" \
+            --set-env-vars="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}" \
+            --set-env-vars="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}" \
+            --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
+            --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
+            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
+            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
+            --timeout 900s
+
+      - name: Get Service URL
+        run: |
+          SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)")
+          echo "Service deployed at: $SERVICE_URL"
+          echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
+
+      - name: Health Check
+        run: |
+          echo "Waiting for service to be ready..."
+          sleep 30
+          curl -f $SERVICE_URL/actuator/health || (echo "Health check failed" && exit 1)
+          echo "✅ Deployment successful and service is healthy!"
+
+  notification:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Notify Deployment Status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "🚀 Deployment to Cloud Run completed successfully!"
+            echo "📊 Service: ${{ env.SERVICE_NAME }}"
+            echo "🌏 Region: ${{ env.REGION }}"
+            echo "🔗 URL: ${{ env.SERVICE_URL }}"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

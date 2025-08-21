@@ -6,6 +6,7 @@ import com.cMall.feedShop.order.application.dto.request.OrderStatusUpdateRequest
 import com.cMall.feedShop.order.application.dto.response.OrderPageResponse;
 import com.cMall.feedShop.order.application.dto.response.OrderStatusUpdateResponse;
 import com.cMall.feedShop.order.application.service.OrderService;
+import com.cMall.feedShop.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -54,7 +55,8 @@ public class OrderSellerController {
             String status,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderPageResponse data = orderService.getOrderListForSeller(page, size, status, userDetails);
+        User currentUser = (User) userDetails;
+        OrderPageResponse data = orderService.getOrderListForSeller(page, size, status, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -73,7 +75,8 @@ public class OrderSellerController {
             @Valid @RequestBody OrderStatusUpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        OrderStatusUpdateResponse data = orderService.updateOrderStatus(orderId, request, userDetails);
+        User currentUser = (User) userDetails;
+        OrderStatusUpdateResponse data = orderService.updateOrderStatus(orderId, request, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 }

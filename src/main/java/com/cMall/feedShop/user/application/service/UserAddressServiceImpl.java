@@ -1,8 +1,8 @@
 package com.cMall.feedShop.user.application.service;
 
-import com.cMall.feedShop.common.exception.ErrorCode;
-import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
-import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
+
+import com.cMall.feedShop.user.application.dto.request.AddressRequest;
+import com.cMall.feedShop.user.application.dto.response.AddressResponse;
 import com.cMall.feedShop.user.domain.exception.UserAddressException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
 import com.cMall.feedShop.user.domain.model.User;
@@ -26,15 +26,15 @@ public class UserAddressServiceImpl implements UserAddressService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AddressResponseDto> getAddresses(Long userId) {
+    public List<AddressResponse> getAddresses(Long userId) {
         List<UserAddress> addresses = userAddressRepository.findByUserId(userId);
         return addresses.stream()
-                .map(AddressResponseDto::new)
+                .map(AddressResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public AddressResponseDto addAddress(Long userId, AddressRequestDto requestDto) {
+    public AddressResponse addAddress(Long userId, AddressRequest requestDto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException());
 
@@ -56,16 +56,22 @@ public class UserAddressServiceImpl implements UserAddressService {
                 .build();
 
         userAddressRepository.save(userAddress);
-        return new AddressResponseDto(userAddress);
+        return new AddressResponse(userAddress);
     }
 
     @Override
-    public void updateAddress(Long userId, Long addressId, AddressRequestDto requestDto) {
+    @Transactional
+    public void updateAddress(Long userId, Long addressId, AddressRequest requestDto) {
         UserAddress userAddress = userAddressRepository.findById(addressId)
-                .orElseThrow(() -> new UserAddressException());
+                .orElseThrow(UserAddressException::new);
 
         if (!userAddress.getUser().getId().equals(userId)) {
             throw new SecurityException("You are not authorized to update this address.");
+        }
+
+        if (requestDto.isDefault()) {
+            // ✅ 기존 기본 배송지를 한 번의 쿼리로 초기화
+            userAddressRepository.resetDefaultAddress(userId);
         }
 
         userAddress.updateAddress(
@@ -76,6 +82,9 @@ public class UserAddressServiceImpl implements UserAddressService {
                 requestDto.getAddressLine2(),
                 requestDto.isDefault()
         );
+
+        // ✅ 현재 주소만 저장
+        userAddressRepository.save(userAddress);
     }
 
     @Override

@@ -65,6 +65,99 @@
 
 ## 🏗️ 아키텍처
 
+### 전체 시스템 아키텍처
+
+```mermaid
+graph TB
+    %% Frontend Layer
+    subgraph "Frontend (Vercel)"
+        FE["React Frontend<br/>🌐 www.feedshop.store"]
+    end
+
+    %% CDN & Storage
+    subgraph "Static Assets"
+        CDN["CDN<br/>📁 cdn-feedshop.store<br/>(Google Cloud Storage)"]
+    end
+
+    %% Backend Services
+    subgraph "GCP Backend Services"
+        subgraph "Development Environment"
+            DEV_APP["Development API<br/>🔧 Spring Boot<br/>(Local/Dev Server)"]
+            DEV_DB[(Development DB<br/>🗄️ MySQL<br/>Compute Engine + Docker)]
+        end
+
+        subgraph "Production Environment"
+            PROD_APP["Production API<br/>🚀 Spring Boot<br/>Cloud Run<br/>feedshop-springboot-*.run.app"]
+            PROD_DB[(Production DB<br/>☁️ Cloud SQL MySQL<br/>feedshop-db)]
+        end
+    end
+
+    %% External Services
+    subgraph "External Services"
+        MAILGUN["Mailgun<br/>📧 Email Service"]
+        RECAPTCHA["Google reCAPTCHA<br/>🛡️ Bot Protection"]
+        SONAR["SonarCloud<br/>📊 Code Quality"]
+    end
+
+    %% CI/CD Pipeline
+    subgraph "CI/CD Pipeline"
+        GITHUB["GitHub Repository<br/>📚 Source Code"]
+        GH_ACTIONS["GitHub Actions<br/>⚙️ CI/CD Pipeline"]
+    end
+
+    %% User Interactions
+    USER["👤 Users"]
+    DEV["👨‍💻 Developers"]
+
+    %% Frontend Connections
+    USER --> FE
+    FE --> PROD_APP
+    FE --> CDN
+
+    %% Development Flow
+    DEV --> GITHUB
+    DEV_APP --> DEV_DB
+
+    %% Production Flow
+    PROD_APP --> PROD_DB
+    PROD_APP --> CDN
+    PROD_APP --> MAILGUN
+    PROD_APP --> RECAPTCHA
+
+    %% CI/CD Flow
+    GITHUB --> GH_ACTIONS
+    GH_ACTIONS --> SONAR
+    GH_ACTIONS -->|Deploy to Main| PROD_APP
+    GH_ACTIONS -->|Build & Test| DEV_APP
+
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef backend fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef database fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef external fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef cicd fill:#fff8e1,stroke:#ff6f00,stroke-width:2px
+    classDef user fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class FE frontend
+    class DEV_APP,PROD_APP backend
+    class DEV_DB,PROD_DB database
+    class MAILGUN,RECAPTCHA,SONAR external
+    class GITHUB,GH_ACTIONS cicd
+    class USER,DEV user
+```
+
+### 인프라 구성 요소
+
+| 구성 요소         | 개발 환경                       | 운영 환경                   |
+| ----------------- | ------------------------------- | --------------------------- |
+| **Frontend**      | Local Development               | Vercel (www.feedshop.store) |
+| **Backend API**   | Local/Dev Server                | GCP Cloud Run               |
+| **Database**      | MySQL (Compute Engine + Docker) | Cloud SQL MySQL             |
+| **File Storage**  | Local Storage                   | Google Cloud Storage        |
+| **CDN**           | -                               | cdn-feedshop.store          |
+| **Email Service** | Mailgun (Dev API Key)           | Mailgun (Prod API Key)      |
+| **Monitoring**    | -                               | GCP Logging & Monitoring    |
+
 ### 클린 아키텍처 패턴 적용
 
 ```

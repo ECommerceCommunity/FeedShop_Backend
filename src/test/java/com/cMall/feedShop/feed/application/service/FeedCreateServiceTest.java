@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,8 +52,6 @@ class FeedCreateServiceTest {
     @Mock
     private FeedMapper feedMapper;
 
-    @Mock
-    private UserDetails userDetails;
 
     @InjectMocks
     private FeedCreateService feedCreateService;
@@ -102,11 +99,10 @@ class FeedCreateServiceTest {
     @DisplayName("피드 생성 실패 - 사용자를 찾을 수 없음")
     void createFeed_Failure_UserNotFound() {
         // given
-        when(userDetails.getUsername()).thenReturn("nonexistent@example.com");
         when(userRepository.findByLoginId("nonexistent@example.com")).thenReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> feedCreateService.createFeed(testRequestDto, userDetails))
+        assertThatThrownBy(() -> feedCreateService.createFeed(testRequestDto, "nonexistent@example.com"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
@@ -115,15 +111,14 @@ class FeedCreateServiceTest {
     @DisplayName("피드 생성 실패 - 구매하지 않은 상품")
     void createFeed_Failure_OrderItemNotFound() {
         // given
-        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(userRepository.findByLoginId("test@example.com")).thenReturn(Optional.of(testUser));
 
         // 빈 목록을 반환하는 응답 객체 생성
-        when(purchasedItemService.getPurchasedItems(userDetails))
+        when(purchasedItemService.getPurchasedItems("test@example.com"))
                 .thenReturn(mock(com.cMall.feedShop.order.application.dto.response.PurchasedItemListResponse.class));
 
         // when & then
-        assertThatThrownBy(() -> feedCreateService.createFeed(testRequestDto, userDetails))
+        assertThatThrownBy(() -> feedCreateService.createFeed(testRequestDto, "test@example.com"))
                 .isInstanceOf(OrderItemNotFoundException.class)
                 .hasMessageContaining("주문 상품을 찾을 수 없습니다");
     }

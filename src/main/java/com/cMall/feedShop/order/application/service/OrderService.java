@@ -12,6 +12,7 @@ import com.cMall.feedShop.order.application.calculator.OrderCalculation;
 import com.cMall.feedShop.order.domain.enums.OrderStatus;
 import com.cMall.feedShop.order.domain.exception.OrderException;
 import com.cMall.feedShop.order.domain.model.Order;
+import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.order.domain.repository.OrderRepository;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
@@ -19,11 +20,14 @@ import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.application.service.BadgeService;
+import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.domain.model.ActivityType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,23 +40,26 @@ import static com.cMall.feedShop.order.application.constants.OrderConstants.MAX_
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class OrderService {
 
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
     private final OrderCommonService orderCommonService;
+    private final BadgeService badgeService;
+    private final UserLevelService userLevelService;
 
     /**
      * 주문 생성
      * @param request 주문 생성 요청 정보
-     * @param userDetails 현재 로그인된 사용자 정보
+     * @param loginId 현재 로그인된 사용자 정보
      * @return 주문 생성 응답 정보
      */
     @Transactional
-    public OrderCreateResponse createOrder(OrderCreateRequest request, UserDetails userDetails) {
+    public OrderCreateResponse createOrder(OrderCreateRequest request, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 선택된 장바구니 아이템 조회 (selected = true 인 아이템들만)
         List<CartItem> selectedCartItems = getSelectedCartItems(currentUser.getId());
@@ -78,7 +85,10 @@ public class OrderService {
         // 8. 장바구니 아이템 삭제
         cartItemRepository.deleteAll(selectedCartItems);
 
-        // 9. 주문 생성 응답 반환
+        // 9. 뱃지 자동 수여 체크
+        checkAndAwardBadgesAfterOrder(currentUser.getId());
+
+        // 10. 주문 생성 응답 반환
         return OrderCreateResponse.from(order);
     }
 
@@ -87,13 +97,13 @@ public class OrderService {
      * @param page
      * @param size
      * @param status
-     * @param userDetails
+     * @param loginId
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderPageResponse getOrderListForUser(int page, int size, String status, UserDetails userDetails) {
+    public OrderPageResponse getOrderListForUser(int page, int size, String status, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 페이지 파라미터 검증
         if (page < 0) {
@@ -119,13 +129,13 @@ public class OrderService {
      * @param page
      * @param size
      * @param status
-     * @param userDetails
+     * @param loginId
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderPageResponse getOrderListForSeller(int page, int size, String status, UserDetails userDetails) {
+    public OrderPageResponse getOrderListForSeller(int page, int size, String status, String loginId) {
         // 1. 현재 사용자 조회를 하고 판매자 권한을 검증
-        User currentUser = validateSeller(userDetails);
+        User currentUser = validateSeller(loginId);
 
         // 2. 페이지 파라미터 검증
         if (page < 0) {
@@ -180,13 +190,13 @@ public class OrderService {
     /**
      * 주문 상세 조회
      * @param orderId
-     * @param userDetails
+     * @param loginId
      * @return
      */
     @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderDetail(Long orderId, UserDetails userDetails) {
+    public OrderDetailResponse getOrderDetail(Long orderId, String loginId) {
         // 1. 현재 사용자 조회 및 권한 검증
-        User currentUser = orderCommonService.validateUser(userDetails);
+        User currentUser = orderCommonService.validateUser(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndUser(orderId, currentUser)
@@ -200,13 +210,13 @@ public class OrderService {
      * 판매자 주문 상태 변경
      * @param orderId
      * @param request
-     * @param userDetails
+     * @param loginId
      * @return
      */
     @Transactional
-    public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, UserDetails userDetails) {
+    public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
         // 1. 판매자 권한 검증
-        User seller = validateSeller(userDetails);
+        User seller = validateSeller(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndSeller(orderId, seller)
@@ -226,13 +236,13 @@ public class OrderService {
      * 사용자 주문 상태 변경
      * @param orderId
      * @param request
-     * @param userDetails
+     * @param loginId
      * @return
      */
     @Transactional
-    public OrderStatusUpdateResponse updateUserOrderStatus(Long orderId, OrderStatusUpdateRequest request, UserDetails userDetails) {
+    public OrderStatusUpdateResponse updateUserOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
         // 1. 현재 사용자 조회 및 권한 검증
-        User user = validateUser(userDetails);
+        User user = validateUser(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndUser(orderId, user)
@@ -240,6 +250,11 @@ public class OrderService {
 
         // 3. 상태 변경 가능 여부 검증
         validateUserStatusUpdate(order.getStatus(), request.getStatus());
+
+        // 4. 재고 복구 처리 (취소/반품 시)
+        if (isStockRestoreRequired(request.getStatus())) {
+            restoreStock(order);
+        }
 
         // 4. 주문 상태 업데이트
         order.updateStatus(request.getStatus());
@@ -264,11 +279,11 @@ public class OrderService {
 
     /**
      * 현재 사용자 조회 및 사용자 권한 검증
-     * @param userDetails 현재 로그인된 사용자 정보
+     * @param loginId 현재 로그인된 사용자 정보
      * @return 검증된 사용자 정보
      */
-    private User validateUser(UserDetails userDetails) {
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+    private User validateUser(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.USER) {
@@ -280,11 +295,11 @@ public class OrderService {
 
     /**
      * 현재 사용자 조회 및 판매자 권한 검증
-     * @param userDetails 현재 로그인된 사용자 정보
+     * @param loginId 현재 로그인된 사용자 정보
      * @return 검증된 사용자 정보
      */
-    private User validateSeller(UserDetails userDetails) {
-        User user = userRepository.findByLoginId(userDetails.getUsername())
+    private User validateSeller(String loginId) {
+        User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         if (user.getRole() != UserRole.SELLER) {
@@ -330,4 +345,49 @@ public class OrderService {
             }
         }
     }
+
+  /**
+     * 주문 완료 후 뱃지 자동 수여 체크
+     */
+    private void checkAndAwardBadgesAfterOrder(Long userId) {
+        try {
+            // 1. 구매 완료 점수 부여
+            userLevelService.recordActivity(
+                userId, 
+                ActivityType.PURCHASE_COMPLETION, 
+                "구매 완료", 
+                null, 
+                "ORDER"
+            );
+            
+            // 2. 사용자의 총 주문 수 조회
+            Long totalOrders = orderRepository.countByUserIdAndOrderStatus(userId, OrderStatus.DELIVERED);
+            
+            // 3. 사용자의 총 주문 금액 조회 (DELIVERED 상태만)
+            Long totalAmount = orderRepository.findTotalOrderAmountByUserId(userId);
+            if (totalAmount == null) {
+                totalAmount = 0L;
+            }
+            
+            // 4. 뱃지 자동 수여 체크 (뱃지 획득 시 보너스 점수도 자동 부여됨)
+            badgeService.checkAndAwardPurchaseBadges(userId, totalOrders, totalAmount);
+        } catch (Exception e) {
+            // 뱃지 수여 실패가 주문 프로세스에 영향을 주지 않도록 예외 처리
+            log.error("뱃지 자동 수여 중 오류 발생 - userId: {}, error: {}", userId, e.getMessage());
+        }
+    }
+
+    // 재고 복구 처리가 필요한 상태인지 확인한다.
+    private boolean isStockRestoreRequired(OrderStatus newStatus) {
+        return newStatus == OrderStatus.CANCELLED || newStatus == OrderStatus.RETURNED;
+    }
+
+    // 주문 취소/반품 시 재고를 복구한다.
+    private void restoreStock(Order order) {
+        for (OrderItem item : order.getOrderItems()) {
+            ProductOption option = item.getProductOption();
+            option.increaseStock(item.getQuantity());
+        }
+    }
+
 }

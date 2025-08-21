@@ -73,4 +73,9 @@ public interface ReviewRepository {
      * 사용자별 삭제된 리뷰 개수
      */
     Long countDeletedReviewsByUserId(Long userId);
+    
+    /**
+     * 사용자별 총 리뷰 개수 조회 (활성 리뷰만)
+     */
+    Long countByUserId(Long userId);
 }

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "point_transactions")
@@ -45,12 +46,13 @@ public class PointTransaction extends BaseTimeEntity {
     private LocalDateTime expiryDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false) // ⭐ 새로운 필드: 트랜잭션 상태
+    @Column(name = "status", nullable = false)
     private PointTransactionStatus status;
 
     @Builder
     public PointTransaction(User user, PointTransactionType transactionType, Integer points,
-                          Integer balanceAfter, String description, Long relatedOrderId, LocalDateTime expiryDate, PointTransactionStatus status) {
+                          Integer balanceAfter, String description, Long relatedOrderId,
+                          LocalDateTime expiryDate, PointTransactionStatus status) {
         this.user = user;
         this.transactionType = transactionType;
         this.points = points;
@@ -58,35 +60,37 @@ public class PointTransaction extends BaseTimeEntity {
         this.description = description;
         this.relatedOrderId = relatedOrderId;
         this.expiryDate = expiryDate;
-        this.status = status;
+        this.status = status != null ? status : PointTransactionStatus.ACTIVE;
     }
 
     // 포인트 적립 거래 생성
     public static PointTransaction createEarnTransaction(User user, Integer points, Integer balanceAfter,
-                                                        String description, Long relatedOrderId) {
+                                                        String description, Long orderId) {
+        LocalDateTime expiryDate = LocalDateTime.now().plusYears(1); // 1년 후 만료
+
         return PointTransaction.builder()
                 .user(user)
                 .transactionType(PointTransactionType.EARN)
                 .points(points)
                 .balanceAfter(balanceAfter)
                 .description(description)
-                .relatedOrderId(relatedOrderId)
-                .expiryDate(LocalDateTime.now().plusYears(1)) // 1년 후 만료
+                .relatedOrderId(orderId)
+                .expiryDate(expiryDate)
                 .status(PointTransactionStatus.ACTIVE)
                 .build();
     }
 
     // 포인트 사용 거래 생성
     public static PointTransaction createUseTransaction(User user, Integer points, Integer balanceAfter,
-                                                       String description, Long relatedOrderId) {
+                                                       String description, Long orderId) {
         return PointTransaction.builder()
                 .user(user)
                 .transactionType(PointTransactionType.USE)
                 .points(points)
                 .balanceAfter(balanceAfter)
                 .description(description)
-                .relatedOrderId(relatedOrderId)
-                .status(PointTransactionStatus.USED)
+                .relatedOrderId(orderId)
+                .status(PointTransactionStatus.ACTIVE)
                 .build();
     }
 
@@ -103,45 +107,48 @@ public class PointTransaction extends BaseTimeEntity {
                 .build();
     }
 
-    // 포인트 취소 거래 생성
+    // 포인트 취소 거래 생성 (주문 취소 시)
     public static PointTransaction createCancelTransaction(User user, Integer points, Integer balanceAfter,
-                                                          String description, Long relatedOrderId) {
+                                                          String description, Long orderId) {
         return PointTransaction.builder()
                 .user(user)
                 .transactionType(PointTransactionType.CANCEL)
                 .points(points)
                 .balanceAfter(balanceAfter)
                 .description(description)
-                .relatedOrderId(relatedOrderId)
-                .status(PointTransactionStatus.CANCELLED)
+                .relatedOrderId(orderId)
+                .status(PointTransactionStatus.ACTIVE)
                 .build();
     }
 
-    //만료 상태로 업데이트하는 메서드
+    // 포인트 만료 상태로 변경
     public void markAsExpired() {
-        if (this.status == PointTransactionStatus.ACTIVE) { // ACTIVE 상태인 경우에만 만료 처리
+        if (this.status == PointTransactionStatus.ACTIVE) {
             this.status = PointTransactionStatus.EXPIRED;
-            // 만약 만료 처리 시 특정 로직이 더 필요하다면 추가
         }
     }
 
-    //사용 상태로 업데이트하는 메서드 (개별 적립 포인트가 사용될 때)
+    // 포인트 사용됨 상태로 변경
     public void markAsUsed() {
-        if (this.status == PointTransactionStatus.ACTIVE) { // ACTIVE 상태인 경우에만 사용 처리
+        if (this.status == PointTransactionStatus.ACTIVE) {
             this.status = PointTransactionStatus.USED;
         }
     }
 
-        // 만료 여부 확인
+    /**
+     * 만료 여부 확인
+     */
     public boolean isExpired() {
-        return expiryDate != null && LocalDateTime.now().isAfter(expiryDate);
+        return this.expiryDate != null && LocalDateTime.now().isAfter(this.expiryDate);
     }
 
-    // 만료까지 남은 일수
+    /**
+     * 만료까지 남은 일수 계산
+     */
     public long getDaysUntilExpiry() {
-        if (expiryDate == null) {
-            return -1; // 만료일이 없는 경우
+        if (this.expiryDate == null) {
+            return Long.MAX_VALUE;
         }
-        return java.time.Duration.between(LocalDateTime.now(), expiryDate).toDays();
+        return ChronoUnit.DAYS.between(LocalDateTime.now(), this.expiryDate);
     }
 }

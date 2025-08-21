@@ -1,5 +1,6 @@
-package com.cMall.feedShop.product.application.dto.response;
+package com.cMall.feedShop.product.application.service;
 
+import com.cMall.feedShop.product.application.dto.response.*;
 import com.cMall.feedShop.product.domain.enums.CategoryType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

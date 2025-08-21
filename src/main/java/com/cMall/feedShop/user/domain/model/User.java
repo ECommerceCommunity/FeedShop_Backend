@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.cart.domain.model.Cart;
+import com.cMall.feedShop.cart.domain.model.WishList;
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.order.domain.model.Order;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -11,9 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,10 +45,16 @@ public class User extends BaseTimeEntity implements UserDetails {
     private Cart cart;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<WishList> wishlist;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserSocialProvider> socialProviders = new java.util.ArrayList<>();
 
     @Column(name = "login_id", unique = true, nullable = false, length = 100)
     private String loginId;
@@ -78,6 +82,16 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "verification_token_expiry")
     private LocalDateTime verificationTokenExpiry;
 
+    // MFA 관련 필드
+    @Column(name = "mfa_secret")
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled")
+    private boolean mfaEnabled = false;
+
+    @Column(name = "temp_mfa_secret")
+    private String tempMfaSecret;
+
     @Builder
     public User(String loginId, String password, String email, UserRole role) {
         this.loginId = loginId;
@@ -85,6 +99,16 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.email = email;
         this.role = role;
         this.status = UserStatus.PENDING;
+        this.passwordChangedAt = LocalDateTime.now();
+    }
+
+    // 소셜 로그인용 생성자
+    public User(String loginId, String email, UserRole role) {
+        this.loginId = loginId;
+        this.password = "SOCIAL_LOGIN"; // 소셜 로그인은 비밀번호가 없으므로 임시값
+        this.email = email;
+        this.role = role;
+        this.status = UserStatus.ACTIVE; // 소셜 로그인은 즉시 활성화
         this.passwordChangedAt = LocalDateTime.now();
     }
 
@@ -110,9 +134,34 @@ public class User extends BaseTimeEntity implements UserDetails {
         // 도메인 규칙 검증
     }
 
+    // 소셜 로그인 관련 헬퍼 메서드
+    public boolean isSocialUser() {
+        return !socialProviders.isEmpty();
+    }
+
+    public void addSocialProvider(UserSocialProvider socialProvider) {
+        this.socialProviders.add(socialProvider);
+        socialProvider.setUser(this);
+    }
+
+    public void removeSocialProvider(UserSocialProvider socialProvider) {
+        this.socialProviders.remove(socialProvider);
+        socialProvider.setUser(null);
+    }
+
+    public boolean hasSocialProvider(String provider) {
+        return socialProviders.stream()
+            .anyMatch(sp -> sp.getProvider().equals(provider));
+    }
+
     @Override
     public String getUsername() {
         return loginId;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
