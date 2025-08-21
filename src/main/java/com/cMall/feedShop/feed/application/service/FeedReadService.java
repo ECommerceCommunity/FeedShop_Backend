@@ -142,5 +142,108 @@ public class FeedReadService {
         
         return responsePage;
     }
+
+    /**
+     * 특정 사용자의 피드 목록 조회
+     * 
+     * @param userId 사용자 ID
+     * @param pageable 페이징 및 정렬 정보
+     * @param userDetails 로그인한 사용자 정보 (선택적)
+     * @return 특정 사용자의 피드 목록 페이지
+     */
+    public Page<FeedListResponseDto> getUserFeeds(Long userId, Pageable pageable, UserDetails userDetails) {
+        log.info("사용자 피드 목록 조회 - userId: {}, page: {}, size: {}, userDetails: {}", 
+                userId, pageable.getPageNumber(), pageable.getPageSize(), userDetails != null ? "있음" : "없음");
+        
+        Page<Feed> feedPage = feedRepository.findByUserId(userId, pageable);
+        Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
+        
+        // 사용자별 좋아요 상태 설정
+        responsePage = responsePage.map(dto -> {
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            return FeedListResponseDto.builder()
+                    .feedId(dto.getFeedId())
+                    .title(dto.getTitle())
+                    .content(dto.getContent())
+                    .feedType(dto.getFeedType())
+                    .instagramId(dto.getInstagramId())
+                    .createdAt(dto.getCreatedAt())
+                    .likeCount(dto.getLikeCount())
+                    .commentCount(dto.getCommentCount())
+                    .participantVoteCount(dto.getParticipantVoteCount())
+                    .userId(dto.getUserId())
+                    .userNickname(dto.getUserNickname())
+                    .userProfileImg(dto.getUserProfileImg())
+                    .userLevel(dto.getUserLevel())
+                    .orderItemId(dto.getOrderItemId())
+                    .productName(dto.getProductName())
+                    .productSize(dto.getProductSize())
+                    .eventId(dto.getEventId())
+                    .eventTitle(dto.getEventTitle())
+                    .hashtags(dto.getHashtags())
+                    .imageUrls(dto.getImageUrls())
+                    .isLiked(isLiked)
+                    .isVoted(dto.getIsVoted())
+                    .build();
+        });
+        
+        log.info("사용자 피드 목록 조회 완료 - userId: {}, 총 {}개, 현재 페이지 {}개", 
+                userId, responsePage.getTotalElements(), responsePage.getNumberOfElements());
+        
+        return responsePage;
+    }
+
+    /**
+     * 특정 사용자의 특정 타입 피드 목록 조회
+     * 
+     * @param userId 사용자 ID
+     * @param feedType 피드 타입
+     * @param pageable 페이징 및 정렬 정보
+     * @param userDetails 로그인한 사용자 정보 (선택적)
+     * @return 특정 사용자의 특정 타입 피드 목록 페이지
+     */
+    public Page<FeedListResponseDto> getUserFeedsByType(Long userId, FeedType feedType, Pageable pageable, UserDetails userDetails) {
+        log.info("사용자 피드 타입별 조회 - userId: {}, feedType: {}, page: {}, size: {}, userDetails: {}", 
+                userId, feedType, pageable.getPageNumber(), pageable.getPageSize(), userDetails != null ? "있음" : "없음");
+        
+        Page<Feed> feedPage = feedRepository.findByUserIdAndFeedType(userId, feedType.name(), pageable);
+        Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
+        
+        // 사용자별 좋아요 상태 설정
+        responsePage = responsePage.map(dto -> {
+            boolean isLiked = userDetails != null ? 
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            return FeedListResponseDto.builder()
+                    .feedId(dto.getFeedId())
+                    .title(dto.getTitle())
+                    .content(dto.getContent())
+                    .feedType(dto.getFeedType())
+                    .instagramId(dto.getInstagramId())
+                    .createdAt(dto.getCreatedAt())
+                    .likeCount(dto.getLikeCount())
+                    .commentCount(dto.getCommentCount())
+                    .participantVoteCount(dto.getParticipantVoteCount())
+                    .userId(dto.getUserId())
+                    .userNickname(dto.getUserNickname())
+                    .userProfileImg(dto.getUserProfileImg())
+                    .userLevel(dto.getUserLevel())
+                    .orderItemId(dto.getOrderItemId())
+                    .productName(dto.getProductName())
+                    .productSize(dto.getProductSize())
+                    .eventId(dto.getEventId())
+                    .eventTitle(dto.getEventTitle())
+                    .hashtags(dto.getHashtags())
+                    .imageUrls(dto.getImageUrls())
+                    .isLiked(isLiked)
+                    .isVoted(dto.getIsVoted())
+                    .build();
+        });
+        
+        log.info("사용자 피드 타입별 조회 완료 - userId: {}, feedType: {}, 총 {}개, 현재 페이지 {}개", 
+                userId, feedType, responsePage.getTotalElements(), responsePage.getNumberOfElements());
+        
+        return responsePage;
+    }
     
 } 

@@ -235,4 +235,122 @@ class FeedReadServiceTest {
 
         verify(feedRepository, times(1)).findAll(customPageable);
     }
+
+    // ===== 새로운 사용자 피드 API 테스트 =====
+
+    @Test
+    @DisplayName("사용자 피드 목록 조회 - 성공")
+    void getUserFeeds_Success() {
+        // given
+        Long userId = 1L;
+        List<Feed> feeds = List.of(testFeed);
+        Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
+        
+        when(feedRepository.findByUserId(userId, testPageable)).thenReturn(feedPage);
+        when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getUserFeeds(userId, testPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 피드");
+
+        verify(feedRepository, times(1)).findByUserId(userId, testPageable);
+        verify(feedMapper, times(1)).toFeedListResponseDto(testFeed);
+    }
+
+    @Test
+    @DisplayName("사용자 타입별 피드 목록 조회 - 성공")
+    void getUserFeedsByType_Success() {
+        // given
+        Long userId = 1L;
+        List<Feed> feeds = List.of(testFeed);
+        Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
+        
+        when(feedRepository.findByUserIdAndFeedType(userId, FeedType.EVENT.name(), testPageable)).thenReturn(feedPage);
+        when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getUserFeedsByType(userId, FeedType.EVENT, testPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 피드");
+
+        verify(feedRepository, times(1)).findByUserIdAndFeedType(userId, FeedType.EVENT.name(), testPageable);
+        verify(feedMapper, times(1)).toFeedListResponseDto(testFeed);
+    }
+
+    @Test
+    @DisplayName("사용자 피드 목록 조회 - 빈 결과")
+    void getUserFeeds_EmptyResult_Success() {
+        // given
+        Long userId = 1L;
+        Page<Feed> emptyPage = new PageImpl<>(List.of(), testPageable, 0);
+        
+        when(feedRepository.findByUserId(userId, testPageable)).thenReturn(emptyPage);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getUserFeeds(userId, testPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
+
+        verify(feedRepository, times(1)).findByUserId(userId, testPageable);
+        verify(feedMapper, never()).toFeedListResponseDto(any(Feed.class));
+    }
+
+    @Test
+    @DisplayName("사용자 타입별 피드 목록 조회 - 빈 결과")
+    void getUserFeedsByType_EmptyResult_Success() {
+        // given
+        Long userId = 1L;
+        Page<Feed> emptyPage = new PageImpl<>(List.of(), testPageable, 0);
+        
+        when(feedRepository.findByUserIdAndFeedType(userId, FeedType.DAILY.name(), testPageable)).thenReturn(emptyPage);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getUserFeedsByType(userId, FeedType.DAILY, testPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0);
+
+        verify(feedRepository, times(1)).findByUserIdAndFeedType(userId, FeedType.DAILY.name(), testPageable);
+        verify(feedMapper, never()).toFeedListResponseDto(any(Feed.class));
+    }
+
+    @Test
+    @DisplayName("사용자 피드 목록 조회 - 페이징 정보 확인")
+    void getUserFeeds_PagingInfo_Success() {
+        // given
+        Long userId = 1L;
+        Pageable customPageable = PageRequest.of(1, 5);
+        List<Feed> feeds = List.of(testFeed);
+        Page<Feed> feedPage = new PageImpl<>(feeds, customPageable, 1);
+        
+        when(feedRepository.findByUserId(userId, customPageable)).thenReturn(feedPage);
+        when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
+
+        // when
+        Page<FeedListResponseDto> result = feedReadService.getUserFeeds(userId, customPageable, null);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getNumber()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(5);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+
+        verify(feedRepository, times(1)).findByUserId(userId, customPageable);
+    }
 } 
