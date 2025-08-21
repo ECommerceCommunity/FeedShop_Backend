@@ -157,10 +157,6 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         switch (sort.toLowerCase()) {
             case "popular":
                 return feed.likeCount.desc();
-            case "comments":
-                return feed.commentCount.desc();
-            case "votes":
-                return feed.participantVoteCount.desc();
             case "latest":
             default:
                 return feed.createdAt.desc();

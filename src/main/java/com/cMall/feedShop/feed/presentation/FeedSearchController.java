@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Arrays;
 
 /**
  * 피드 검색 REST API 컨트롤러
@@ -62,12 +63,39 @@ public class FeedSearchController {
             @RequestParam(required = false) String eventTitle,
             @RequestParam(required = false) List<String> hashtags,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "6") int size,
             @RequestParam(defaultValue = "latest") String sort,
             @AuthenticationPrincipal UserDetails userDetails) {
         
         log.info("피드 검색 요청 - q: {}, authorId: {}, feedType: {}, page: {}, size: {}, sort: {}", 
                 q, authorId, feedType, page, size, sort);
+        
+        // 검색어 길이 제한
+        if (q != null && q.length() > 100) {
+            log.warn("검색어 길이 초과: {}", q.length());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("검색어는 100자를 초과할 수 없습니다."));
+        }
+        
+        // 페이지 크기 제한
+        if (size > 20) {
+            log.warn("페이지 크기 초과: {}", size);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("페이지 크기는 20을 초과할 수 없습니다."));
+        }
+        
+        // 페이지 번호 검증
+        if (page < 0) {
+            log.warn("잘못된 페이지 번호: {}", page);
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("페이지 번호는 0 이상이어야 합니다."));
+        }
+        
+        // 정렬 옵션 검증 (프론트엔드에서 사용하는 옵션만)
+        if (!Arrays.asList("latest", "popular").contains(sort)) {
+            log.warn("잘못된 정렬 옵션: {}", sort);
+            sort = "latest"; // 기본값으로 설정
+        }
         
         // FeedType 변환
         FeedType type = null;
