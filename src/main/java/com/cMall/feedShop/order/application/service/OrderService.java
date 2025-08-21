@@ -19,6 +19,8 @@ import com.cMall.feedShop.product.domain.model.ProductOption;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.model.UserActivity;
+import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.application.service.BadgeService;
 import com.cMall.feedShop.user.application.service.UserLevelService;
@@ -47,8 +49,8 @@ public class OrderService {
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
     private final OrderCommonService orderCommonService;
-    private final BadgeService badgeService;
     private final UserLevelService userLevelService;
+    private final UserActivityRepository userActivityRepository;
 
     /**
      * 주문 생성
@@ -86,9 +88,9 @@ public class OrderService {
         cartItemRepository.deleteAll(selectedCartItems);
 
         // 9. 뱃지 자동 수여 체크
-        checkAndAwardBadgesAfterOrder(currentUser.getId());
+        orderCommonService.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
 
-        // 10. 주문 생성 응답 반환
+        // 11. 주문 생성 응답 반환
         return OrderCreateResponse.from(order);
     }
 
@@ -343,37 +345,6 @@ public class OrderService {
             if (item.getOptionId() == null || item.getOptionId() <= 0) {
                 throw new OrderException(ErrorCode.INVALID_OPTION_ID);
             }
-        }
-    }
-
-  /**
-     * 주문 완료 후 뱃지 자동 수여 체크
-     */
-    private void checkAndAwardBadgesAfterOrder(Long userId) {
-        try {
-            // 1. 구매 완료 점수 부여
-            userLevelService.recordActivity(
-                userId, 
-                ActivityType.PURCHASE_COMPLETION, 
-                "구매 완료", 
-                null, 
-                "ORDER"
-            );
-            
-            // 2. 사용자의 총 주문 수 조회
-            Long totalOrders = orderRepository.countByUserIdAndOrderStatus(userId, OrderStatus.DELIVERED);
-            
-            // 3. 사용자의 총 주문 금액 조회 (DELIVERED 상태만)
-            Long totalAmount = orderRepository.findTotalOrderAmountByUserId(userId);
-            if (totalAmount == null) {
-                totalAmount = 0L;
-            }
-            
-            // 4. 뱃지 자동 수여 체크 (뱃지 획득 시 보너스 점수도 자동 부여됨)
-            badgeService.checkAndAwardPurchaseBadges(userId, totalOrders, totalAmount);
-        } catch (Exception e) {
-            // 뱃지 수여 실패가 주문 프로세스에 영향을 주지 않도록 예외 처리
-            log.error("뱃지 자동 수여 중 오류 발생 - userId: {}, error: {}", userId, e.getMessage());
         }
     }
 
