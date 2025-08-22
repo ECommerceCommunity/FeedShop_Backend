@@ -19,6 +19,7 @@ import com.cMall.feedShop.review.domain.repository.ReviewRepository;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
+import com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService;
 import com.cMall.feedShop.store.domain.model.Store;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -57,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
@@ -80,6 +82,9 @@ class ReviewServiceTest {
 
     @Mock
     private ReviewDuplicationValidator duplicationValidator;
+
+    @Mock
+    private ReviewPurchaseVerificationService purchaseVerificationService;
 
     @Mock
     private ReviewImageService reviewImageService;
@@ -161,6 +166,9 @@ class ReviewServiceTest {
                 .build();
 
         ReflectionTestUtils.setField(reviewService, "gcpStorageService", gcpStorageService);
+        
+        // 구매이력검증 기본 Mock 설정 (모든 테스트에서 검증 통과하도록)
+        lenient().doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
     }
 
     @AfterEach

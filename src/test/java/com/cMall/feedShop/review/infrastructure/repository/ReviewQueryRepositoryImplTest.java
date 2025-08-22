@@ -112,6 +112,7 @@ class ReviewQueryRepositoryImplTest {
 
     private void setupLenientStubbing() {
         lenient().when(queryFactory.selectFrom(review)).thenReturn(reviewQuery);
+        lenient().when(reviewQuery.where(any(Predicate.class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.where(any(Predicate[].class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.orderBy(any(OrderSpecifier.class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.orderBy(any(OrderSpecifier[].class))).thenReturn(reviewQuery);
@@ -121,12 +122,12 @@ class ReviewQueryRepositoryImplTest {
 
         lenient().when(queryFactory.select(review.count())).thenReturn(countQuery);
         lenient().when(countQuery.from(review)).thenReturn(countQuery);
+        lenient().when(countQuery.where(any(Predicate.class))).thenReturn(countQuery);
         lenient().when(countQuery.where(any(Predicate[].class))).thenReturn(countQuery);
-        // 🔥 이 라인을 삭제! 🔥
-        // lenient().when(countQuery.fetchOne()).thenReturn(1L);
 
         lenient().when(queryFactory.select(review.rating.avg())).thenReturn(avgQuery);
         lenient().when(avgQuery.from(review)).thenReturn(avgQuery);
+        lenient().when(avgQuery.where(any(Predicate.class))).thenReturn(avgQuery);
         lenient().when(avgQuery.where(any(Predicate[].class))).thenReturn(avgQuery);
         lenient().when(avgQuery.fetchOne()).thenReturn(4.5);
 
@@ -134,6 +135,7 @@ class ReviewQueryRepositoryImplTest {
         lenient().when(queryFactory.select(review.sizeFit, review.count())).thenReturn(tupleQuery);
         lenient().when(queryFactory.select(review.stability, review.count())).thenReturn(tupleQuery);
         lenient().when(tupleQuery.from(review)).thenReturn(tupleQuery);
+        lenient().when(tupleQuery.where(any(Predicate.class))).thenReturn(tupleQuery);
         lenient().when(tupleQuery.where(any(Predicate[].class))).thenReturn(tupleQuery);
         // 🔥 핵심 수정: groupBy 체인 연결! 🔥
         lenient().when(tupleQuery.groupBy(any(Expression.class))).thenReturn(tupleQuery);

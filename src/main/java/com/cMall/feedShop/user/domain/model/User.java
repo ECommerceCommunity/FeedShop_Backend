@@ -117,6 +117,11 @@ public class User extends BaseTimeEntity implements UserDetails {
     }
 
     @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 사용자의 역할을 Spring Security의 권한(GrantedAuthority)으로 변환하여 반환합니다.
         // UserRole.USER -> new SimpleGrantedAuthority("USER")
