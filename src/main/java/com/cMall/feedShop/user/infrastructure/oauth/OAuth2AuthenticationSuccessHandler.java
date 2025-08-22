@@ -27,7 +27,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Value("${app.oauth2.authorized-redirect-uri:http://localhost:3000/auth/callback}")
+    @Value("${app.oauth2.authorized-redirect-uri}")
     private String redirectUri;
 
     @Override
@@ -43,13 +43,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         
         // JWT 토큰 생성
         String token = jwtTokenProvider.generateAccessToken(oAuth2User.getEmail(), "ROLE_USER");
-        
-        // 프론트엔드로 리다이렉트 (토큰과 사용자 정보 포함)
+
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-                .queryParam("token", token)
-                .queryParam("email", URLEncoder.encode(oAuth2User.getEmail(), StandardCharsets.UTF_8))
-                .queryParam("name", URLEncoder.encode(oAuth2User.getName() != null ? oAuth2User.getName() : "", StandardCharsets.UTF_8))
-                .queryParam("provider", oAuth2User.getProvider())
+                .fragment("token=" + token +
+                        "&email=" + URLEncoder.encode(oAuth2User.getEmail(), StandardCharsets.UTF_8) +
+                        "&name=" + URLEncoder.encode(oAuth2User.getName() != null ? oAuth2User.getName() : "", StandardCharsets.UTF_8) +
+                        "&provider=" + oAuth2User.getProvider())
                 .build().toUriString();
 
         log.info("OAuth2 로그인 성공 - 리다이렉트: {}", targetUrl);
