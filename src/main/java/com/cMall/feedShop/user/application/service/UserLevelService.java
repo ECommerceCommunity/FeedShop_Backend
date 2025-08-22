@@ -1,5 +1,6 @@
 package com.cMall.feedShop.user.application.service;
 
+import com.cMall.feedShop.user.application.dto.UserStatsResponse;
 import com.cMall.feedShop.user.domain.model.*;
 import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
 import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
@@ -80,7 +81,19 @@ public class UserLevelService {
             // 점수 시스템 오류가 다른 비즈니스 로직에 영향주지 않도록 예외를 던지지 않음
         }
     }
-    
+
+    public UserStatsResponse getUserStatsResponse(Long userId) {
+        UserStats userStats = getUserStats(userId);
+        Long userRank = getUserRank(userId);
+
+        java.util.List<UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
+
+        Integer pointsToNextLevel = userStats.getPointsToNextLevel(allLevels);
+        Double levelProgress = userStats.getLevelProgress(allLevels);
+
+        return UserStatsResponse.from(userStats, userRank, pointsToNextLevel, levelProgress);
+    }
+
     /**
      * 레벨업 처리
      */
