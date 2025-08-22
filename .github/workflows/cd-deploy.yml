@@ -55,13 +55,13 @@ jobs:
 
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
-
+        
       - name: Build Docker Image
         run: |
           docker build -t $IMAGE_NAME:$GITHUB_SHA \
                        -t $IMAGE_NAME:latest \
                        .
-
+                       
       - name: Push Docker Image to GCR
         run: |
           docker push $IMAGE_NAME:$GITHUB_SHA
@@ -91,8 +91,18 @@ jobs:
             --timeout 900s \
             --cpu-throttling \
             --execution-environment gen2 \
-            --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},DB_USERNAME=${{ secrets.DB_USERNAME }},MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }},MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }},GCS_ID=${{ secrets.GCS_ID }},GCS_BUCKET=${{ secrets.GCS_BUCKET }},CDN_BASE_URL=${{ secrets.CDN_BASE_URL }},RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
-            --update-secrets="DB_PASSWORD=DB_PASSWORD:latest,JWT_SECRET=JWT_SECRET:latest,MAILGUN_API_KEY=MAILGUN_API_KEY:latest"
+            --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
+            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
+            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
+            --set-env-vars="DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
+            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+            --set-env-vars="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" \
+            --set-env-vars="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}" \
+            --set-env-vars="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}" \
+            --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
+            --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
+            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
+            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}"
     
       - name: Check deployment status
         if: failure()
