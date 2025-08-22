@@ -1,9 +1,13 @@
 package com.cMall.feedShop.user.presentation;
 
+import com.cMall.feedShop.common.aop.ApiResponseFormat;
+import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.user.application.dto.UserActivityResponse;
 import com.cMall.feedShop.user.application.dto.UserRankingResponse;
 import com.cMall.feedShop.user.application.dto.UserStatsResponse;
 import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.ActivityType;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserActivity;
@@ -15,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +28,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.cMall.feedShop.common.exception.ErrorCode.FORBIDDEN;
 
 @RestController
 @RequestMapping("/api/users/level")
@@ -33,20 +40,27 @@ public class UserLevelController {
     private final UserStatsRepository userStatsRepository;
     private final UserActivityRepository userActivityRepository;
     private final UserLevelRepository userLevelRepository;
-    
+
     /**
      * 현재 사용자의 레벨 및 점수 정보 조회
      */
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserStatsResponse> getMyStats(@AuthenticationPrincipal UserDetails userDetails) {
+    @ApiResponseFormat
+    public ApiResponse<UserStatsResponse> getMyStats(@AuthenticationPrincipal UserDetails userDetails) {
+        if (!(userDetails instanceof User)) {
+            throw new UserException(FORBIDDEN, "인증된 사용자 정보를 찾을 수 없습니다.");
+        }
+
+        // 1. userDetails를 안전하게 User 객체로 캐스팅
         User user = (User) userDetails;
-        UserStats userStats = userLevelService.getUserStats(user.getId());
-        Long userRank = userLevelService.getUserRank(user.getId());
-        
-        java.util.List<com.cMall.feedShop.user.domain.model.UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
-        UserStatsResponse response = UserStatsResponse.from(userStats, userRank, allLevels);
-        return ResponseEntity.ok(response);
+
+        // 2. userId를 사용해 서비스 계층의 통합된 메서드를 호출
+        // 이 메서드가 모든 데이터 조회 및 계산을 담당합니다.
+        UserStatsResponse response = userLevelService.getUserStatsResponse(user.getId());
+
+        // 3. 서비스로부터 받은 DTO를 응답으로 반환
+        return ApiResponse.success(response);
     }
     
     /**
@@ -71,13 +85,9 @@ public class UserLevelController {
      * 특정 사용자의 공개 레벨 정보 조회
      */
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserStatsResponse> getUserStats(@PathVariable Long userId) {
-        UserStats userStats = userLevelService.getUserStats(userId);
-        Long userRank = userLevelService.getUserRank(userId);
-        
-        java.util.List<com.cMall.feedShop.user.domain.model.UserLevel> allLevels = userLevelRepository.findAllOrderByMinPointsRequired();
-        UserStatsResponse response = UserStatsResponse.from(userStats, userRank, allLevels);
-        return ResponseEntity.ok(response);
+    public ApiResponse<UserStatsResponse> getUserStats(@PathVariable Long userId) {
+        UserStatsResponse response = userLevelService.getUserStatsResponse(userId);
+        return ApiResponse.success(response);
     }
     
     /**
