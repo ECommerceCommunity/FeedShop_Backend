@@ -36,7 +36,17 @@ jobs:
         run: ./gradlew clean
 
       - name: Run Tests
-        run: ./gradlew test --info --continue
+        run: |
+          echo "=== Starting Tests ==="
+          ./gradlew test --info --continue || {
+            echo "=== Tests Failed - Showing Summary ==="
+            echo "Total tests: $(find build/test-results/test/ -name "*.xml" | wc -l)"
+            echo "Failed tests: $(find build/test-results/test/ -name "*.xml" -exec grep -l "failure\|error" {} \; | wc -l)"
+            echo ""
+            echo "=== Failed Test Files ==="
+            find build/test-results/test/ -name "*.xml" -exec grep -l "failure\|error" {} \;
+            exit 1
+          }
         env:
           SPRING_PROFILES_ACTIVE: test
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
@@ -62,8 +72,18 @@ jobs:
             echo "Test XML files found:"
             ls -la build/test-results/test/
             echo ""
-            echo "=== Failed Tests ==="
-            find build/test-results/test/ -name "*.xml" -exec grep -l "failure\|error" {} \;
+            echo "=== Failed Tests Details ==="
+            for file in build/test-results/test/TEST-*.xml; do
+              if grep -q "failure\|error" "$file"; then
+                echo "FAILED: $file"
+                echo "--- Test Class ---"
+                grep -o 'classname="[^"]*"' "$file" | head -1
+                echo "--- Failed Test Method ---"
+                grep -A 5 -B 5 "failure\|error" "$file" | head -20
+                echo "--- End of Failed Test ---"
+                echo ""
+              fi
+            done
           else
             echo "No test results found"
           fi
