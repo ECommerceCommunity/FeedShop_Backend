@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -95,7 +96,7 @@ public class User extends BaseTimeEntity implements UserDetails {
     // 소셜 로그인용 생성자
     public User(String loginId, String email, UserRole role) {
         this.loginId = loginId;
-        this.password = "SOCIAL_LOGIN"; // 소셜 로그인은 비밀번호가 없으므로 임시값
+        this.password = UUID.randomUUID().toString(); // 소셜 로그인은 비밀번호가 없으므로 임시값
         this.email = email;
         this.role = role;
         this.status = UserStatus.ACTIVE; // 소셜 로그인은 즉시 활성화
