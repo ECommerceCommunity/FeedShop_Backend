@@ -211,14 +211,6 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
                 .fetchOne();
     }
 
-    @Override
-    public Long countByUserId(Long userId) {
-        return queryFactory
-                .select(review.count())
-                .from(review)
-                .where(review.user.id.eq(userId))
-                .fetchOne();
-    }
 
     // ========== 공통 메서드들 ==========
 
