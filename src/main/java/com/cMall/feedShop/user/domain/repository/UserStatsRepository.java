@@ -21,7 +21,7 @@ public interface UserStatsRepository extends JpaRepository<UserStats, Long> {
     Optional<UserStats> findByUserId(Long userId);
     
     // 특정 레벨 사용자들 조회
-    List<UserStats> findByCurrentLevel(UserLevel level);
+    List<UserStats> findByCurrentLevel_LevelId(Integer currentLevelId);
     
     // 점수 순위 조회 (상위 N명)
     @Query("SELECT us FROM UserStats us ORDER BY us.totalPoints DESC")
@@ -32,7 +32,7 @@ public interface UserStatsRepository extends JpaRepository<UserStats, Long> {
     Long getUserRankByPoints(@Param("points") Integer points);
     
     // 레벨별 사용자 수 통계
-    @Query("SELECT us.currentLevel, COUNT(us) FROM UserStats us GROUP BY us.currentLevel")
+    @Query("SELECT us.currentLevel.levelId, COUNT(us) FROM UserStats us GROUP BY us.currentLevel.levelId")
     List<Object[]> getLevelDistribution();
     
     // 평균 점수 계산
