@@ -32,8 +32,11 @@ jobs:
       # 기존에 분리되어 있던 'Clean Gradle Build Cache', 'Clean build directory', 'Run Tests', 'Build Project (without tests)' 스텝들을
       # 하나의 'Clean and Build Project' 스텝으로 통합합니다.
       # 이렇게 하면 Q클래스 생성 -> 컴파일 -> 테스트 -> 빌드 과정이 모두 한 번에 순서대로 처리됩니다.
-      - name: Clean and Build Project (including Tests)
-        run: ./gradlew clean build
+      - name: Clean Project
+        run: ./gradlew clean
+
+      - name: Run Tests
+        run: ./gradlew test --info
         env:
           SPRING_PROFILES_ACTIVE: test
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
@@ -46,6 +49,9 @@ jobs:
           MAILGUN_DOMAIN: test.mailgun.org
           MAILGUN_EMAIL: test@mailgun.org
           RECAPTCHA_SECRET_KEY: test-recaptcha-secret-key
+
+      - name: Build Project
+        run: ./gradlew build -x test
 
       - name: Generate Test Coverage Report (if needed)
         run: ./gradlew jacocoTestReport
@@ -63,7 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: build/test-results/test/*.xml
+          path: build/test-results/test/
 
       - name: Upload Test Coverage
         if: always()
