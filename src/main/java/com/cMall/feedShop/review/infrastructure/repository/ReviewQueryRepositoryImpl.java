@@ -57,11 +57,12 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
     @Override
     public Long countActiveReviewsByProductId(Long productId) {
         BooleanBuilder conditions = createActiveReviewConditions(productId);
-        return queryFactory
+        Long count = queryFactory
                 .select(review.count())
                 .from(review)
                 .where(conditions)
                 .fetchOne();
+        return count != null ? count : 0L;
     }
 
     @Override
@@ -249,20 +250,24 @@ public class ReviewQueryRepositoryImpl implements ReviewQueryRepository {
      */
     private Page<Review> executePagedQuery(BooleanBuilder conditions, Pageable pageable, OrderSpecifier<?>... orderBy) {
         // 데이터 조회
+        OrderSpecifier<?>[] orderSpecifiers = orderBy.length > 0 ? orderBy : new OrderSpecifier[]{review.createdAt.desc()};
+        
         List<Review> reviews = queryFactory
                 .selectFrom(review)
                 .where(conditions)
-                .orderBy(orderBy.length > 0 ? orderBy : new OrderSpecifier[]{review.createdAt.desc()})
+                .orderBy(orderSpecifiers)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        // 전체 개수 조회 (count 쿼리는 0을 반환하므로 null 체크 불필요)
-        long total = queryFactory
+        // 전체 개수 조회
+        Long totalCount = queryFactory
                 .select(review.count())
                 .from(review)
                 .where(conditions)
                 .fetchOne();
+        
+        long total = totalCount != null ? totalCount : 0L;
 
         return new PageImpl<>(reviews, pageable, total);
     }
