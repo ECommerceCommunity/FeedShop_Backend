@@ -198,6 +198,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     @DisplayName("JWT 토큰 생성 실패 - 예외 처리")
     void onAuthenticationSuccess_JwtTokenGenerationFails_ThrowsException() {
         // given
+        when(authentication.getPrincipal()).thenReturn(customOAuth2User);
         when(jwtTokenProvider.generateAccessToken(anyString(), anyString()))
                 .thenThrow(new RuntimeException("JWT 토큰 생성 실패"));
 
