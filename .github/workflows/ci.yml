@@ -36,7 +36,7 @@ jobs:
         run: ./gradlew clean
 
       - name: Run Tests
-        run: ./gradlew test --info
+        run: ./gradlew test --info --continue
         env:
           SPRING_PROFILES_ACTIVE: test
           APP_VERIFICATION_URL: ${{ secrets.APP_VERIFICATION_URL }}
@@ -49,9 +49,24 @@ jobs:
           MAILGUN_DOMAIN: test.mailgun.org
           MAILGUN_EMAIL: test@mailgun.org
           RECAPTCHA_SECRET_KEY: test-recaptcha-secret-key
+          TZ: UTC
 
       - name: Build Project
         run: ./gradlew build -x test
+
+      - name: Show Test Results
+        if: always()
+        run: |
+          echo "=== Test Results Summary ==="
+          if [ -f "build/test-results/test/TEST-*.xml" ]; then
+            echo "Test XML files found:"
+            ls -la build/test-results/test/
+            echo ""
+            echo "=== Failed Tests ==="
+            find build/test-results/test/ -name "*.xml" -exec grep -l "failure\|error" {} \;
+          else
+            echo "No test results found"
+          fi
 
       - name: Generate Test Coverage Report (if needed)
         run: ./gradlew jacocoTestReport
