@@ -61,14 +61,15 @@ class FeedShopApplicationTests {
         String token = "test-token";
         String action = "test-action";
 
-        // Mock 설정
-        when(recaptchaVerificationService.verifyRecaptcha(token, action)).thenReturn(true);
+        // Mock 설정 - void 메서드이므로 doNothing 사용
+        doNothing().when(recaptchaVerificationService).verifyRecaptcha(token, action);
 
-        // 테스트 실행
-        boolean result = recaptchaVerificationService.verifyRecaptcha(token, action);
+        // 테스트 실행 - 예외가 발생하지 않으면 성공
+        assertThatCode(() -> {
+            recaptchaVerificationService.verifyRecaptcha(token, action);
+        }).doesNotThrowAnyException();
 
         // 검증
-        assertThat(result).isTrue();
         verify(recaptchaVerificationService, times(1)).verifyRecaptcha(token, action);
     }
 
