@@ -72,13 +72,13 @@ jobs:
       - name: Build Project
         run: ./gradlew build -x test
 
-       - name: Publish Test Report
-         uses: dorny/test-reporter@v1
-         if: success() || failure()
-          with:
-            name: JUnit Test Results
-            path: 'build/test-results/test/TEST-*.xml'
-            reporter: java-junit
+      - name: Publish Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: JUnit Test Results
+          path: 'build/test-results/test/TEST-*.xml'
+          reporter: java-junit
 
       - name: Generate Test Coverage Report (if needed)
         run: ./gradlew jacocoTestReport
