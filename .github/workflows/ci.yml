@@ -72,32 +72,13 @@ jobs:
       - name: Build Project
         run: ./gradlew build -x test
 
-      - name: Show Test Results
-        if: always()
-        run: |
-          echo "=== Test Results Summary ==="
-          if [ -d "build/test-results/test" ]; then
-            echo "Test XML files found:"
-            ls -la build/test-results/test/
-            echo ""
-            echo "=== Failed Tests Details ==="
-            failed_count=0
-            for file in build/test-results/test/TEST-*.xml; do
-              if [ -f "$file" ] && grep -q "<failure\|<error" "$file"; then
-                failed_count=$((failed_count + 1))
-                echo "FAILED #$failed_count: $(basename "$file")"
-                echo "  Class: $(grep -o 'classname="[^"]*"' "$file" | head -1 | sed 's/classname="//;s/"//')"
-                echo "  Failed methods:"
-                grep -A 10 "<failure\|<error" "$file" | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//' | head -3
-                echo "  Error message:"
-                grep -A 3 "<failure\|<error" "$file" | grep -o '<message>[^<]*</message>' | sed 's/<message>//;s/<\/message>//' | head -2
-                echo ""
-              fi
-            done
-            echo "Total failed test files: $failed_count"
-          else
-            echo "No test results directory found"
-          fi
+       - name: Publish Test Report
+         uses: dorny/test-reporter@v1
+         if: success() || failure()
+          with:
+            name: JUnit Test Results
+            path: 'build/test-results/test/TEST-*.xml'
+            reporter: java-junit
 
       - name: Generate Test Coverage Report (if needed)
         run: ./gradlew jacocoTestReport
