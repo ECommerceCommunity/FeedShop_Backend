@@ -66,15 +66,15 @@ jobs:
         run: |
           docker push $IMAGE_NAME:$GITHUB_SHA
           docker push $IMAGE_NAME:latest
-
+          
       - name: Clear existing environment variables and secrets
         run: |
           echo "Clearing existing environment variables and secrets..."
           gcloud run services update $SERVICE_NAME \
             --region $REGION \
             --clear-env-vars \
-            --clear-secrets || echo "Service might not exist yet, continuing..."    
-          
+            --clear-secrets || echo "Service might not exist yet, continuing..."
+            
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE_NAME \
@@ -91,7 +91,7 @@ jobs:
             --timeout 900s \
             --cpu-throttling \
             --execution-environment gen2 \
-            --set-env-vars="PORT=8080,SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},DB_USERNAME=${{ secrets.DB_USERNAME }},MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }},MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }},GCS_ID=${{ secrets.GCS_ID }},GCS_BUCKET=${{ secrets.GCS_BUCKET }},CDN_BASE_URL=${{ secrets.CDN_BASE_URL }},RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
+            --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},DB_USERNAME=${{ secrets.DB_USERNAME }},MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }},MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }},GCS_ID=${{ secrets.GCS_ID }},GCS_BUCKET=${{ secrets.GCS_BUCKET }},CDN_BASE_URL=${{ secrets.CDN_BASE_URL }},RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
             --update-secrets="DB_PASSWORD=DB_PASSWORD:latest,JWT_SECRET=JWT_SECRET:latest,MAILGUN_API_KEY=MAILGUN_API_KEY:latest"
     
       - name: Check deployment status
