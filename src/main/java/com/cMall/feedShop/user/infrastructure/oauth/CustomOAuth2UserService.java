@@ -29,90 +29,100 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserSocialProviderRepository socialProviderRepository;
 
     @Override
-    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        // 부모 클래스의 메서드를 호출하여 OAuth2User 객체를 가져옴
-        OAuth2User oAuth2User = super.loadUser(userRequest);
-
+        OAuth2User oAuth2User = super.loadUser(userRequest); // Network call is now outside the transaction
         try {
-            return processOAuth2User(userRequest, oAuth2User);
+            // Call the new transactional method
+            return processAndSaveOAuth2User(userRequest, oAuth2User);
         } catch (Exception e) {
             log.error("OAuth2 사용자 처리 중 오류 발생", e);
             throw new OAuth2AuthenticationException("OAuth2 사용자 처리 실패");
         }
     }
 
-    private OAuth2User processOAuth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
-        // 제공자 정보 추출
+    @Transactional
+    public OAuth2User processAndSaveOAuth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
+        // 1. Get user info (same as before)
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        
-        // 제공자별 사용자 정보 추출
-        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(
-            registrationId, 
-            oAuth2User.getAttributes()
-        );
+        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
         String email = oAuth2UserInfo.getEmail();
         if (email == null || email.isEmpty()) {
             throw new OAuth2AuthenticationException("소셜 로그인 제공자에서 이메일을 가져올 수 없습니다.");
         }
 
-        // 소셜 로그인 제공자 정보로 사용자 찾기
+        // 2. Find or create user (move your existing logic here)
         UserSocialProvider socialProvider = socialProviderRepository
-            .findByProviderAndProviderSocialUserId(registrationId, oAuth2UserInfo.getId())
-            .orElse(null);
+                .findByProviderAndProviderSocialUserId(registrationId, oAuth2UserInfo.getId())
+                .orElse(null);
 
         User user;
         if (socialProvider != null) {
-            // 기존 소셜 로그인 사용자
-            user = socialProvider.getUser();
-            // 소셜 이메일이 변경된 경우 업데이트
-            if (!oAuth2UserInfo.getEmail().equals(socialProvider.getSocialEmail())) {
-                socialProvider.updateSocialInfo(oAuth2UserInfo.getEmail());
-                socialProviderRepository.save(socialProvider);
-            }
+            user = handleExistingSocialUser(socialProvider, oAuth2UserInfo);
         } else {
-            // 새로운 소셜 로그인 - 이메일로 기존 사용자 확인
-            user = userRepository.findByEmail(oAuth2UserInfo.getEmail())
-                .orElseGet(() -> createNewUser(oAuth2UserInfo));
-            
-            // 새로운 소셜 로그인 제공자 정보 추가
-            UserSocialProvider newSocialProvider = new UserSocialProvider(
-                user, 
-                registrationId, 
-                oAuth2UserInfo.getId(), 
-                oAuth2UserInfo.getEmail()
-            );
-            socialProviderRepository.save(newSocialProvider);
-            user.addSocialProvider(newSocialProvider);
+            user = handleNewSocialUser(oAuth2UserInfo, registrationId);
         }
 
+        // 3. Return a CustomOAuth2User object (same as before)
         return new CustomOAuth2User(
-            oAuth2User,
-            registrationId,
-            oAuth2UserInfo.getId(),
-            oAuth2UserInfo.getEmail(),
-            oAuth2UserInfo.getName()
+                oAuth2User,
+                registrationId,
+                oAuth2UserInfo.getId(),
+                oAuth2UserInfo.getEmail(),
+                oAuth2UserInfo.getName()
         );
+    }
+
+    // 기존 소셜 로그인 사용자를 처리하는 메서드
+    private User handleExistingSocialUser(UserSocialProvider socialProvider, OAuth2UserInfo oAuth2UserInfo) {
+        User user = socialProvider.getUser();
+        if (!oAuth2UserInfo.getEmail().equals(socialProvider.getSocialEmail())) {
+            socialProvider.updateSocialInfo(oAuth2UserInfo.getEmail());
+            socialProviderRepository.save(socialProvider);
+        }
+        return user;
+    }
+
+    // 새로운 소셜 로그인 사용자를 처리하는 메서드
+    private User handleNewSocialUser(OAuth2UserInfo oAuth2UserInfo, String registrationId) {
+        // 1. 이메일로 기존 사용자 확인 (없으면 새로 생성)
+        User user = userRepository.findByEmail(oAuth2UserInfo.getEmail())
+                .orElseGet(() -> createNewUser(oAuth2UserInfo));
+
+        // 2. 새로운 소셜 로그인 제공자 정보 추가
+        UserSocialProvider newSocialProvider = new UserSocialProvider(
+                user,
+                registrationId,
+                oAuth2UserInfo.getId(),
+                oAuth2UserInfo.getEmail()
+        );
+        socialProviderRepository.save(newSocialProvider);
+        user.addSocialProvider(newSocialProvider);
+
+        return user;
     }
 
     private User createNewUser(OAuth2UserInfo oAuth2UserInfo) {
         log.info("새로운 소셜 로그인 사용자 생성: email={}", oAuth2UserInfo.getEmail());
-        
-        // 고유한 loginId 생성 (소셜 로그인용)
-        String loginId = "social_" + UUID.randomUUID().toString().substring(0, 8);
-        
-        // loginId 중복 체크
-        while (userRepository.existsByLoginId(loginId)) {
+
+        String loginId = "";
+        int maxAttempts = 10; // 최대 시도 횟수
+
+        for (int i = 0; i < maxAttempts; i++) {
             loginId = "social_" + UUID.randomUUID().toString().substring(0, 8);
+            if (!userRepository.existsByLoginId(loginId)) {
+                break;
+            }
+            if (i == maxAttempts - 1) {
+                throw new IllegalStateException("고유한 로그인 ID를 생성하는 데 실패했습니다.");
+            }
         }
 
         User newUser = new User(
-            loginId,
-            oAuth2UserInfo.getEmail(),
-            UserRole.USER
+                loginId,
+                oAuth2UserInfo.getEmail(),
+                UserRole.USER
         );
-
         return userRepository.save(newUser);
     }
 }
