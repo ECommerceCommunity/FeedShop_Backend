@@ -13,4 +13,8 @@ public class UserLoginResponse {
     private UserRole role;
     private String token;
     private String nickname;
+
+    private boolean requiresMfa; // MFA 2단계 인증 필요 여부
+    private String tempToken; // MFA 인증을 위한 임시 토큰
+    private String email;
 }
