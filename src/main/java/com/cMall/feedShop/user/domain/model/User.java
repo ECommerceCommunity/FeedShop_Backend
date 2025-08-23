@@ -83,16 +83,6 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Column(name = "verification_token_expiry")
     private LocalDateTime verificationTokenExpiry;
 
-    // MFA 관련 필드
-    @Column(name = "mfa_secret")
-    private String mfaSecret;
-
-    @Column(name = "mfa_enabled")
-    private boolean mfaEnabled = false;
-
-    @Column(name = "temp_mfa_secret")
-    private String tempMfaSecret;
-
     @Builder
     public User(String loginId, String password, String email, UserRole role) {
         this.loginId = loginId;
