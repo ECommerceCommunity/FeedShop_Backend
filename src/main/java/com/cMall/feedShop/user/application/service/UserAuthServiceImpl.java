@@ -12,6 +12,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -85,7 +86,15 @@ public class UserAuthServiceImpl implements UserAuthService {
 
             String token = jwtProvider.generateAccessToken(user.getEmail(), user.getRole().name());
 
-            return new UserLoginResponse(user.getLoginId(), user.getRole(), token, nickname);
+            return UserLoginResponse.builder()
+                    .loginId(user.getLoginId())
+                    .role(user.getRole())
+                    .token(token)
+                    .nickname(nickname)
+                    .requiresMfa(false)
+                    .tempToken(null)
+                    .email(user.getEmail())
+                    .build();
         } catch (UsernameNotFoundException e) {
             // 사용자를 찾을 수 없을 때 (CustomUserDetailsService에서 발생)
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다.");
@@ -153,4 +162,37 @@ public class UserAuthServiceImpl implements UserAuthService {
 
         passwordResetTokenRepository.delete(token);
     }
+
+    @Override
+    public UserLoginResponse completeMfaLogin(String email) {
+        // 사용자 정보 조회
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        // 계정 상태 확인
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException(ErrorCode.USER_ACCOUNT_NOT_ACTIVE, "비활성화된 계정입니다.");
+        }
+
+        // MFA 인증이 완료된 상태에서 최종 로그인 토큰 발급
+        String finalToken = jwtProvider.generateAccessToken(user.getEmail(), user.getRole().name());
+
+        // 닉네임 정보 가져오기
+        String nickname = null;
+        if (user.getUserProfile() != null) {
+            nickname = user.getUserProfile().getNickname();
+        }
+
+        return UserLoginResponse.builder()
+                .loginId(user.getLoginId())
+                .role(user.getRole())
+                .token(finalToken) // 최종 로그인 토큰
+                .nickname(nickname)
+                .requiresMfa(false) // MFA 인증 완료
+                .tempToken(null) // 임시 토큰 제거
+                .email(user.getEmail())
+                .build();
+    }
+
+
 }

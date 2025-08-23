@@ -11,4 +11,6 @@ public interface UserAuthService {
     void validatePasswordResetToken(String tokenValue);
 
     void resetPassword(String tokenValue, String newPassword);
+
+    UserLoginResponse completeMfaLogin(String email);
 }
