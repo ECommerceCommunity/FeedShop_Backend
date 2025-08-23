@@ -163,8 +163,13 @@ class CommentServiceTest {
         Page<Comment> commentPage = new PageImpl<>(comments, pageable, 1);
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(commentRepository.findByFeedIdWithUser(feedId, pageable)).thenReturn(commentPage);
-        when(commentRepository.countByFeedId(feedId)).thenReturn(1L);
+        
+        // 페이징된 댓글 ID 목록 조회
+        Page<Long> commentIdsPage = new PageImpl<>(List.of(1L), pageable, 1);
+        when(commentRepository.findCommentIdsByFeedId(feedId, pageable)).thenReturn(commentIdsPage);
+        
+        // 댓글 ID 목록으로 fetch join하여 댓글 상세 정보 조회
+        when(commentRepository.findByIdsWithUser(List.of(1L))).thenReturn(comments);
         
         // User Mock 설정
         when(user.getId()).thenReturn(1L);
@@ -190,8 +195,8 @@ class CommentServiceTest {
         assertThat(result.getPagination().getContent().get(0).getContent()).isEqualTo("테스트 댓글");
 
         verify(feedRepository).findById(feedId);
-        verify(commentRepository).findByFeedIdWithUser(feedId, pageable);
-        verify(commentRepository).countByFeedId(feedId);
+        verify(commentRepository).findCommentIdsByFeedId(feedId, pageable);
+        verify(commentRepository).findByIdsWithUser(List.of(1L));
     }
 
     @Test
@@ -210,8 +215,8 @@ class CommentServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FEED_NOT_FOUND);
 
         verify(feedRepository).findById(feedId);
-        verify(commentRepository, never()).findByFeedIdWithUser(anyLong(), any(Pageable.class));
-        verify(commentRepository, never()).countByFeedId(anyLong());
+        verify(commentRepository, never()).findCommentIdsByFeedId(anyLong(), any(Pageable.class));
+        verify(commentRepository, never()).findByIdsWithUser(anyList());
     }
 
     @Test
@@ -322,8 +327,13 @@ class CommentServiceTest {
         Page<Comment> emptyPage = new PageImpl<>(List.of(), pageable, 0);
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(commentRepository.findByFeedIdWithUser(feedId, pageable)).thenReturn(emptyPage);
-        when(commentRepository.countByFeedId(feedId)).thenReturn(0L);
+        
+        // 페이징된 댓글 ID 목록 조회 (빈 페이지)
+        Page<Long> emptyCommentIdsPage = new PageImpl<>(List.of(), pageable, 0);
+        when(commentRepository.findCommentIdsByFeedId(feedId, pageable)).thenReturn(emptyCommentIdsPage);
+        
+        // 댓글 ID 목록으로 fetch join하여 댓글 상세 정보 조회 (빈 리스트)
+        when(commentRepository.findByIdsWithUser(List.of())).thenReturn(List.of());
 
         // when
         CommentListResponseDto result = commentService.getComments(feedId, page, size);
@@ -334,7 +344,7 @@ class CommentServiceTest {
         assertThat(result.getPagination().getContent()).isEmpty();
 
         verify(feedRepository).findById(feedId);
-        verify(commentRepository).findByFeedIdWithUser(feedId, pageable);
-        verify(commentRepository).countByFeedId(feedId);
+        verify(commentRepository).findCommentIdsByFeedId(feedId, pageable);
+        verify(commentRepository).findByIdsWithUser(List.of());
     }
 }
