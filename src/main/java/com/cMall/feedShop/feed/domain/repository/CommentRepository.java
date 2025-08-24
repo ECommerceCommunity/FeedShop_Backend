@@ -28,7 +28,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /**
      * 댓글 ID 목록으로 댓글을 fetch join으로 조회 - N+1 해결용
      */
-    @Query("select c.id from Comment c join fetch c.user u join fetch u.userProfile up where c.id in :commentIds order by c.createdAt desc")
+    @Query("select c from Comment c join fetch c.user u join fetch u.userProfile up where c.id in :commentIds order by c.createdAt desc")
     List<Comment> findByIdsWithUser(@Param("commentIds") List<Long> commentIds);
 
     /**
@@ -46,12 +46,11 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     /**
      * 댓글 ID 목록으로 댓글을 fetch join으로 조회 - N+1 해결용
      */
-    @Query("select c.id from Comment c join fetch c.feed f join fetch f.user fu join fetch fu.userProfile fup where c.id in :commentIds order by c.createdAt desc")
+    @Query("select c from Comment c join fetch c.feed f join fetch f.user fu join fetch fu.userProfile fup where c.id in :commentIds order by c.createdAt desc")
     List<Comment> findByIdsWithFeedAndAuthor(@Param("commentIds") List<Long> commentIds);
 
     /**
      * 특정 사용자가 작성한 댓글 목록 조회 (페이징 없음)
-     */
      */
     @Query("select c from Comment c join fetch c.feed f where c.user.id = :userId order by c.createdAt desc")
     List<Comment> findByUserId(@Param("userId") Long userId);
