@@ -1,6 +1,6 @@
 package com.cMall.feedShop.feed.application.service;
 
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.model.FeedRewardEvent;
 import com.cMall.feedShop.feed.domain.repository.FeedRewardEventRepository;
 import com.cMall.feedShop.user.domain.enums.RewardType;

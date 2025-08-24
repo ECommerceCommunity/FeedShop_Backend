@@ -28,12 +28,12 @@ public interface FeedRewardEventRepository extends JpaRepository<FeedRewardEvent
             Pageable pageable);
 
     // 특정 피드의 리워드 이벤트 조회
-    List<FeedRewardEvent> findByFeedOrderByCreatedAtDesc(com.cMall.feedShop.feed.domain.Feed feed);
+    List<FeedRewardEvent> findByFeedOrderByCreatedAtDesc(com.cMall.feedShop.feed.domain.entity.Feed feed);
 
     // 특정 사용자와 피드의 리워드 이벤트 조회
     List<FeedRewardEvent> findByUserAndFeedOrderByCreatedAtDesc(
             com.cMall.feedShop.user.domain.model.User user, 
-            com.cMall.feedShop.feed.domain.Feed feed);
+            com.cMall.feedShop.feed.domain.entity.Feed feed);
 
     // 특정 사용자의 특정 타입 리워드 이벤트 조회
     List<FeedRewardEvent> findByUserAndRewardTypeOrderByCreatedAtDesc(
@@ -90,7 +90,7 @@ public interface FeedRewardEventRepository extends JpaRepository<FeedRewardEvent
            "AND fre.eventStatus IN ('PENDING', 'PROCESSING', 'PROCESSED')")
     boolean existsByUserAndFeedAndRewardTypeAndActiveStatus(
             @Param("user") com.cMall.feedShop.user.domain.model.User user,
-            @Param("feed") com.cMall.feedShop.feed.domain.Feed feed,
+            @Param("feed") com.cMall.feedShop.feed.domain.entity.Feed feed,
             @Param("rewardType") RewardType rewardType);
 
     // 특정 사용자의 특정 피드에 대한 특정 기간 내 이벤트 존재 여부
@@ -99,7 +99,7 @@ public interface FeedRewardEventRepository extends JpaRepository<FeedRewardEvent
            "AND fre.createdAt BETWEEN :startDate AND :endDate")
     boolean existsByUserAndFeedAndRewardTypeAndDateRange(
             @Param("user") com.cMall.feedShop.user.domain.model.User user,
-            @Param("feed") com.cMall.feedShop.feed.domain.Feed feed,
+            @Param("feed") com.cMall.feedShop.feed.domain.entity.Feed feed,
             @Param("rewardType") RewardType rewardType,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);

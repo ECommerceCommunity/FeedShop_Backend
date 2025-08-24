@@ -2,8 +2,8 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedLikeRepository;
 import com.cMall.feedShop.order.domain.model.OrderItem;

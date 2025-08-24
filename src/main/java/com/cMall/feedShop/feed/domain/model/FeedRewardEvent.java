@@ -27,7 +27,7 @@ public class FeedRewardEvent extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "feed_id", nullable = false)
-    private com.cMall.feedShop.feed.domain.Feed feed;
+    private com.cMall.feedShop.feed.domain.entity.Feed feed;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -60,7 +60,7 @@ public class FeedRewardEvent extends BaseTimeEntity {
     private String errorMessage; // 오류 발생 시 메시지
 
     @Builder
-    public FeedRewardEvent(com.cMall.feedShop.feed.domain.Feed feed, com.cMall.feedShop.user.domain.model.User user, 
+    public FeedRewardEvent(com.cMall.feedShop.feed.domain.entity.Feed feed, com.cMall.feedShop.user.domain.model.User user, 
                           RewardType rewardType, Integer points, String description, String relatedData) {
         this.feed = feed;
         this.user = user;

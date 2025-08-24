@@ -1,4 +1,4 @@
-package com.cMall.feedShop.feed.domain;
+package com.cMall.feedShop.feed.domain.enums;
 
 public enum FeedType {
     DAILY,      // 일상 피드

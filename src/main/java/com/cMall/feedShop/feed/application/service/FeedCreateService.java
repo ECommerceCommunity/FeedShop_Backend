@@ -2,7 +2,7 @@ package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.request.FeedCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.application.exception.OrderItemNotFoundException;
 import com.cMall.feedShop.feed.application.exception.EventNotAvailableException;
 import com.cMall.feedShop.common.exception.BusinessException;

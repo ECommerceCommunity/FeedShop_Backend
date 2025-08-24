@@ -40,15 +40,12 @@ class FeedShopApplicationTests {
     private EmailService emailService;
 
     @MockBean
-    private EmailServiceImpl emailServiceImpl;
-
-    @MockBean
     private GcpStorageService gcpStorageService;
 
     @MockBean
     private ImageValidator imageValidator;
 
-    @Autowired
+    @MockBean
     private RecaptchaVerificationService recaptchaVerificationService;
 
     @Test
@@ -61,11 +58,15 @@ class FeedShopApplicationTests {
         String token = "test-token";
         String action = "test-action";
 
-        // MockRecaptchaVerificationService는 실제로는 아무것도 하지 않고 로그만 출력합니다.
-        // 예외가 발생하지 않으면 성공입니다.
+        // Mock 설정 - void 메서드이므로 doNothing 사용
+        doNothing().when(recaptchaVerificationService).verifyRecaptcha(token, action);
+
+        // 검증 - 예외가 발생하지 않으면 성공
         assertThatCode(() -> {
             recaptchaVerificationService.verifyRecaptcha(token, action);
         }).doesNotThrowAnyException();
+        
+        verify(recaptchaVerificationService).verifyRecaptcha(token, action);
     }
 
     @Test

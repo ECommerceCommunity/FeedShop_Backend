@@ -3,8 +3,9 @@ package com.cMall.feedShop.feed.application.service;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.response.MyCommentListResponseDto;
-import com.cMall.feedShop.feed.domain.Comment;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Comment;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import com.cMall.feedShop.feed.domain.repository.CommentRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
@@ -89,7 +90,7 @@ class MyCommentServiceTest {
         
         when(feed.getId()).thenReturn(1L);
         when(feed.getTitle()).thenReturn("테스트 피드");
-        when(feed.getFeedType()).thenReturn(com.cMall.feedShop.feed.domain.FeedType.DAILY);
+        when(feed.getFeedType()).thenReturn(FeedType.DAILY);
         when(feed.getUser()).thenReturn(user);
         
         when(comment.getId()).thenReturn(1L);

@@ -1,6 +1,6 @@
 package com.cMall.feedShop.feed.domain.repository;
 
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,7 +47,7 @@ public class FeedRepositoryImpl implements FeedRepository {
     
     @Override
     public Page<Feed> findByFeedType(String feedType, Pageable pageable) {
-        return feedJpaRepository.findByFeedType(com.cMall.feedShop.feed.domain.FeedType.valueOf(feedType), pageable);
+        return feedJpaRepository.findByFeedType(com.cMall.feedShop.feed.domain.enums.FeedType.valueOf(feedType), pageable);
     }
     
     @Override
@@ -74,7 +74,7 @@ public class FeedRepositoryImpl implements FeedRepository {
     public Page<Feed> findByUserIdAndFeedType(Long userId, String feedType, Pageable pageable) {
         return feedJpaRepository.findByUserIdAndFeedTypeActive(
                 userId, 
-                com.cMall.feedShop.feed.domain.FeedType.valueOf(feedType), 
+                com.cMall.feedShop.feed.domain.enums.FeedType.valueOf(feedType), 
                 pageable
         );
     }
@@ -88,7 +88,7 @@ public class FeedRepositoryImpl implements FeedRepository {
     public long countByUserIdAndFeedType(Long userId, String feedType) {
         return feedJpaRepository.countByUserIdAndFeedTypeActive(
                 userId, 
-                com.cMall.feedShop.feed.domain.FeedType.valueOf(feedType)
+                com.cMall.feedShop.feed.domain.enums.FeedType.valueOf(feedType)
         );
     }
 } 

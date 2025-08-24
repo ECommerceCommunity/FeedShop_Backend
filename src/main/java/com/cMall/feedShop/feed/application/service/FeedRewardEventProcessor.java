@@ -219,6 +219,6 @@ public class FeedRewardEventProcessor {
     public List<FeedRewardEvent> getPendingEventsByFeed(Long feedId) {
         // Feed 엔티티 조회 (실제로는 FeedRepository를 주입받아야 함)
         // 여기서는 간단히 처리
-        return feedRewardEventRepository.findByFeedOrderByCreatedAtDesc(null);
+        return feedRewardEventRepository.findByFeedIdOrderByCreatedAtDesc(feedId);
     }
 }

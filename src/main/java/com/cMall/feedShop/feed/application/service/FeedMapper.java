@@ -5,9 +5,10 @@ import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedHashtag;
-import com.cMall.feedShop.feed.domain.FeedImage;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.entity.FeedHashtag;
+import com.cMall.feedShop.feed.domain.entity.FeedImage;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.event.domain.Event;
@@ -240,7 +241,7 @@ public class FeedMapper {
                 .comments(toFeedCommentDtoList(feed.getComments()))
                 .isLiked(false) // 기본값: 좋아요하지 않음 (서비스에서 실제 상태로 업데이트)
                 .isVoted(false) // 기본값: 투표하지 않음 (서비스에서 실제 상태로 업데이트)
-                .canVote(feed.getFeedType() == com.cMall.feedShop.feed.domain.FeedType.EVENT) // 이벤트 피드만 투표 가능
+                .canVote(feed.getFeedType() == FeedType.EVENT) // 이벤트 피드만 투표 가능
                 .build();
     }
     
@@ -382,7 +383,7 @@ public class FeedMapper {
     /**
      * Comment 리스트를 FeedDetailResponseDto.FeedCommentDto 리스트로 변환
      */
-    private List<FeedDetailResponseDto.FeedCommentDto> toFeedCommentDtoList(List<com.cMall.feedShop.feed.domain.Comment> comments) {
+    private List<FeedDetailResponseDto.FeedCommentDto> toFeedCommentDtoList(List<com.cMall.feedShop.feed.domain.entity.Comment> comments) {
         if (comments == null || comments.isEmpty()) {
             return List.of();
         }
