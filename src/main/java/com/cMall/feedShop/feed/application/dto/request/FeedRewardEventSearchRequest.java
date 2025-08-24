@@ -14,13 +14,14 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class FeedRewardEventSearchRequest {
 
     // 페이지네이션
-    private Integer page;
-    private Integer size;
+    @Builder.Default
+    private Integer page = 0;
+    
+    @Builder.Default
+    private Integer size = 20;
     
     // 필터링
     private Long userId;
@@ -31,18 +32,11 @@ public class FeedRewardEventSearchRequest {
     private LocalDateTime endDate;
     
     // 정렬
-    private String sortBy;
-    private String sortDirection;
-
-    // 기본값 설정을 위한 정적 메서드
-    public static FeedRewardEventSearchRequest getDefault() {
-        return FeedRewardEventSearchRequest.builder()
-                .page(0)
-                .size(20)
-                .sortBy("createdAt")
-                .sortDirection("DESC")
-                .build();
-    }
+    @Builder.Default
+    private String sortBy = "createdAt";
+    
+    @Builder.Default
+    private String sortDirection = "DESC";
 
     /**
      * Pageable 객체 생성
