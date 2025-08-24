@@ -19,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -52,6 +53,9 @@ public class User extends BaseTimeEntity implements UserDetails {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserSocialProvider> socialProviders = new java.util.ArrayList<>();
 
     @Column(name = "login_id", unique = true, nullable = false, length = 100)
     private String loginId;
@@ -89,6 +93,16 @@ public class User extends BaseTimeEntity implements UserDetails {
         this.passwordChangedAt = LocalDateTime.now();
     }
 
+    // 소셜 로그인용 생성자
+    public User(String loginId, String email, UserRole role) {
+        this.loginId = loginId;
+        this.password = UUID.randomUUID().toString(); // 소셜 로그인은 비밀번호가 없으므로 임시값
+        this.email = email;
+        this.role = role;
+        this.status = UserStatus.ACTIVE; // 소셜 로그인은 즉시 활성화
+        this.passwordChangedAt = LocalDateTime.now();
+    }
+
     public User(Long id, String loginId, String password, String email, UserRole role) {
         this.id = id;
         this.loginId = loginId;
@@ -109,6 +123,26 @@ public class User extends BaseTimeEntity implements UserDetails {
     // 비즈니스 메서드
     public void changePassword(String newPassword) {
         // 도메인 규칙 검증
+    }
+
+    // 소셜 로그인 관련 헬퍼 메서드
+    public boolean isSocialUser() {
+        return !socialProviders.isEmpty();
+    }
+
+    public void addSocialProvider(UserSocialProvider socialProvider) {
+        this.socialProviders.add(socialProvider);
+        socialProvider.setUser(this);
+    }
+
+    public void removeSocialProvider(UserSocialProvider socialProvider) {
+        this.socialProviders.remove(socialProvider);
+        socialProvider.setUser(null);
+    }
+
+    public boolean hasSocialProvider(String provider) {
+        return socialProviders.stream()
+            .anyMatch(sp -> sp.getProvider().equals(provider));
     }
 
     @Override
