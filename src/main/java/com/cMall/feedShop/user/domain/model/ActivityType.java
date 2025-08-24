@@ -1,9 +1,13 @@
 package com.cMall.feedShop.user.domain.model;
 
 public enum ActivityType {
-    // 피드 관련
-    FEED_CREATION(10, "피드 작성"),
-    FEED_LIKE_RECEIVED(1, "피드 좋아요 받기"),
+    // 피드 관련 (백로그 요구사항에 맞게 수정 및 추가)
+    FEED_CREATION(5, "피드 작성"),                    // 뱃지 점수: 5점 (기존 10점에서 수정)
+    FEED_LIKE_RECEIVED(1, "피드 좋아요 받기"),        // 기존 유지
+    FEED_LIKES_MILESTONE(2, "좋아요 마일스톤"),        // 신규 추가: 좋아요 100개당 2점
+    EVENT_FEED_PARTICIPATION(2, "이벤트 피드 참여"),   // 신규 추가: 이벤트 피드 작성 2점
+    COMMENT_DAILY_ACHIEVEMENT(1, "댓글 일일 달성"),   // 신규 추가: 하루 댓글 10개 작성 1점
+    DIVERSE_PRODUCT_FEED(0, "다양 상품 피드"),         // 신규 추가: 다양 상품 피드 작성 0점 (포인트만)
     
     // 투표 관련
     VOTE_PARTICIPATION(1, "투표 참여"),
