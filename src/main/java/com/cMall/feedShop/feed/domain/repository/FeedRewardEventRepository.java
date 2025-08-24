@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -111,4 +112,60 @@ public interface FeedRewardEventRepository extends JpaRepository<FeedRewardEvent
             @Param("user") com.cMall.feedShop.user.domain.model.User user,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
+
+    // 관리자용 조회 메서드들
+    
+    // 사용자 ID로 리워드 이벤트 조회 (페이징)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.user.id = :userId ORDER BY fre.createdAt DESC")
+    Page<FeedRewardEvent> findByUserOrderByCreatedAtDesc(@Param("userId") Long userId, Pageable pageable);
+    
+    // 사용자 ID로 리워드 이벤트 조회 (리스트)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.user.id = :userId ORDER BY fre.createdAt DESC")
+    List<FeedRewardEvent> findByUserOrderByCreatedAtDesc(@Param("userId") Long userId);
+    
+    // 피드 ID로 리워드 이벤트 조회 (페이징)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.feed.id = :feedId ORDER BY fre.createdAt DESC")
+    Page<FeedRewardEvent> findByFeedOrderByCreatedAtDesc(@Param("feedId") Long feedId, Pageable pageable);
+    
+    // 피드 ID로 리워드 이벤트 조회 (리스트)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.feed.id = :feedId ORDER BY fre.createdAt DESC")
+    List<FeedRewardEvent> findByFeedIdOrderByCreatedAtDesc(@Param("feedId") Long feedId);
+    
+    // 리워드 타입으로 리워드 이벤트 조회 (페이징)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.rewardType = :rewardType ORDER BY fre.createdAt DESC")
+    Page<FeedRewardEvent> findByRewardTypeOrderByCreatedAtDesc(@Param("rewardType") RewardType rewardType, Pageable pageable);
+    
+    // 이벤트 상태로 리워드 이벤트 조회 (페이징)
+    @Query("SELECT fre FROM FeedRewardEvent fre WHERE fre.eventStatus = :eventStatus ORDER BY fre.createdAt ASC")
+    Page<FeedRewardEvent> findByEventStatusOrderByCreatedAtAsc(@Param("eventStatus") FeedRewardEvent.EventStatus eventStatus, Pageable pageable);
+    
+    // 이벤트 상태별 개수 조회
+    @Query("SELECT COUNT(fre) FROM FeedRewardEvent fre WHERE fre.eventStatus = :eventStatus")
+    Long countByEventStatus(@Param("eventStatus") FeedRewardEvent.EventStatus eventStatus);
+    
+    // 리워드 타입별 이벤트 개수 조회
+    @Query("SELECT fre.rewardType, COUNT(fre) FROM FeedRewardEvent fre GROUP BY fre.rewardType")
+    Map<RewardType, Long> countByRewardType();
+    
+    // 처리 완료된 이벤트의 포인트 합계 조회
+    @Query("SELECT COALESCE(SUM(fre.points), 0) FROM FeedRewardEvent fre WHERE fre.eventStatus = :eventStatus")
+    Integer sumPointsByEventStatus(@Param("eventStatus") FeedRewardEvent.EventStatus eventStatus);
+    
+    // 일별 생성된 이벤트 수 조회
+    @Query("SELECT DATE(fre.createdAt) as date, COUNT(fre) FROM FeedRewardEvent fre " +
+           "WHERE fre.createdAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(fre.createdAt)")
+    Map<String, Long> countDailyCreatedEvents(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    
+    // 일별 처리된 이벤트 수 조회
+    @Query("SELECT DATE(fre.processedAt) as date, COUNT(fre) FROM FeedRewardEvent fre " +
+           "WHERE fre.processedAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(fre.processedAt)")
+    Map<String, Long> countDailyProcessedEvents(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+    
+    // 일별 지급된 포인트 조회
+    @Query("SELECT DATE(fre.processedAt) as date, COALESCE(SUM(fre.points), 0) FROM FeedRewardEvent fre " +
+           "WHERE fre.processedAt BETWEEN :startDate AND :endDate " +
+           "GROUP BY DATE(fre.processedAt)")
+    Map<String, Integer> sumDailyPoints(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 }
