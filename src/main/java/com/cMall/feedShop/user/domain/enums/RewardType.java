@@ -38,14 +38,7 @@ public enum RewardType {
     
     // 기타
     COMPENSATION("보상", "기타 보상"),
-    ADJUSTMENT("조정", "포인트 조정"),
-    
-    // 피드 관련
-    FEED_CREATION("피드 생성", "피드 작성 보상"),
-    FEED_LIKES_MILESTONE("피드 좋아요 마일스톤", "피드 좋아요 마일스톤 달성 보상"),
-    EVENT_FEED_PARTICIPATION("이벤트 피드 참여", "이벤트 피드 참여 보상"),
-    COMMENT_DAILY_ACHIEVEMENT("댓글 일일 달성", "댓글 일일 달성 보상"),
-    DIVERSE_PRODUCT_FEED("다양한 상품 피드", "다양한 상품으로 피드 작성 보상");
+    ADJUSTMENT("조정", "포인트 조정");
     
     private final String displayName;
     private final String description;
