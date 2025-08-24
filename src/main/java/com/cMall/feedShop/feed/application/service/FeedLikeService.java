@@ -34,6 +34,7 @@ public class FeedLikeService {
     private final FeedLikeRepository feedLikeRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
+    private final FeedRewardEventHandler feedRewardEventHandler;
 
     /**
      * 좋아요 토글
@@ -73,6 +74,18 @@ public class FeedLikeService {
         }
 
         int likeCount = feed.getLikeCount() != null ? feed.getLikeCount() : 0;
+        
+        // 좋아요 추가 시 리워드 이벤트 생성 (마일스톤 체크)
+        if (liked) {
+            try {
+                feedRewardEventHandler.createFeedLikesMilestoneEvent(user, feed, likeCount);
+            } catch (Exception e) {
+                log.warn("좋아요 마일스톤 리워드 이벤트 생성 중 오류 발생 - userId: {}, feedId: {}, likeCount: {}", 
+                        userId, feedId, likeCount, e);
+                // 리워드 이벤트 생성 실패가 좋아요 처리에 영향을 주지 않도록 예외를 던지지 않음
+            }
+        }
+        
         return LikeToggleResponseDto.builder()
                 .liked(liked)
                 .likeCount(likeCount)

@@ -19,9 +19,11 @@ import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FeedCreateService {
@@ -32,6 +34,7 @@ public class FeedCreateService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final FeedMapper feedMapper;
+    private final FeedRewardEventHandler feedRewardEventHandler;
     
     /**
      * 피드 생성
@@ -90,7 +93,25 @@ public class FeedCreateService {
         // 10. 피드 저장
         Feed savedFeed = feedRepository.save(feed);
         
-        // 11. 응답 DTO 변환 및 반환
+        // 11. 피드 생성 리워드 이벤트 생성
+        try {
+            feedRewardEventHandler.createFeedCreationEvent(user, savedFeed);
+            
+            // 이벤트 피드인 경우 이벤트 참여 리워드 이벤트도 생성
+            if (event != null) {
+                feedRewardEventHandler.createEventFeedParticipationEvent(user, savedFeed, event.getId());
+            }
+            
+            // 다양한 상품 피드인 경우 관련 리워드 이벤트 생성
+            // (현재는 단일 OrderItem만 지원하므로 향후 확장 시 구현)
+            
+        } catch (Exception e) {
+            log.warn("피드 생성 리워드 이벤트 생성 중 오류 발생 - userId: {}, feedId: {}", 
+                    user.getId(), savedFeed.getId(), e);
+            // 리워드 이벤트 생성 실패가 피드 생성에 영향을 주지 않도록 예외를 던지지 않음
+        }
+        
+        // 12. 응답 DTO 변환 및 반환
         return feedMapper.toFeedCreateResponseDto(savedFeed);
     }
     
