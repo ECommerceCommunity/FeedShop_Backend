@@ -82,10 +82,16 @@ class ReviewServiceTest {
     private ReviewDuplicationValidator duplicationValidator;
 
     @Mock
+    private com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService purchaseVerificationService;
+
+    @Mock
     private ReviewImageService reviewImageService;
     
     @Mock
     private com.cMall.feedShop.review.domain.repository.ReviewImageRepository reviewImageRepository;
+
+    @Mock
+    private com.cMall.feedShop.user.application.service.UserLevelService userLevelService;
 
     @Mock
     private GcpStorageService gcpStorageService;
@@ -178,6 +184,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, null);
@@ -338,6 +346,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // 중복 검증 통과하도록 설정 (예외 발생 안함)
             doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
@@ -373,8 +383,15 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
             given(gcpStorageService.uploadFilesWithDetails(any(List.class), eq(UploadDirectory.REVIEWS)))
                     .willReturn(List.of(mockResult));
+            
+            // ReviewImage Mock 설정
+            com.cMall.feedShop.review.domain.ReviewImage mockReviewImage = mock(com.cMall.feedShop.review.domain.ReviewImage.class);
+            given(mockReviewImage.getReviewImageId()).willReturn(1L);
+            given(reviewImageRepository.save(any(com.cMall.feedShop.review.domain.ReviewImage.class))).willReturn(mockReviewImage);
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, imageFiles);
@@ -397,6 +414,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, null);
@@ -480,6 +499,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, emptyImageList);
@@ -528,6 +549,8 @@ class ReviewServiceTest {
                 assertThat(savedReview.getContent()).isEqualTo(createRequest.getContent());
                 return testReview;
             });
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             reviewService.createReview(createRequest, null);
