@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.cart.domain.model.Cart;
+import com.cMall.feedShop.cart.domain.model.WishList;
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.order.domain.model.Order;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -11,9 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -45,6 +43,9 @@ public class User extends BaseTimeEntity implements UserDetails {
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Cart cart;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<WishList> wishlist;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders;
@@ -113,6 +114,11 @@ public class User extends BaseTimeEntity implements UserDetails {
     @Override
     public String getUsername() {
         return loginId;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
