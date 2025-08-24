@@ -98,9 +98,12 @@ public enum ErrorCode {
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
     INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
     EVENT_NOT_AVAILABLE(400, "E004", "참여할 수 없는 이벤트입니다."),
-
+    
     // 피드
     FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
+    INVALID_REQUEST(400, "F002", "잘못된 요청입니다."),
+    DUPLICATE_REQUEST(409, "F003", "중복된 요청입니다."),
+    NOT_FOUND(404, "F004", "요청한 리소스를 찾을 수 없습니다."),
     FEED_ACCESS_DENIED(403, "F002", "해당 피드에 대한 권한이 없습니다."),
     DUPLICATE_FEED(409, "F003", "이미 해당 주문 상품에 대한 피드를 작성하셨습니다."),
     ORDER_ITEM_NOT_FOUND(404, "F004", "주문 상품을 찾을 수 없습니다."),
