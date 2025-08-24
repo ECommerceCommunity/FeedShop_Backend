@@ -1,5 +1,6 @@
 package com.cMall.feedShop.user.presentation;
 
+import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.user.application.dto.UserStatsResponse;
 import com.cMall.feedShop.user.application.service.UserLevelService;
 import com.cMall.feedShop.user.domain.model.ActivityType;
@@ -7,6 +8,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserLevel;
 import com.cMall.feedShop.user.domain.model.UserStats;
 import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -23,6 +25,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static com.cMall.feedShop.common.exception.ErrorCode.FORBIDDEN;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("사용자 레벨 컨트롤러 단위 테스트")
@@ -40,6 +46,7 @@ class UserLevelControllerTest {
     private User testUser;
     private UserStats testUserStats;
     private List<UserLevel> testLevels;
+    private UserStatsResponse testUserStatsResponse;
     
     @BeforeEach
     void setUp() {
@@ -60,6 +67,20 @@ class UserLevelControllerTest {
                 .currentLevel(level2)
                 .build();
         testUserStats.addPoints(150, testLevels); // 레벨 2, 150점
+        
+        // 테스트용 UserStatsResponse 생성
+        testUserStatsResponse = UserStatsResponse.builder()
+                .userId(1L)
+                .totalPoints(150)
+                .currentLevelName("성장")
+                .levelDisplayName("성장 🌿")
+                .levelEmoji("🌿")
+                .rewardDescription("테스트 보상")
+                .pointsToNextLevel(150)
+                .levelProgress(0.5)
+                .userRank(5L)
+                .levelUpdatedAt(LocalDateTime.now())
+                .build();
     }
     
     @Test
@@ -78,61 +99,67 @@ class UserLevelControllerTest {
         assertThat(result.getTotalPoints()).isEqualTo(150);
         assertThat(rank).isEqualTo(10L);
     }
-    
+
     @Test
     @DisplayName("내 통계 정보를 조회할 수 있다")
     void getMyStats_Success() {
         // given
-        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
-        given(userLevelService.getUserRank(1L)).willReturn(5L);
-        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
-        
+        given(userLevelService.getUserStatsResponse(1L)).willReturn(testUserStatsResponse);
+
         // when
-        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
-        
+        ApiResponse<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+
         // then
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
-        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
-        assertThat(response.getBody().getUserRank()).isEqualTo(5L);
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getCurrentLevelName()).isEqualTo("성장");
+        assertThat(response.getData().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getData().getUserRank()).isEqualTo(5L);
+    }
+    
+    @Test
+    @DisplayName("UserDetails가 User 타입이 아닐 경우 예외가 발생한다")
+    void getMyStats_ThrowsException_WhenUserDetailsIsNotUser() {
+        // given
+        UserDetails mockUserDetails = mock(UserDetails.class);
+
+        // when & then
+        assertThatThrownBy(() -> userLevelController.getMyStats(mockUserDetails))
+                .isInstanceOf(UserException.class)
+                .hasFieldOrPropertyWithValue("errorCode", FORBIDDEN);
     }
     
     @Test
     @DisplayName("특정 사용자의 통계 정보를 조회할 수 있다")
     void getUserStats_Success() {
         // given
-        given(userLevelService.getUserStats(2L)).willReturn(testUserStats);
-        given(userLevelService.getUserRank(2L)).willReturn(3L);
-        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        given(userLevelService.getUserStatsResponse(2L)).willReturn(testUserStatsResponse);
         
         // when
-        ResponseEntity<UserStatsResponse> response = userLevelController.getUserStats(2L);
+        ApiResponse<UserStatsResponse> response = userLevelController.getUserStats(2L);
         
         // then
-        assertThat(response.getStatusCodeValue()).isEqualTo(200);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getCurrentLevel().getLevelName()).isEqualTo("성장");
-        assertThat(response.getBody().getTotalPoints()).isEqualTo(150);
-        assertThat(response.getBody().getUserRank()).isEqualTo(3L);
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getCurrentLevelName()).isEqualTo("성장");
+        assertThat(response.getData().getTotalPoints()).isEqualTo(150);
+        assertThat(response.getData().getUserRank()).isEqualTo(5L);
     }
     
     @Test
     @DisplayName("사용자 통계 정보에 레벨 진행률이 포함된다")
     void userStatsResponse_ContainsLevelProgress() {
         // given
-        given(userLevelService.getUserStats(1L)).willReturn(testUserStats);
-        given(userLevelService.getUserRank(1L)).willReturn(10L);
-        given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(testLevels);
+        given(userLevelService.getUserStatsResponse(1L)).willReturn(testUserStatsResponse);
         
         // when
-        ResponseEntity<UserStatsResponse> response = userLevelController.getMyStats(testUser);
+        ApiResponse<UserStatsResponse> response = userLevelController.getMyStats(testUser);
         
         // then
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getLevelProgress()).isGreaterThanOrEqualTo(0.0);
-        assertThat(response.getBody().getLevelProgress()).isLessThanOrEqualTo(1.0);
-        assertThat(response.getBody().getPointsToNextLevel()).isGreaterThanOrEqualTo(0);
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getLevelProgress()).isGreaterThanOrEqualTo(0.0);
+        assertThat(response.getData().getLevelProgress()).isLessThanOrEqualTo(1.0);
+        assertThat(response.getData().getPointsToNextLevel()).isGreaterThanOrEqualTo(0);
     }
     
     @Test

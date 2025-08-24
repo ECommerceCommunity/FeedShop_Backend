@@ -20,6 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -57,7 +59,7 @@ public class CommentService {
     }
 
     /**
-     * 피드의 댓글 목록 조회 (페이징)
+     * 피드의 댓글 목록 조회 (페이징) - 페이징과 fetch join 분리
      */
     public CommentListResponseDto getComments(Long feedId, int page, int size) {
         // 피드 존재 확인
@@ -66,26 +68,32 @@ public class CommentService {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Comment> commentPage = commentRepository.findByFeedIdWithUser(feedId, pageable);
-        long totalComments = commentRepository.countByFeedId(feedId);
-
-        // DTO 변환
-        Page<CommentResponseDto> responseDtoPage = commentPage.map(CommentResponseDto::from);
-
-        // PaginatedResponse 생성
+        
+        // 1단계: 페이징된 댓글 ID 목록 조회
+        Page<Long> commentIdsPage = commentRepository.findCommentIdsByFeedId(feedId, pageable);
+        
+        // 2단계: 댓글 ID 목록으로 fetch join하여 댓글 상세 정보 조회
+        List<Comment> comments = commentRepository.findByIdsWithUser(commentIdsPage.getContent());
+        
+        // 3단계: DTO 변환
+        List<CommentResponseDto> commentDtos = comments.stream()
+                .map(CommentResponseDto::from)
+                .collect(Collectors.toList());
+        
+        // 4단계: PaginatedResponse 생성
         PaginatedResponse<CommentResponseDto> pagination = PaginatedResponse.<CommentResponseDto>builder()
-                .content(responseDtoPage.getContent())
+                .content(commentDtos)
                 .page(page)
                 .size(size)
-                .totalElements(responseDtoPage.getTotalElements())
-                .totalPages(responseDtoPage.getTotalPages())
-                .hasNext(responseDtoPage.hasNext())
-                .hasPrevious(responseDtoPage.hasPrevious())
+                .totalElements(commentIdsPage.getTotalElements())
+                .totalPages(commentIdsPage.getTotalPages())
+                .hasNext(commentIdsPage.hasNext())
+                .hasPrevious(commentIdsPage.hasPrevious())
                 .build();
 
         return CommentListResponseDto.builder()
                 .pagination(pagination)
-                .totalComments(totalComments)
+                .totalComments(commentIdsPage.getTotalElements())
                 .build();
     }
 
