@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.Getter;
 
 @Getter
-public class AddressResponseDto {
+public class AddressResponse {
 
     private Long id;
     private String recipientName;
@@ -15,7 +15,7 @@ public class AddressResponseDto {
     private String addressLine2;
     private boolean isDefault;
 
-    public AddressResponseDto(UserAddress userAddress) {
+    public AddressResponse(UserAddress userAddress) {
         this.id = userAddress.getId();
         this.recipientName = userAddress.getRecipientName();
         this.recipientPhone = userAddress.getRecipientPhone();

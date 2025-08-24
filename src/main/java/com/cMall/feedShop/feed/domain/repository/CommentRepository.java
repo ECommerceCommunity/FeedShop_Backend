@@ -14,10 +14,22 @@ import java.util.List;
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /**
-     * 특정 피드의 댓글 목록을 페이징으로 조회 (최신순)
+     * 특정 피드의 댓글 목록을 페이징으로 조회 (최신순) - 페이징용
      */
-    @Query("select c from Comment c join fetch c.user u join fetch u.userProfile up where c.feed.id = :feedId order by c.createdAt desc")
-    Page<Comment> findByFeedIdWithUser(@Param("feedId") Long feedId, Pageable pageable);
+    @Query("select c from Comment c where c.feed.id = :feedId order by c.createdAt desc")
+    Page<Comment> findByFeedId(@Param("feedId") Long feedId, Pageable pageable);
+
+    /**
+     * 특정 피드의 댓글 ID 목록을 페이징으로 조회 (최신순) - 페이징용
+     */
+    @Query("select c.id from Comment c where c.feed.id = :feedId order by c.createdAt desc")
+    Page<Long> findCommentIdsByFeedId(@Param("feedId") Long feedId, Pageable pageable);
+
+    /**
+     * 댓글 ID 목록으로 댓글을 fetch join으로 조회 - N+1 해결용
+     */
+    @Query("select c.id from Comment c join fetch c.user u join fetch u.userProfile up where c.id in :commentIds order by c.createdAt desc")
+    List<Comment> findByIdsWithUser(@Param("commentIds") List<Long> commentIds);
 
     /**
      * 특정 피드의 댓글 개수 조회
@@ -26,7 +38,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     long countByFeedId(@Param("feedId") Long feedId);
 
     /**
-     * 특정 사용자가 작성한 댓글 목록 조회
+     * 특정 사용자가 작성한 댓글 ID 목록을 페이징으로 조회 (페이징용)
+     */
+    @Query("select c.id from Comment c where c.user.id = :userId order by c.createdAt desc")
+    Page<Long> findCommentIdsByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * 댓글 ID 목록으로 댓글을 fetch join으로 조회 - N+1 해결용
+     */
+    @Query("select c.id from Comment c join fetch c.feed f join fetch f.user fu join fetch fu.userProfile fup where c.id in :commentIds order by c.createdAt desc")
+    List<Comment> findByIdsWithFeedAndAuthor(@Param("commentIds") List<Long> commentIds);
+
+    /**
+     * 특정 사용자가 작성한 댓글 목록 조회 (페이징 없음)
+     */
      */
     @Query("select c from Comment c join fetch c.feed f where c.user.id = :userId order by c.createdAt desc")
     List<Comment> findByUserId(@Param("userId") Long userId);

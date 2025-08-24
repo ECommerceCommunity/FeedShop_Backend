@@ -3,8 +3,10 @@ package com.cMall.feedShop.user.application.service;
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.user.domain.exception.UserException; // UserException은 필수
+import com.cMall.feedShop.user.domain.model.DailyPoints;
 import com.cMall.feedShop.user.domain.model.User;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface UserService {
@@ -29,5 +31,7 @@ public interface UserService {
     void withdrawCurrentUserWithPassword(String email, String rawPassword);
 
     List<UserResponse> findByUsernameAndPhoneNumber(String username, String phoneNumber);
+
+    List<DailyPoints> getDailyPointsStatisticsForUser(User user, LocalDateTime startDate);
 }
 
