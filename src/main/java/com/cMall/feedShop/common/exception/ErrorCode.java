@@ -37,6 +37,16 @@ public enum ErrorCode {
     INVALID_TOKEN(400, "U100", "유효하지 않거나 찾을 수 없는 토큰입니다."), // 일반적인 토큰 유효성 검사 실패 (찾을 수 없거나 잘못된 형식)
     TOKEN_EXPIRED(400, "U101", "토큰이 만료되었습니다. 비밀번호 재설정을 다시 시도해주세요."), // 토큰 만료
 
+    // MFA 관련
+    MFA_NOT_FOUND(404, "MFA001", "MFA 설정을 찾을 수 없습니다. 먼저 MFA 설정을 진행해주세요."),
+    MFA_ALREADY_ENABLED(409, "MFA002", "MFA가 이미 활성화되어 있습니다."),
+    MFA_NOT_ENABLED(400, "MFA003", "MFA가 활성화되어 있지 않습니다."),
+    INVALID_MFA_TOKEN(400, "MFA004", "유효하지 않은 MFA 토큰입니다."),
+    INVALID_BACKUP_CODE(400, "MFA005", "유효하지 않은 백업 코드입니다."),
+    MFA_SETUP_REQUIRED(400, "MFA006", "MFA 설정이 필요합니다."),
+    MFA_VERIFICATION_FAILED(400, "MFA007", "MFA 인증에 실패했습니다."),
+    BACKUP_CODES_EXHAUSTED(400, "MFA008", "모든 백업 코드를 사용했습니다. 새로운 백업 코드를 생성해주세요."),
+
     // 외부 API
     MAILGUN_API_FAILED(502, "E001", "이메일 전송 중 외부 API 오류가 발생했습니다."),
 

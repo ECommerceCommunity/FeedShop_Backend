@@ -1,6 +1,8 @@
 package com.cMall.feedShop.feed.domain.repository;
 
 import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
+import com.cMall.feedShop.feed.infrastructure.repository.FeedQueryRepositoryImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +16,7 @@ import java.util.Optional;
 public class FeedRepositoryImpl implements FeedRepository {
     
     private final FeedJpaRepository feedJpaRepository;
+    private final FeedQueryRepositoryImpl feedQueryRepository;
     
     @Override
     public Feed save(Feed feed) {
@@ -90,5 +93,17 @@ public class FeedRepositoryImpl implements FeedRepository {
                 userId, 
                 com.cMall.feedShop.feed.domain.enums.FeedType.valueOf(feedType)
         );
+    }
+    
+    // ==================== FeedQueryRepository 구현 ====================
+    
+    @Override
+    public long countWithSearchConditions(FeedSearchRequest request) {
+        return feedQueryRepository.countWithSearchConditions(request);
+    }
+    
+    @Override
+    public Page<Feed> findWithSearchConditions(FeedSearchRequest request, Pageable pageable) {
+        return feedQueryRepository.findWithSearchConditions(request, pageable);
     }
 } 

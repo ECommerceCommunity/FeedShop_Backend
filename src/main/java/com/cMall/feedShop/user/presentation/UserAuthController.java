@@ -8,9 +8,11 @@ import com.cMall.feedShop.user.application.dto.request.PasswordResetConfirmReque
 import com.cMall.feedShop.user.application.dto.request.UserLoginRequest;
 
 import com.cMall.feedShop.user.application.dto.request.UserSignUpRequest;
+import com.cMall.feedShop.user.application.dto.response.MfaStatusResponse;
 import com.cMall.feedShop.user.application.dto.response.UserLoginResponse;
 import com.cMall.feedShop.user.application.dto.response.UserResponse;
 import com.cMall.feedShop.common.captcha.GoogleRecaptchaVerificationService;
+import com.cMall.feedShop.user.application.service.MfaService;
 import com.cMall.feedShop.user.application.service.UserAuthService;
 import com.cMall.feedShop.user.application.service.UserService;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ public class UserAuthController {
     private final UserService userService;
     private final UserAuthService userAuthService;
     private final RecaptchaVerificationService recaptchaService;
+    private final MfaService mfaService;
 
 
     @PostMapping("/signup")
@@ -38,9 +41,34 @@ public class UserAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserLoginResponse>> login(@Valid @RequestBody UserLoginRequest request) {
+    @ApiResponseFormat
+    public ApiResponse<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
         recaptchaService.verifyRecaptcha(request.getRecaptchaToken(), "login_submit");
-        return ResponseEntity.ok(ApiResponse.success(userAuthService.login(request)));
+
+        // 1단계 로그인 (이메일/비밀번호 검증)
+        UserLoginResponse loginResponse = userAuthService.login(request);
+
+        // MFA 상태 확인
+        MfaStatusResponse mfaStatus = mfaService.getMfaStatus(request.getEmail());
+
+        if (mfaStatus != null && mfaStatus.isEnabled()) {
+            // MFA가 활성화된 경우 - 2단계 인증 필요
+            UserLoginResponse mfaRequiredResponse = UserLoginResponse.builder()
+                    .loginId(loginResponse.getLoginId())
+                    .role(loginResponse.getRole())
+                    .nickname(loginResponse.getNickname())
+                    .tempToken(loginResponse.getToken()) // 임시 토큰으로 사용
+                    .email(request.getEmail())
+                    .requiresMfa(true)
+                    .build();
+
+            // ResponseEntity를 제거하고 ApiResponse 객체만 반환
+            return ApiResponse.success(mfaRequiredResponse);
+        } else {
+            // MFA가 비활성화된 경우 - 일반 로그인 완료
+            // ResponseEntity를 제거하고 ApiResponse 객체만 반환
+            return ApiResponse.success(loginResponse);
+        }
     }
 
     @GetMapping("/verify-email")
@@ -99,4 +127,6 @@ public class UserAuthController {
         userAuthService.resetPassword(request.getToken(), request.getNewPassword());
         return new ResponseEntity<>(ApiResponse.success("비밀번호가 성공적으로 재설정되었습니다.", null), HttpStatus.OK);
     }
+
+
 }

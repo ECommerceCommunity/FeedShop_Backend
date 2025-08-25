@@ -19,7 +19,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -36,8 +35,6 @@ public class MyFeedReadController {
     private final UserRepository userRepository;
 
     /**
-     * 마이피드 목록 조회 (FD-802)
-     *
      * @param userDetails JWT 토큰에서 추출된 사용자 정보
      * @param feedType 피드 타입 (DAILY, EVENT, RANKING)
      * @param page 페이지 번호 (기본값: 0)
@@ -270,4 +267,4 @@ public class MyFeedReadController {
         log.debug("사용자 ID 추출 완료: {}", user.getId());
         return user.getId();
     }
-} 
+}

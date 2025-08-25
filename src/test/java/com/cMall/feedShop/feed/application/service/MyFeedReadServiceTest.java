@@ -184,7 +184,7 @@ class MyFeedReadServiceTest {
     }
 
     @Test
-    @DisplayName("여러 마이피드 목록 조회 - 성공")
+    @DisplayName("마이피드 목록 조회 - 성공")
     void getMyFeeds_MultipleFeeds_Success() {
         // given
         Long userId = 1L;
@@ -216,32 +216,5 @@ class MyFeedReadServiceTest {
         verify(feedServiceUtils, times(1)).getUserIdFromUserDetails(userDetails);
         verify(feedRepository, times(1)).findByUserId(userId, testPageable);
         verify(feedMapper, times(2)).toMyFeedListResponseDto(any(Feed.class));
-    }
-
-    @Test
-    @DisplayName("마이피드 개수 조회 - 성공 (현재 구현되지 않음)")
-    void getMyFeedCount_Success() {
-        // given
-        Long userId = 1L;
-        
-        // 현재 getMyFeedCount 메서드는 구현되지 않음
-        // TODO: 메서드 구현 후 테스트 활성화
-        
-        // when & then
-        assertThat(true).isTrue(); // 임시 테스트 통과
-    }
-
-    @Test
-    @DisplayName("마이피드 타입별 개수 조회 - 성공 (현재 구현되지 않음)")
-    void getMyFeedCountByType_Success() {
-        // given
-        Long userId = 1L;
-        FeedType feedType = FeedType.EVENT;
-        
-        // 현재 getMyFeedCountByType 메서드는 구현되지 않음
-        // TODO: 메서드 구현 후 테스트 활성화
-        
-        // when & then
-        assertThat(true).isTrue(); // 임시 테스트 통과
     }
 } 

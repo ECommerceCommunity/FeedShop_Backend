@@ -5,6 +5,7 @@ import com.cMall.feedShop.feed.application.dto.response.FeedCreateResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedSearchResponseDto;
 import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.entity.FeedHashtag;
 import com.cMall.feedShop.feed.domain.entity.FeedImage;
@@ -202,6 +203,47 @@ public class FeedMapper {
         }
         return feeds.stream()
                 .map(this::toMyFeedListResponseDto)
+                .collect(Collectors.toList());
+    }
+    
+    // ==================== 피드 검색 관련 매핑 메서드들 ====================
+    
+    /**
+     * Feed 엔티티를 FeedSearchResponseDto로 변환 (검색용 최적화)
+     */
+    public FeedSearchResponseDto toFeedSearchResponseDto(Feed feed) {
+        return FeedSearchResponseDto.builder()
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType())
+                .instagramId(feed.getInstagramId())
+                .createdAt(feed.getCreatedAt())
+                .likeCount(feed.getLikeCount())
+                .commentCount(feed.getCommentCount())
+                .participantVoteCount(feed.getParticipantVoteCount())
+                .userId(getUserId(feed.getUser()))
+                .userNickname(getUserNickname(feed.getUser()))
+                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .productName(getProductName(feed.getOrderItem()))
+                .eventId(getEventId(feed.getEvent()))
+                .eventTitle(getEventTitle(feed.getEvent()))
+                .hashtags(getHashtags(feed.getHashtags()))
+                .imageUrls(getImageUrls(feed.getImages()))
+                .isLiked(false) // 기본값: 좋아요하지 않음 (서비스에서 실제 상태로 업데이트)
+                .isVoted(false) // 기본값: 투표하지 않음 (서비스에서 실제 상태로 업데이트)
+                .build();
+    }
+    
+    /**
+     * Feed 리스트를 FeedSearchResponseDto 리스트로 변환
+     */
+    public List<FeedSearchResponseDto> toFeedSearchResponseDtoList(List<Feed> feeds) {
+        if (feeds == null || feeds.isEmpty()) {
+            return List.of();
+        }
+        return feeds.stream()
+                .map(this::toFeedSearchResponseDto)
                 .collect(Collectors.toList());
     }
     

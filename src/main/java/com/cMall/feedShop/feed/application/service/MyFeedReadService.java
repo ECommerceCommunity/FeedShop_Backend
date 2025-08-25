@@ -1,6 +1,8 @@
 package com.cMall.feedShop.feed.application.service;
 
 import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
+import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
 import com.cMall.feedShop.feed.application.service.FeedLikeService;
 import com.cMall.feedShop.feed.application.service.FeedVoteService;
 import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -37,7 +40,7 @@ public class MyFeedReadService {
     private final FeedServiceUtils feedServiceUtils;
     
     /**
-     * 내 피드 목록 조회 (페이징, 정렬)
+     * 내 피드 목록 조회 (페이징, 정렬) - 성능 개선 버전
      * 
      * @param userDetails 현재 로그인한 사용자 정보
      * @param pageable 페이징 및 정렬 정보
@@ -86,6 +89,9 @@ public class MyFeedReadService {
                     .likeCount(dto.getLikeCount())
                     .commentCount(dto.getCommentCount())
                     .participantVoteCount(dto.getParticipantVoteCount())
+                    .userNickname(dto.getUserNickname())
+                    .userProfileImg(dto.getUserProfileImg())
+                    .userLevel(dto.getUserLevel())
                     .orderItemId(dto.getOrderItemId())
                     .productName(dto.getProductName())
                     .productSize(dto.getProductSize())
