@@ -2,6 +2,9 @@ package com.cMall.feedShop.config;
 
 import com.cMall.feedShop.user.infrastructure.security.JwtAuthenticationFilter;
 import com.cMall.feedShop.user.infrastructure.service.CustomUserDetailsService;
+import com.cMall.feedShop.user.infrastructure.oauth.CustomOAuth2UserService;
+import com.cMall.feedShop.user.infrastructure.oauth.OAuth2AuthenticationSuccessHandler;
+import com.cMall.feedShop.user.infrastructure.oauth.OAuth2AuthenticationFailureHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +38,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -54,6 +60,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ADMIN")
                     .requestMatchers(
                       "/api/auth/**",
+                      "/oauth2/**",
+                      "/login/oauth2/**",
                       "/public/**",
                       "/swagger-ui/**",
                       "/v3/api-docs/**",
@@ -72,6 +80,16 @@ public class SecurityConfig {
                 )
                 .formLogin(formLogin -> formLogin.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
+                
+                // OAuth2 로그인 설정
+                .oauth2Login(oauth2 -> oauth2
+                    .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService)
+                    )
+                    .successHandler(oAuth2AuthenticationSuccessHandler)
+                    .failureHandler(oAuth2AuthenticationFailureHandler)
+                )
+                
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();

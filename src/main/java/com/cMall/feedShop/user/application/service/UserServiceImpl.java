@@ -10,8 +10,10 @@ import com.cMall.feedShop.user.domain.exception.AccountNotVerifiedException;
 import com.cMall.feedShop.user.domain.exception.DuplicateEmailException;
 import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.exception.UserNotFoundException;
+import com.cMall.feedShop.user.domain.model.DailyPoints;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserProfile;
+import com.cMall.feedShop.user.domain.repository.UserActivityRepository;
 import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +48,7 @@ public class UserServiceImpl implements UserService{
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final UserActivityRepository userActivityRepository;
 
     @Value("${app.verification-url}")
     private String verificationUrl;
@@ -292,5 +296,35 @@ public class UserServiceImpl implements UserService{
         } else {
             return localPart.charAt(0) + "*".repeat(localPart.length() - 2) + localPart.charAt(localPart.length() - 1) + "@" + domain;
         }
+    }
+
+    /**
+     * 특정 사용자의 일별 활동 점수 통계를 조회합니다.
+     * @param user 조회 대상 사용자
+     * @param startDate 통계 시작 날짜
+     * @return 일별 점수 통계 DTO 리스트
+     * @throws UserException 활동 내역이 없는 경우
+     */
+    @Transactional(readOnly = true)
+    public List<DailyPoints> getDailyPointsStatisticsForUser(User user, LocalDateTime startDate) {
+
+        // LocalDateTime을 LocalDate로 변환
+        LocalDate startLocalDate = startDate.toLocalDate();
+        List<Object[]> rawStats = userActivityRepository.getDailyPointsStatistics(user, startLocalDate);
+
+        if (rawStats.isEmpty()) {
+            // 조회 결과가 비어있다면 비즈니스 예외를 던집니다.
+            throw new UserException(NO_ACTIVITY_DATA, "해당 기간의 활동 내역이 없습니다.");
+        }
+
+        // Object[]를 DailyPoints로 변환
+        List<DailyPoints> dailyStats = new ArrayList<>();
+        for (Object[] row : rawStats) {
+            LocalDate date = (LocalDate) row[0];
+            Integer totalPoints = (Integer) row[1];
+            dailyStats.add(new DailyPoints(date, totalPoints));
+        }
+
+        return dailyStats;
     }
 }

@@ -5,6 +5,8 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.LikeToggleResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.LikeUserResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedsResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedItemDto;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedLike;
@@ -145,6 +147,47 @@ public class FeedLikeService {
     }
     
     /**
+     * 사용자가 좋아요한 피드 목록 조회 (페이징)
+     * - 로그인한 사용자가 좋아요를 누른 피드들을 페이징으로 조회
+     * - 좋아요를 누른 시간순으로 정렬 (최신순)
+     * - 피드 상세 정보와 함께 좋아요 시간 제공
+     */
+    @Transactional(readOnly = true)
+    public MyLikedFeedsResponseDto getMyLikedFeeds(Long userId, int page, int size) {
+        log.info("사용자별 좋아요 피드 목록 조회 요청 - userId: {}, page: {}, size: {}", userId, page, size);
+        
+        // 사용자 존재 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "사용자를 찾을 수 없습니다."));
+        
+        // 페이징 및 정렬 설정
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        // 사용자가 좋아요한 피드 목록 조회
+        Page<FeedLike> feedLikes = feedLikeRepository.findByUserIdWithFeed(userId, pageRequest);
+        
+        // DTO 변환
+        List<MyLikedFeedItemDto> likedFeeds = feedLikes.getContent().stream()
+                .map(this::toMyLikedFeedItemDto)
+                .collect(Collectors.toList());
+        
+        log.info("사용자별 좋아요 피드 목록 조회 완료 - userId: {}, 총 {}개", userId, feedLikes.getTotalElements());
+        
+        // MyLikedFeedsResponseDto 구성
+        return MyLikedFeedsResponseDto.builder()
+                .content(likedFeeds)
+                .page(page)
+                .size(size)
+                .totalElements(feedLikes.getTotalElements())
+                .totalPages(feedLikes.getTotalPages())
+                .first(feedLikes.isFirst())
+                .last(feedLikes.isLast())
+                .hasNext(feedLikes.hasNext())
+                .hasPrevious(feedLikes.hasPrevious())
+                .build();
+    }
+    
+    /**
      * FeedLike 엔티티를 LikeUserResponseDto로 변환
      */
     private LikeUserResponseDto toLikeUserResponseDto(FeedLike feedLike) {
@@ -155,6 +198,27 @@ public class FeedLikeService {
                 .profileImageUrl(getUserProfileImageUrl(user))
                 .level(getUserLevel(user))
                 .likedAt(feedLike.getCreatedAt())
+                .build();
+    }
+    
+    /**
+     * FeedLike 엔티티를 MyLikedFeedItemDto로 변환
+     */
+    private MyLikedFeedItemDto toMyLikedFeedItemDto(FeedLike feedLike) {
+        Feed feed = feedLike.getFeed();
+        User author = feed.getUser();
+        
+        return MyLikedFeedItemDto.builder()
+                .feedId(feed.getId())
+                .title(feed.getTitle())
+                .content(feed.getContent())
+                .feedType(feed.getFeedType().name())
+                .imageUrl(getFirstImageUrl(feed))
+                .likedAt(feedLike.getCreatedAt())
+                .likeCount(feed.getLikeCount() != null ? feed.getLikeCount() : 0)
+                .commentCount(feed.getCommentCount() != null ? feed.getCommentCount() : 0)
+                .authorNickname(getUserNickname(author))
+                .authorProfileImage(getUserProfileImageUrl(author))
                 .build();
     }
     
@@ -181,6 +245,15 @@ public class FeedLikeService {
      */
     private Integer getUserLevel(User user) {
         // TODO: 추후 UserProfile에 level 필드 추가 시 구현
+        return null;
+    }
+    
+    /**
+     * 피드의 첫 번째 이미지 URL 조회
+     */
+    private String getFirstImageUrl(Feed feed) {
+        // TODO: Feed 엔티티에 images 관계가 있다면 첫 번째 이미지 URL 반환
+        // 현재는 null 반환
         return null;
     }
     

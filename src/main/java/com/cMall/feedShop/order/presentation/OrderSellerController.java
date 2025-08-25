@@ -59,10 +59,10 @@ public class OrderSellerController {
             @RequestParam(defaultValue = "0")
             @Min(value = 0, message = "페이지 번호는 0 이상이어야 합니다.")
             int page,
-            @Parameter(description = "페이지 크기 (1~100)")
+            @Parameter(description = "페이지 크기 (0~1000)")
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "페이지 크기는 1 이상이어야 합니다.")
-            @Max(value = 100, message = "페이지 크기는 100 이하이어야 합니다.")
+            @Max(value = 1000, message = "페이지 크기는 1000 이하이어야 합니다.")
             int size,
             @Parameter(
                     description = "주문 상태 필터링(전체 조회시 'ALL' 또는 'NULL')",

@@ -21,6 +21,7 @@ import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,7 @@ import java.util.Map;
 import static com.cMall.feedShop.order.application.constants.OrderConstants.MAX_ORDER_QUANTITY;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -51,6 +53,8 @@ public class OrderService {
      */
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest request, String loginId) {
+        log.info("주문 생성 시작 - 사용포인트: {}", request.getUsedPoints());
+      
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
         User currentUser = orderCommonService.validateUser(loginId);
 
@@ -78,8 +82,15 @@ public class OrderService {
         // 8. 장바구니 아이템 삭제
         cartItemRepository.deleteAll(selectedCartItems);
 
-        // 9. 주문 생성 응답 반환
-        return OrderCreateResponse.from(order);
+        // 9. 뱃지 자동 수여 체크
+        orderCommonService.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
+
+        // 10. 주문 생성 응답 반환
+        OrderCreateResponse response = OrderCreateResponse.from(order);
+        log.info("주문 생성 완료 - orderId: {}, userId: {}, 총금액: {}",
+                order.getOrderId(), currentUser.getId(), calculation.getFinalAmount());
+
+        return response;
     }
 
     /**
@@ -92,6 +103,8 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public OrderPageResponse getOrderListForUser(int page, int size, String status, String loginId) {
+        log.debug("사용자 주문 목록 조회 - page: {}, size: {}, status: {}", page, size, status);
+      
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
         User currentUser = orderCommonService.validateUser(loginId);
 
@@ -185,6 +198,8 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(Long orderId, String loginId) {
+        log.debug("주문 상세 조회 - orderId: {}", orderId);
+
         // 1. 현재 사용자 조회 및 권한 검증
         User currentUser = orderCommonService.validateUser(loginId);
 
@@ -205,6 +220,8 @@ public class OrderService {
      */
     @Transactional
     public OrderStatusUpdateResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
+        log.info("주문 상태 변경 시작 - orderId: {}, newStatus: {}", orderId, request.getStatus());
+
         // 1. 판매자 권한 검증
         User seller = validateSeller(loginId);
 
@@ -219,7 +236,11 @@ public class OrderService {
         order.updateStatus(request.getStatus());
 
         // 5. 주문 상태 변경 응답 반환
-        return OrderStatusUpdateResponse.from(order);
+        OrderStatusUpdateResponse response = OrderStatusUpdateResponse.from(order);
+        log.info("주문 상태 변경 완료 - orderId: {}, sellerId: {}, newStatus: {}",
+                orderId, seller.getId(), request.getStatus());
+
+        return response;
     }
 
     /**
@@ -231,6 +252,8 @@ public class OrderService {
      */
     @Transactional
     public OrderStatusUpdateResponse updateUserOrderStatus(Long orderId, OrderStatusUpdateRequest request, String loginId) {
+        log.info("사용자 주문 상태 변경 시작 - orderId: {}, newStatus: {}", orderId, request.getStatus());
+
         // 1. 현재 사용자 조회 및 권한 검증
         User user = validateUser(loginId);
 
@@ -250,12 +273,17 @@ public class OrderService {
         order.updateStatus(request.getStatus());
 
         // 5. 주문 상태 변경 응답 반환
-        return OrderStatusUpdateResponse.from(order);
+        OrderStatusUpdateResponse response = OrderStatusUpdateResponse.from(order);
+        log.info("사용자 주문 상태 변경 완료 - orderId: {}, userId: {}, newStatus: {}",
+                orderId, user.getId(), request.getStatus());
+
+        return response;
     }
 
     // 판매자가 주문 상태를 변경할 수 있는지 검증한다.
     private void validateStatusUpdate(OrderStatus currentStatus, OrderStatus newStatus) {
         if (!currentStatus.canChangeTo(newStatus)) {
+            log.warn("유효하지 않은 주문 상태 변경 시도 - currentStatus: {}, newStatus: {}", currentStatus, newStatus);
             throw new OrderException(ErrorCode.INVALID_ORDER_STATUS);
         }
     }
@@ -319,6 +347,7 @@ public class OrderService {
      */
     private void validateCartItems(List<CartItem> selectedCartItems) {
         if (selectedCartItems.isEmpty()) {
+            log.warn("선택된 장바구니 아이템이 없어 주문 생성 실패");
             throw new OrderException(ErrorCode.ORDER_CART_EMPTY);
         }
 
@@ -343,9 +372,11 @@ public class OrderService {
 
     // 주문 취소/반품 시 재고를 복구한다.
     private void restoreStock(Order order) {
+        log.info("재고 복구 시작 - orderId: {}", order.getOrderId());
         for (OrderItem item : order.getOrderItems()) {
             ProductOption option = item.getProductOption();
             option.increaseStock(item.getQuantity());
+            log.debug("재고 복구 완료 - optionId: {}, 복구수량: {}", option.getOptionId(), item.getQuantity());
         }
     }
 }
