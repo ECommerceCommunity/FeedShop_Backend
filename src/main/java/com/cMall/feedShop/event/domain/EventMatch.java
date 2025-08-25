@@ -2,7 +2,7 @@ package com.cMall.feedShop.event.domain;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.event.domain.enums.MatchStatus;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

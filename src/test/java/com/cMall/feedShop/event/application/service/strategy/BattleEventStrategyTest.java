@@ -5,7 +5,7 @@ import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.EventResult;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.feed.domain.repository.FeedVoteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,8 +112,8 @@ class BattleEventStrategyTest {
     void calculateResult_Success() {
         // given
         List<Feed> participants = Arrays.asList(feed1, feed2);
-        lenient().when(feedVoteRepository.countByFeedId(1L)).thenReturn(15L);
-        lenient().when(feedVoteRepository.countByFeedId(2L)).thenReturn(8L);
+        lenient().when(feedVoteRepository.countByFeed_Id(1L)).thenReturn(15L);
+        lenient().when(feedVoteRepository.countByFeed_Id(2L)).thenReturn(8L);
 
         // when
         EventResult result = battleEventStrategy.calculateResult(testEvent, participants);
@@ -141,8 +141,8 @@ class BattleEventStrategyTest {
     void calculateResult_Tie() {
         // given
         List<Feed> participants = Arrays.asList(feed1, feed2);
-        lenient().when(feedVoteRepository.countByFeedId(1L)).thenReturn(10L);
-        lenient().when(feedVoteRepository.countByFeedId(2L)).thenReturn(10L);
+        lenient().when(feedVoteRepository.countByFeed_Id(1L)).thenReturn(10L);
+        lenient().when(feedVoteRepository.countByFeed_Id(2L)).thenReturn(10L);
 
         // when
         EventResult result = battleEventStrategy.calculateResult(testEvent, participants);
@@ -174,7 +174,7 @@ class BattleEventStrategyTest {
     void calculateResult_SingleParticipant() {
         // given
         List<Feed> participants = Arrays.asList(feed1);
-        lenient().when(feedVoteRepository.countByFeedId(1L)).thenReturn(5L);
+        lenient().when(feedVoteRepository.countByFeed_Id(1L)).thenReturn(5L);
 
         // when & then
         assertThatThrownBy(() -> battleEventStrategy.calculateResult(testEvent, participants))

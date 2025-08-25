@@ -4,7 +4,7 @@ import com.cMall.feedShop.event.application.service.strategy.EventStrategy;
 import com.cMall.feedShop.event.application.service.strategy.EventStrategyFactory;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

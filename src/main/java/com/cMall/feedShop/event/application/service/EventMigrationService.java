@@ -9,7 +9,7 @@ import com.cMall.feedShop.event.domain.EventMatch;
 import com.cMall.feedShop.event.domain.repository.EventParticipantRepository;
 import com.cMall.feedShop.event.domain.repository.EventMatchRepository;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

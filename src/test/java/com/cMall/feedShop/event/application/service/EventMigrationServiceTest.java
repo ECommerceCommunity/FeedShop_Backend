@@ -11,7 +11,7 @@ import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventParticipantRepository;
 import com.cMall.feedShop.event.domain.repository.EventMatchRepository;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import org.junit.jupiter.api.BeforeEach;

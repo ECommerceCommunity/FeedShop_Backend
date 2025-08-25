@@ -5,7 +5,7 @@ import com.cMall.feedShop.event.domain.EventResult;
 import com.cMall.feedShop.event.domain.EventResultDetail;
 import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.enums.EventType;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedVoteRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
@@ -183,7 +183,7 @@ public class BattleEventStrategy implements EventStrategy {
      * 피드 투표 수 조회
      */
     private long getVoteCount(Long feedId) {
-        return feedVoteRepository.countByFeedId(feedId);
+        return feedVoteRepository.countByFeed_Id(feedId);
     }
 
     /**

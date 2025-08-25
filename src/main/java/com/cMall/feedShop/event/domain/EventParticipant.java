@@ -2,7 +2,7 @@ package com.cMall.feedShop.event.domain;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.event.domain.enums.ParticipationStatus;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

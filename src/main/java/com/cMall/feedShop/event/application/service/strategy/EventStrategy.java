@@ -3,7 +3,7 @@ package com.cMall.feedShop.event.application.service.strategy;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventResult;
 import com.cMall.feedShop.event.domain.enums.EventType;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 
 import java.util.List;
