@@ -67,7 +67,35 @@ public interface ReviewQueryRepository {
     Long countDeletedReviewsByUserId(Long userId);
     
     /**
-     * 사용자별 총 리뷰 개수 조회 (활성 리뷰만)
+     * 사용자별 전체 리뷰 개수 (활성 + 삭제)
      */
     Long countByUserId(Long userId);
+
+    // ========== 리뷰 필터링 메서드들 ==========
+    
+    /**
+     * 평점별 필터링으로 상품별 활성 리뷰 조회 (최신순)
+     */
+    Page<Review> findActiveReviewsByProductIdAndRating(Long productId, Integer rating, Pageable pageable);
+    
+    /**
+     * 착용감 필터링으로 상품별 활성 리뷰 조회 (최신순)
+     */
+    Page<Review> findActiveReviewsByProductIdAndSizeFit(Long productId, SizeFit sizeFit, Pageable pageable);
+    
+    /**
+     * 쿠션감 필터링으로 상품별 활성 리뷰 조회 (최신순)
+     */
+    Page<Review> findActiveReviewsByProductIdAndCushion(Long productId, Cushion cushion, Pageable pageable);
+    
+    /**
+     * 안정성 필터링으로 상품별 활성 리뷰 조회 (최신순)
+     */
+    Page<Review> findActiveReviewsByProductIdAndStability(Long productId, Stability stability, Pageable pageable);
+    
+    /**
+     * 복합 필터링으로 상품별 활성 리뷰 조회 (최신순)
+     * - null인 파라미터는 필터링에서 제외
+     */
+    Page<Review> findActiveReviewsByProductIdWithFilters(Long productId, Integer rating, SizeFit sizeFit, Cushion cushion, Stability stability, Pageable pageable);
 }
