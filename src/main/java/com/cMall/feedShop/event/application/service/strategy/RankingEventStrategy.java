@@ -122,6 +122,8 @@ public class RankingEventStrategy implements EventStrategy {
         return EventResultDetail.createRankingResult(
                 null, // EventResult는 나중에 설정
                 feed.getUser(),
+                feed.getId(),
+                feed.getTitle(),
                 rank,
                 getVoteCount(feed.getId()),
                 rewardInfo.getPoints(),

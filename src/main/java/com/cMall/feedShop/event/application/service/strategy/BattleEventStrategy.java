@@ -169,6 +169,8 @@ public class BattleEventStrategy implements EventStrategy {
         return EventResultDetail.createBattleWinner(
                 null, // EventResult는 나중에 설정
                 winner.getUser(),
+                winner.getId(),
+                winner.getTitle(),
                 getVoteCount(winner.getId()),
                 rewardInfo.getPoints(),
                 rewardInfo.getBadgePoints(),

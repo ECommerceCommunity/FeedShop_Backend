@@ -36,6 +36,12 @@ public class EventResultDetail extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "feed_id")
+    private Long feedId; // 우승한 피드 ID
+
+    @Column(name = "feed_title", length = 100)
+    private String feedTitle; // 우승한 피드 제목
+
     @Column(name = "rank_position")
     private Integer rankPosition; // 순위 (1, 2, 3...)
 
@@ -65,11 +71,14 @@ public class EventResultDetail extends BaseTimeEntity {
      * 배틀 우승자 결과 상세 생성
      */
     public static EventResultDetail createBattleWinner(EventResult eventResult, User user, 
-                                                     Long voteCount, Integer points, Integer badgePoints,
+                                                     Long feedId, String feedTitle, Long voteCount, 
+                                                     Integer points, Integer badgePoints,
                                                      String couponCode, String couponDescription) {
         return EventResultDetail.builder()
                 .eventResult(eventResult)
                 .user(user)
+                .feedId(feedId)
+                .feedTitle(feedTitle)
                 .rankPosition(1) // 배틀은 1등만
                 .voteCount(voteCount)
                 .pointsEarned(points)
@@ -83,12 +92,14 @@ public class EventResultDetail extends BaseTimeEntity {
      * 랭킹 결과 상세 생성
      */
     public static EventResultDetail createRankingResult(EventResult eventResult, User user, 
-                                                      Integer rankPosition, Long voteCount, 
-                                                      Integer points, Integer badgePoints,
+                                                      Long feedId, String feedTitle, Integer rankPosition, 
+                                                      Long voteCount, Integer points, Integer badgePoints,
                                                       String couponCode, String couponDescription) {
         return EventResultDetail.builder()
                 .eventResult(eventResult)
                 .user(user)
+                .feedId(feedId)
+                .feedTitle(feedTitle)
                 .rankPosition(rankPosition)
                 .voteCount(voteCount)
                 .pointsEarned(points)

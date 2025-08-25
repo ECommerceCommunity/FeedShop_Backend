@@ -113,8 +113,8 @@ public class EventResultResponseDto {
                     .userId(detail.getUser().getId())
                     .userName(detail.getUser().getUserProfile() != null ? 
                              detail.getUser().getUserProfile().getName() : "")
-                    .feedId(null) // EventResultDetail에는 feedId 필드가 없음
-                    .feedTitle(null) // EventResultDetail에는 feedTitle 필드가 없음
+                    .feedId(detail.getFeedId())
+                    .feedTitle(detail.getFeedTitle())
                     .rankPosition(detail.getRankPosition())
                     .voteCount(detail.getVoteCount())
                     .pointsEarned(detail.getPointsEarned())
