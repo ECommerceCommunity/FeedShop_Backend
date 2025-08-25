@@ -35,6 +35,11 @@ public interface FeedLikeRepository extends JpaRepository<FeedLike, Long> {
     List<FeedLike> findByFeed_Id(Long feedId);
 
     /**
+     * 특정 피드의 좋아요 목록 조회 (페이징 지원)
+     */
+    Page<FeedLike> findByFeed_Id(Long feedId, Pageable pageable);
+
+    /**
      * 특정 사용자의 좋아요 목록 조회 (페이징)
      */
     Page<FeedLike> findByUser_Id(Long userId, Pageable pageable);

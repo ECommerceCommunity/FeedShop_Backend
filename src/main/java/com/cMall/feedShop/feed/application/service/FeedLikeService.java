@@ -115,30 +115,26 @@ public class FeedLikeService {
         // 페이징 및 정렬 설정
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         
-        // 좋아요 사용자 목록 조회 (User 정보 포함)
-        List<FeedLike> feedLikes = feedLikeRepository.findByFeed_Id(feedId);
-        
-        // 페이징 처리 (수동으로 구현)
-        int start = (int) pageRequest.getOffset();
-        int end = Math.min(start + pageRequest.getPageSize(), feedLikes.size());
-        List<FeedLike> pagedFeedLikes = feedLikes.subList(start, end);
+        // 좋아요 사용자 목록 조회 (User 정보 포함, 페이징 지원)
+        Page<FeedLike> feedLikesPage = feedLikeRepository.findByFeed_Id(feedId, pageRequest);
         
         // DTO 변환
-        List<LikeUserResponseDto> likeUsers = pagedFeedLikes.stream()
+        List<LikeUserResponseDto> likeUsers = feedLikesPage.getContent().stream()
                 .map(this::toLikeUserResponseDto)
                 .collect(Collectors.toList());
         
-        log.info("좋아요 사용자 목록 조회 완료 - feedId: {}, 총 {}명", feedId, feedLikes.size());
+        log.info("좋아요 사용자 목록 조회 완료 - feedId: {}, 총 {}명, 현재 페이지 {}명", 
+                feedId, feedLikesPage.getTotalElements(), feedLikesPage.getNumberOfElements());
         
         // PaginatedResponse 구성
         return PaginatedResponse.<LikeUserResponseDto>builder()
                 .content(likeUsers)
                 .page(page)
                 .size(size)
-                .totalElements((long) feedLikes.size())
-                .totalPages((int) Math.ceil((double) feedLikes.size() / size))
-                .hasNext(end < feedLikes.size())
-                .hasPrevious(page > 0)
+                .totalElements(feedLikesPage.getTotalElements())
+                .totalPages(feedLikesPage.getTotalPages())
+                .hasNext(feedLikesPage.hasNext())
+                .hasPrevious(feedLikesPage.hasPrevious())
                 .build();
     }
 
