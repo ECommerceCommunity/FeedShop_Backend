@@ -302,4 +302,36 @@ public class Review extends BaseTimeEntity {
         this.status = ReviewStatus.DELETED;
         log.info("리뷰가 삭제 상태로 변경됨: reviewId={}", this.reviewId);
     }
+
+    /**
+     * 신고 수 증가
+     */
+    public void increaseReportCount() {
+        this.reportCount++;
+    }
+
+    /**
+     * 리뷰 숨김 처리
+     */
+    public void markAsHidden() {
+        this.status = ReviewStatus.HIDDEN;
+        this.isBlinded = true;
+        log.info("리뷰가 숨김 처리됨: reviewId={}", this.reviewId);
+    }
+
+    /**
+     * 리뷰 숨김 해제
+     */
+    public void markAsActive() {
+        this.status = ReviewStatus.ACTIVE;
+        this.isBlinded = false;
+        log.info("리뷰 숨김이 해제됨: reviewId={}", this.reviewId);
+    }
+
+    /**
+     * 리뷰가 숨김 상태인지 확인
+     */
+    public boolean isHidden() {
+        return this.status == ReviewStatus.HIDDEN || this.isBlinded;
+    }
 }

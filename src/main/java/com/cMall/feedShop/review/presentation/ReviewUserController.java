@@ -50,18 +50,103 @@ public class ReviewUserController {
     private final ReviewService reviewService;
     private final ReviewImageService reviewImageService;
     private final UserRepository userRepository;
+    private final com.cMall.feedShop.user.application.service.PointService pointService;
 
     // ============= 리뷰 작성 API =============
 
+    /**
+     * 리뷰 작성 - JSON 요청 (이미지 없음)
+     */
+    @PostMapping(consumes = "application/json")
+    @PreAuthorize("isAuthenticated()")
+    @ApiResponseFormat(message = "리뷰가 성공적으로 작성되었습니다.")
+    @Operation(summary = "리뷰 작성 (JSON)", description = "이미지 없이 리뷰를 작성합니다.")
+    public ApiResponse<ReviewCreateResponse> createReviewJson(
+            @Valid @RequestBody ReviewCreateRequest request,
+            @AuthenticationPrincipal User user) {
+
+        log.info("JSON 리뷰 작성 API 호출: productId={}, rating={}", request.getProductId(), request.getRating());
+        
+        // 1. 리뷰 작성 (트랜잭션 포함)
+        ReviewCreateResponse baseResponse = reviewService.createReview(request, null);
+        
+        // 2. 트랜잭션 완료 후 별도로 포인트 조회
+        Integer currentPoints = getCurrentPointsSafely(user);
+        
+        // 3. 최종 응답 생성
+        ReviewCreateResponse finalResponse = baseResponse.withCurrentPoints(currentPoints);
+        
+        log.info("JSON 리뷰 작성 API 완료: reviewId={}, pointsEarned={}, currentPoints={}", 
+                finalResponse.getReviewId(), finalResponse.getPointsEarned(), finalResponse.getCurrentPoints());
+        
+        return ApiResponse.success(finalResponse);
+    }
+
+    /**
+     * 리뷰 작성 - FormData 개별 필드 방식 (프론트엔드 호환)
+     */
     @PostMapping(consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰가 성공적으로 작성되었습니다.")
-    @Operation(summary = "리뷰 작성", description = "새로운 리뷰를 작성합니다. 개발 환경에서는 인증 없이 접근 가능합니다.")
-    public ApiResponse<ReviewCreateResponse> createReview(
+    @Operation(summary = "리뷰 작성 (FormData)", description = "FormData 개별 필드로 리뷰를 작성합니다.")
+    public ApiResponse<ReviewCreateResponse> createReviewFormData(
+            @Valid @NotNull(message = "상품 ID는 필수입니다.") @RequestParam Long productId,
+            @Valid @NotBlank(message = "리뷰 제목은 필수입니다.") @RequestParam String title,
+            @Valid @NotNull(message = "평점은 필수입니다.") @Min(1) @Max(5) @RequestParam Integer rating,
+            @Valid @NotBlank(message = "리뷰 내용은 필수입니다.") @RequestParam String content,
+            @Valid @NotNull(message = "사이즈 착용감은 필수입니다.") @RequestParam Integer sizeFit,
+            @Valid @NotNull(message = "쿠션감은 필수입니다.") @RequestParam Integer cushion,
+            @Valid @NotNull(message = "안정성은 필수입니다.") @RequestParam Integer stability,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @AuthenticationPrincipal User user) {
+
+        log.info("FormData 리뷰 작성 API 호출: productId={}, rating={}", productId, rating);
+        
+        // 개별 파라미터를 ReviewCreateRequest로 변환
+        ReviewCreateRequest request = ReviewCreateRequest.builder()
+                .productId(productId)
+                .title(title)
+                .rating(rating)
+                .content(content)
+                .sizeFit(com.cMall.feedShop.review.domain.enums.SizeFit.fromValue(sizeFit))
+                .cushion(com.cMall.feedShop.review.domain.enums.Cushion.fromValue(cushion))
+                .stability(com.cMall.feedShop.review.domain.enums.Stability.fromValue(stability))
+                .build();
+        
+        // 1. 리뷰 작성 (트랜잭션 포함)
+        ReviewCreateResponse baseResponse = reviewService.createReview(request, images);
+        
+        // 2. 트랜잭션 완료 후 별도로 포인트 조회
+        Integer currentPoints = getCurrentPointsSafely(user);
+        
+        // 3. 최종 응답 생성
+        ReviewCreateResponse finalResponse = baseResponse.withCurrentPoints(currentPoints);
+        
+        log.info("FormData 리뷰 작성 API 완료: reviewId={}, pointsEarned={}, currentPoints={}", 
+                finalResponse.getReviewId(), finalResponse.getPointsEarned(), finalResponse.getCurrentPoints());
+        
+        return ApiResponse.success(finalResponse);
+    }
+
+    /**
+     * 리뷰 작성 - JSON 부분과 이미지 부분으로 나뉜 멀티파트 요청
+     */
+    @PostMapping(value = "/with-images", consumes = "multipart/form-data")
+    @PreAuthorize("isAuthenticated()")
+    @ApiResponseFormat(message = "리뷰가 성공적으로 작성되었습니다.")
+    @Operation(summary = "리뷰 작성 (JSON + 이미지)", description = "JSON 문자열과 이미지로 리뷰를 작성합니다.")
+    public ApiResponse<ReviewCreateResponse> createReviewWithImages(
             @Valid @RequestPart(value = "review") ReviewCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
+        log.info("JSON+이미지 리뷰 작성 API 호출: productId={}, imageCount={}", 
+                request.getProductId(), images != null ? images.size() : 0);
+        
         ReviewCreateResponse response = reviewService.createReview(request, images);
+        
+        log.info("JSON+이미지 리뷰 작성 API 완료: reviewId={}, pointsEarned={}", 
+                response.getReviewId(), response.getPointsEarned());
+        
         return ApiResponse.success(response);
     }
 
@@ -293,6 +378,27 @@ public class ReviewUserController {
     public static class UserDeletedReviewCountResponse {
         private Long userId;
         private Long deletedReviewCount;
+    }
+
+    // ============= 헬퍼 메서드 =============
+
+    /**
+     * 안전하게 현재 포인트 조회 (트랜잭션과 분리)
+     */
+    private Integer getCurrentPointsSafely(User user) {
+        try {
+            if (user == null) {
+                log.warn("User가 null입니다");
+                return null;
+            }
+            
+            // User 엔티티를 직접 전달하는 방식으로 변경
+            return pointService.getPointBalance(user).getCurrentPoints();
+        } catch (Exception e) {
+            log.error("포인트 조회 실패: userId={}, error={}", 
+                    user != null ? user.getId() : "null", e.getMessage(), e);
+            return null; // 실패시 null 반환
+        }
     }
 
     /*
