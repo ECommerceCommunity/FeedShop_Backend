@@ -3,6 +3,10 @@ package com.cMall.feedShop.feed.application.service;
 import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
+import com.cMall.feedShop.feed.application.service.FeedLikeService;
+import com.cMall.feedShop.feed.application.service.FeedVoteService;
+import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
+import com.cMall.feedShop.feed.application.service.FeedMapper;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
@@ -15,8 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 import java.util.Optional;
 
@@ -34,6 +36,8 @@ public class MyFeedReadService {
     private final UserRepository userRepository;
     private final FeedMapper feedMapper;
     private final FeedLikeService feedLikeService;
+    private final FeedServiceUtils feedServiceUtils;
+    private final FeedVoteService feedVoteService; // Added FeedVoteService
 
     /**
      * 사용자의 마이피드 목록 조회 (페이징)
@@ -60,8 +64,9 @@ public class MyFeedReadService {
         // 사용자별 좋아요 및 투표 상태 설정
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
-                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
-            boolean isVoted = false; // TODO: FeedVoteService 구현 후 활성화
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            boolean isVoted = userDetails != null ? 
+                    feedVoteService.hasVoted(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             
             return FeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
@@ -121,8 +126,9 @@ public class MyFeedReadService {
         // 사용자별 좋아요 및 투표 상태 설정
         responsePage = responsePage.map(dto -> {
             boolean isLiked = userDetails != null ? 
-                    feedLikeService.isLikedByUser(dto.getFeedId(), getUserIdFromUserDetails(userDetails)) : false;
-            boolean isVoted = false; // TODO: FeedVoteService 구현 후 활성화
+                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            boolean isVoted = userDetails != null ? 
+                    feedVoteService.hasVoted(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
             
             return FeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
@@ -227,18 +233,5 @@ public class MyFeedReadService {
                 userId, totalCount, dailyCount, eventCount, rankingCount);
 
         return response;
-    }
-
-    /**
-     * UserDetails에서 사용자 ID를 추출하는 헬퍼 메서드
-     */
-    private Long getUserIdFromUserDetails(UserDetails userDetails) {
-        if (userDetails == null) {
-            return null;
-        }
-
-        String loginId = userDetails.getUsername();
-        Optional<User> userOptional = userRepository.findByLoginId(loginId);
-        return userOptional.map(User::getId).orElse(null);
     }
 } 

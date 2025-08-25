@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AddressRequestDto {
+public class AddressRequest {
     private String recipientName;
     private String recipientPhone;
     private String zipCode;
