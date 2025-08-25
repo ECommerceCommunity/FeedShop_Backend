@@ -171,8 +171,6 @@ public class FeedReadService {
         
         return responsePage;
     }
-<<<<<<< HEAD
-=======
     
     /**
      * 피드 타입별 조회 (페이징)
@@ -268,7 +266,7 @@ public class FeedReadService {
                     .hashtags(dto.getHashtags())
                     .imageUrls(dto.getImageUrls())
                     .isLiked(isLiked)
-                    .isVoted(dto.getIsVoted())
+                    .isVoted(false) // 투표는 이벤트 피드에서만 가능
                     .build();
         });
         

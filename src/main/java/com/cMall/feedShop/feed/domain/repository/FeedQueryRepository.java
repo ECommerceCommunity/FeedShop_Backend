@@ -1,7 +1,7 @@
 package com.cMall.feedShop.feed.domain.repository;
 
 import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

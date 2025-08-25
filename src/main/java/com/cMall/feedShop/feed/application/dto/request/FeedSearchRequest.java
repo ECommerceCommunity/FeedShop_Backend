@@ -1,6 +1,6 @@
 package com.cMall.feedShop.feed.application.dto.request;
 
-import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -1,7 +1,7 @@
 package com.cMall.feedShop.feed.infrastructure.repository;
 
 import com.cMall.feedShop.feed.application.dto.request.FeedSearchRequest;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedQueryRepository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -15,8 +15,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
-import static com.cMall.feedShop.feed.domain.QFeed.feed;
-import static com.cMall.feedShop.feed.domain.QFeedHashtag.feedHashtag;
+import static com.cMall.feedShop.feed.domain.entity.QFeed.feed;
+import static com.cMall.feedShop.feed.domain.entity.QFeedHashtag.feedHashtag;
 import static com.cMall.feedShop.event.domain.QEvent.event;
 import static com.cMall.feedShop.event.domain.QEventDetail.eventDetail;
 import static com.cMall.feedShop.order.domain.model.QOrderItem.orderItem;
