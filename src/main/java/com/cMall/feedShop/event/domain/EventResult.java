@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,7 +48,8 @@ public class EventResult extends BaseTimeEntity {
     private Long totalVotes;
 
     @OneToMany(mappedBy = "eventResult", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<EventResultDetail> resultDetails;
+    @Builder.Default
+    private List<EventResultDetail> resultDetails = new ArrayList<>();
 
     /**
      * 이벤트 결과 생성
