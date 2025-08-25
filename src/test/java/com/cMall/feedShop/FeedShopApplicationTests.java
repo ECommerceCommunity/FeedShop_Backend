@@ -27,9 +27,6 @@ class FeedShopApplicationTests {
     private EmailService emailService;
 
     @MockBean
-    private GcpStorageService gcpStorageService;
-
-    @MockBean
     private ImageValidator imageValidator;
 
     @MockBean

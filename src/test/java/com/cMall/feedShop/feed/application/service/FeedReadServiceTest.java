@@ -122,7 +122,7 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.EVENT, testPageable, null);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(FeedType.EVENT, testPageable, null);
 
         // then
         assertThat(result).isNotNull();
@@ -200,7 +200,7 @@ class FeedReadServiceTest {
         when(feedMapper.toFeedListResponseDto(feed2)).thenReturn(dto2);
 
         // when
-        Page<FeedListResponseDto> result = feedReadService.getFeedsByType(FeedType.EVENT, testPageable, null);
+        Page<FeedListResponseDto> result = feedReadService.getFeeds(FeedType.EVENT, testPageable, null);
 
         // then
         assertThat(result).isNotNull();

@@ -285,7 +285,12 @@ public class FeedLikeService {
         if (userId == null) {
             return false;
         }
-        return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, userId);
+        try {
+            return feedLikeRepository.existsByFeed_IdAndUser_Id(feedId, userId);
+        } catch (Exception e) {
+            log.error("사용자별 좋아요 상태 확인 중 오류 발생 - feedId: {}, userId: {}", feedId, userId, e);
+            return false;
+        }
     }
 
     /**
