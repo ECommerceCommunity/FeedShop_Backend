@@ -2,7 +2,6 @@ package com.cMall.feedShop;
 
 import com.cMall.feedShop.common.storage.StorageService;
 import com.cMall.feedShop.common.email.EmailService;
-import com.cMall.feedShop.common.storage.GcpStorageService;
 import com.cMall.feedShop.common.validator.ImageValidator;
 import com.cMall.feedShop.common.captcha.RecaptchaVerificationService;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ class FeedShopApplicationTests {
 
     @Test
     void contextLoads() {
-        // 단순히 컨텍스트가 로드되는지만 확인
+        // Spring 컨텍스트가 정상적으로 로드되는지 확인
         assertThat(true).isTrue();
     }
 
