@@ -3,9 +3,10 @@ package com.cMall.feedShop.feed.presentation;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.service.MyFeedReadService;
-import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +65,7 @@ class MyFeedReadControllerTest {
 
     private User testUser;
     private FeedListResponseDto testFeedDto;
+    private MyFeedListResponseDto testMyFeedDto;
     private Pageable testPageable;
 
     @BeforeEach
@@ -105,18 +107,26 @@ class MyFeedReadControllerTest {
                 .feedType(FeedType.DAILY)
                 .createdAt(LocalDateTime.now())
                 .build();
+                
+        testMyFeedDto = MyFeedListResponseDto.builder()
+                .feedId(1L)
+                .title("테스트 피드")
+                .content("테스트 내용")
+                .feedType(FeedType.DAILY)
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 
     @Test
     @DisplayName("마이피드 목록 조회 - 성공")
     void getMyFeeds_Success() throws Exception {
         // given
-        List<FeedListResponseDto> feeds = List.of(testFeedDto);
-        Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
+        List<MyFeedListResponseDto> feeds = List.of(testMyFeedDto);
+        Page<MyFeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
 
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
+        when(myFeedReadService.getMyFeeds(eq(userDetails), any(Pageable.class))).thenReturn(feedPage);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my")
@@ -130,79 +140,10 @@ class MyFeedReadControllerTest {
                 .andExpect(jsonPath("$.data.content[0].feedId").value(1))
                 .andExpect(jsonPath("$.data.content[0].title").value("테스트 피드"));
 
-        verify(myFeedReadService, times(1)).getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails));
+        verify(myFeedReadService, times(1)).getMyFeeds(eq(userDetails), any(Pageable.class));
     }
 
-    @Test
-    @DisplayName("마이피드 타입별 조회 - 성공")
-    void getMyFeedsByType_Success() throws Exception {
-        // given
-        List<FeedListResponseDto> feeds = List.of(testFeedDto);
-        Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
-        
-
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedsByType(eq(1L), eq(FeedType.EVENT), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
-
-        // when & then
-        mockMvc.perform(get("/api/feeds/my/type/EVENT")
-                        .param("page", "0")
-                        .param("size", "10")
-                        .param("sort", "latest")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content[0].feedId").value(1));
-
-        verify(myFeedReadService, times(1)).getMyFeedsByType(eq(1L), eq(FeedType.EVENT), any(Pageable.class), eq(userDetails));
-    }
-
-    @Test
-    @DisplayName("마이피드 개수 조회 - 성공")
-    void getMyFeedCounts_Success() throws Exception {
-        // given
-        MyFeedCountResponse counts = MyFeedCountResponse.builder()
-                .totalCount(10L)
-                .dailyCount(5L)
-                .eventCount(3L)
-                .rankingCount(2L)
-                .build();
-        
-
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedCounts(eq(1L))).thenReturn(counts);
-
-        // when & then
-        mockMvc.perform(get("/api/feeds/my/count")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.totalCount").value(10))
-                .andExpect(jsonPath("$.data.dailyCount").value(5))
-                .andExpect(jsonPath("$.data.eventCount").value(3))
-                .andExpect(jsonPath("$.data.rankingCount").value(2));
-
-        verify(myFeedReadService, times(1)).getMyFeedCounts(eq(1L));
-    }
-
-    @Test
-    @DisplayName("마이피드 타입별 개수 조회 - 성공")
-    void getMyFeedCountByType_Success() throws Exception {
-        // given
-
-        when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeedCountByType(eq(1L), eq(FeedType.DAILY))).thenReturn(5L);
-
-        // when & then
-        mockMvc.perform(get("/api/feeds/my/count/type/DAILY")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value(5));
-
-        verify(myFeedReadService, times(1)).getMyFeedCountByType(eq(1L), eq(FeedType.DAILY));
-    }
+    // TODO: getMyFeedsByType, getMyFeedCounts, getMyFeedCountByType 메서드가 구현되면 테스트 추가
 
     @Test
     @DisplayName("잘못된 피드 타입 - 에러 응답")
@@ -219,7 +160,7 @@ class MyFeedReadControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("잘못된 피드 타입입니다. (DAILY, EVENT, RANKING)"));
 
-        verify(myFeedReadService, never()).getMyFeeds(any(), any(), any());
+        verify(myFeedReadService, never()).getMyFeeds(any(), any());
     }
 
     @Test
@@ -232,19 +173,19 @@ class MyFeedReadControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("사용자 정보를 찾을 수 없습니다."));
 
-        verify(myFeedReadService, never()).getMyFeeds(any(), any(), any());
+        verify(myFeedReadService, never()).getMyFeeds(any(), any());
     }
 
     @Test
     @DisplayName("인기순 정렬 - 성공")
     void getMyFeeds_PopularSort_Success() throws Exception {
         // given
-        List<FeedListResponseDto> feeds = List.of(testFeedDto);
-        Page<FeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
+        List<MyFeedListResponseDto> feeds = List.of(testMyFeedDto);
+        Page<MyFeedListResponseDto> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
 
         when(userRepository.findByLoginId("testuser")).thenReturn(Optional.of(testUser));
-        when(myFeedReadService.getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails))).thenReturn(feedPage);
+        when(myFeedReadService.getMyFeeds(eq(userDetails), any(Pageable.class))).thenReturn(feedPage);
 
         // when & then
         mockMvc.perform(get("/api/feeds/my")
@@ -253,6 +194,6 @@ class MyFeedReadControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        verify(myFeedReadService, times(1)).getMyFeeds(eq(1L), any(Pageable.class), eq(userDetails));
+        verify(myFeedReadService, times(1)).getMyFeeds(eq(userDetails), any(Pageable.class));
     }
 }
