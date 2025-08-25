@@ -100,6 +100,8 @@ public enum ErrorCode {
     REVIEW_ALREADY_DELETED(409, "R005", "이미 삭제된 리뷰입니다."),
     REVIEW_DELETE_FORBIDDEN(403, "R006", "해당 리뷰를 삭제할 권한이 없습니다."),
     REVIEW_DELETION_FAILED(500, "R007", "리뷰 삭제 중 오류가 발생했습니다."),
+    DUPLICATE_REPORT(409, "R008", "이미 신고한 리뷰입니다."),
+    SELF_REPORT_NOT_ALLOWED(400, "R009", "자신이 작성한 리뷰는 신고할 수 없습니다."),
 
   
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)

@@ -75,6 +75,7 @@ public class BadgeService {
         UserBadge userBadge = UserBadge.builder()
                 .user(user)
                 .badgeType(badgeType)
+                .badgeName(badgeType.getName())
                 .awardedAt(LocalDateTime.now())
                 .isDisplayed(true)
                 .build();
@@ -184,6 +185,7 @@ public class BadgeService {
             UserBadge userBadge = UserBadge.builder()
                     .user(user)
                     .badgeType(badgeType)
+                    .badgeName(badgeType.getName())
                     .awardedAt(LocalDateTime.now())
                     .isDisplayed(true)
                     .build();
