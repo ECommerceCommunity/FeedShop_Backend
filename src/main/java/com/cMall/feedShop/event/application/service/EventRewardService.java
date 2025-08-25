@@ -4,11 +4,15 @@ import com.cMall.feedShop.event.domain.EventResultDetail;
 import com.cMall.feedShop.event.domain.repository.EventResultRepository;
 import com.cMall.feedShop.user.application.service.UserLevelService;
 import com.cMall.feedShop.user.application.service.PointService;
+import com.cMall.feedShop.user.application.service.UserCouponService;
+import com.cMall.feedShop.user.domain.enums.DiscountType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -29,8 +33,7 @@ public class EventRewardService {
     private final EventResultRepository eventResultRepository;
     private final PointService pointService;
     private final UserLevelService userLevelService;
-    // TODO: 쿠폰 서비스 연동
-    // private final CouponService couponService;
+    private final UserCouponService userCouponService;
 
     /**
      * 이벤트 결과에 대한 리워드 지급
@@ -102,11 +105,32 @@ public class EventRewardService {
                         detail.getUser().getId(), detail.getBadgePointsEarned());
             }
             
-            // 3. 쿠폰 지급 (TODO: 쿠폰 시스템 연동)
+            // 3. 쿠폰 지급
             if (detail.getCouponCode() != null && !detail.getCouponCode().isEmpty()) {
-                // couponService.issueCoupon(detail.getUser().getId(), detail.getCouponCode());
-                log.debug("쿠폰 지급 예정 - userId: {}, couponCode: {}", 
-                        detail.getUser().getId(), detail.getCouponCode());
+                try {
+                    // 이벤트 리워드용 쿠폰 발급
+                    String couponCode = generateEventRewardCouponCode(detail);
+                    String couponName = generateEventRewardCouponName(detail);
+                    BigDecimal discountValue = parseDiscountValue(detail.getCouponCode());
+                    DiscountType discountType = parseDiscountType(detail.getCouponCode());
+                    LocalDateTime expiresAt = LocalDateTime.now().plusMonths(3); // 3개월 유효기간
+                    
+                    userCouponService.issueCoupon(
+                        detail.getUser().getEmail(),
+                        couponCode,
+                        couponName,
+                        discountType,
+                        discountValue,
+                        false, // 무료배송 여부
+                        expiresAt
+                    );
+                    
+                    log.debug("쿠폰 지급 완료 - userId: {}, couponCode: {}, discountValue: {}", 
+                            detail.getUser().getId(), couponCode, discountValue);
+                } catch (Exception e) {
+                    log.error("쿠폰 지급 실패 - userId: {}, error: {}", detail.getUser().getId(), e.getMessage());
+                    // 쿠폰 지급 실패는 전체 리워드 실패로 처리하지 않고 로그만 남김
+                }
             }
             
             // 4. 지급 완료 처리
@@ -156,6 +180,54 @@ public class EventRewardService {
         detail.markRewardAsProcessed();
         
         return processParticipantReward(detail);
+    }
+
+    /**
+     * 이벤트 리워드용 쿠폰 코드 생성
+     */
+    private String generateEventRewardCouponCode(EventResultDetail detail) {
+        return String.format("EVENT_REWARD_%d_%d_%d_%s", 
+                detail.getEventResult().getEvent().getId(),
+                detail.getUser().getId(),
+                detail.getRankPosition(),
+                System.currentTimeMillis());
+    }
+
+    /**
+     * 이벤트 리워드용 쿠폰 이름 생성
+     */
+    private String generateEventRewardCouponName(EventResultDetail detail) {
+        return String.format("[이벤트 리워드] %s %d등 할인쿠폰", 
+                detail.getEventResult().getEvent().getEventDetail().getTitle(),
+                detail.getRankPosition());
+    }
+
+    /**
+     * 할인 값 파싱 (예: "50% 할인쿠폰" -> 50)
+     */
+    private BigDecimal parseDiscountValue(String couponDescription) {
+        try {
+            // "50% 할인쿠폰" 형태에서 숫자 추출
+            String numberStr = couponDescription.replaceAll("[^0-9]", "");
+            if (numberStr.isEmpty()) {
+                return BigDecimal.valueOf(10); // 기본값 10%
+            }
+            return BigDecimal.valueOf(Integer.parseInt(numberStr));
+        } catch (Exception e) {
+            log.warn("할인 값 파싱 실패, 기본값 사용: {}", couponDescription);
+            return BigDecimal.valueOf(10); // 기본값 10%
+        }
+    }
+
+    /**
+     * 할인 타입 파싱 (예: "50% 할인쿠폰" -> RATE_DISCOUNT)
+     */
+    private DiscountType parseDiscountType(String couponDescription) {
+        if (couponDescription.contains("%")) {
+            return DiscountType.RATE_DISCOUNT;
+        } else {
+            return DiscountType.FIXED_DISCOUNT;
+        }
     }
 
     /**
