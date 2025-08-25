@@ -59,11 +59,20 @@ dependencies {
 
 	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.15.0'
 
+	// OAuth2 의존성 추가
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
 	// QueryDSL 의존성 최신화 (취약점 패치)
 	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
 	annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api:2.1.1'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.1.0'
+
+	implementation 'com.warrenstrange:googleauth:1.5.0'
+
+	implementation 'com.google.zxing:core:3.5.1'
+	implementation 'com.google.zxing:javase:3.5.1'
 }
 
 jacoco {
@@ -82,12 +91,20 @@ sourceSets {
 	}
 }
 
+// QueryDSL Q클래스 생성 태스크
 tasks.register('cleanQuerydsl', Delete) {
 	delete querydslDir
 }
 
 clean {
 	delete querydslDir
+}
+
+// compileJava 태스크가 annotationProcessor를 실행하도록 의존성 설정
+compileJava {
+	options.compilerArgs += [
+		"-Aquerydsl.packageName=com.cMall.feedShop"
+	]
 }
 
 jacocoTestReport {

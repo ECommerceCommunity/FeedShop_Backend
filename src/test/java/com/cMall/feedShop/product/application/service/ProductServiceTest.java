@@ -30,6 +30,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -346,5 +347,74 @@ class ProductServiceTest {
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
         verify(productRepository, never()).delete(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("상품 삭제 성공 - Soft Delete 검증")
+    void deleteProduct_Success_WithSoftDeleteVerification() {
+        // given
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
+
+        // 삭제 전 상태 확인
+        assertThat(product.getDeletedAt()).isNull();
+
+        // when
+        productService.deleteProduct(1L, "seller123");
+
+        // then
+        verify(productRepository, times(1)).delete(product);
+
+        // ✅ Soft delete 검증 추가
+        assertThat(product.getDeletedAt()).isNotNull();
+        assertThat(product.getDeletedAt()).isBeforeOrEqualTo(LocalDateTime.now());
+    }
+
+    @Test
+    @DisplayName("삭제된 상품 재삭제 시도 - 이미 삭제된 상품은 조회되지 않음")
+    void deleteProduct_AlreadyDeletedProduct_NotFound() {
+        // given
+        Product deletedProduct = Product.builder()
+                .name("이미 삭제된 상품")
+                .price(new BigDecimal("10000"))
+                .store(store)
+                .category(category)
+                .build();
+        ReflectionTestUtils.setField(deletedProduct, "productId", 1L);
+        deletedProduct.delete(); // soft delete 적용
+
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        // @Where 조건으로 인해 삭제된 상품은 조회되지 않음
+        given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
+
+        // when & then
+        ProductException thrown = assertThrows(
+                ProductException.class,
+                () -> productService.deleteProduct(1L, "seller123")
+        );
+
+        assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
+        verify(productRepository, never()).delete(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("상품 삭제 후 조회 시 찾을 수 없음 - Soft Delete 동작 확인")
+    void deleteProduct_ThenFind_NotFound() {
+        // given
+        given(userRepository.findByLoginId("seller123")).willReturn(Optional.of(seller));
+        given(productRepository.findByProductId(1L)).willReturn(Optional.of(product));
+
+        // when - 상품 삭제
+        productService.deleteProduct(1L, "seller123");
+
+        // 삭제 후 조회 시뮬레이션 - @Where 조건으로 인해 조회되지 않음
+        given(productRepository.findByProductId(1L)).willReturn(Optional.empty());
+
+        // then - 삭제된 상품은 조회되지 않음
+        Optional<Product> foundProduct = productRepository.findByProductId(1L);
+        assertThat(foundProduct).isEmpty();
+
+        // 하지만 실제로는 soft delete되어 deleted_at이 설정됨
+        assertThat(product.getDeletedAt()).isNotNull();
     }
 }

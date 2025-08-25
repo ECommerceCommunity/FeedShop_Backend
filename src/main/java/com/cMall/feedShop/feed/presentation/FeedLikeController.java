@@ -5,6 +5,7 @@ import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
 import com.cMall.feedShop.feed.application.dto.response.LikeToggleResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.LikeUserResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.MyLikedFeedsResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedLikeService;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
@@ -62,8 +63,27 @@ public class FeedLikeController {
 
     @GetMapping("/my-likes")
     @ApiResponseFormat(message = "내가 좋아요한 피드 목록입니다.", status = 200)
-    public ResponseEntity<ApiResponse<List<Long>>> getMyLikedFeeds(@AuthenticationPrincipal UserDetails userDetails) {
-        log.info("내 좋아요 피드 목록 조회 요청");
+    public ResponseEntity<ApiResponse<MyLikedFeedsResponseDto>> getMyLikedFeeds(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("내 좋아요 피드 목록 조회 요청 - page: {}, size: {}", page, size);
+        
+        // 사용자 ID 추출
+        Long userId = getUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
+        
+        MyLikedFeedsResponseDto result = feedLikeService.getMyLikedFeeds(userId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+    
+    @GetMapping("/my-likes/ids")
+    @ApiResponseFormat(message = "내가 좋아요한 피드 ID 목록입니다.", status = 200)
+    public ResponseEntity<ApiResponse<List<Long>>> getMyLikedFeedIds(@AuthenticationPrincipal UserDetails userDetails) {
+        log.info("내 좋아요 피드 ID 목록 조회 요청");
         
         // 사용자 ID 추출
         Long userId = getUserIdFromUserDetails(userDetails);
@@ -88,17 +108,26 @@ public class FeedLikeController {
             return null;
         }
 
-        String loginId = userDetails.getUsername();
-        log.debug("UserDetails에서 사용자 정보 추출 완료");
+        String username = userDetails.getUsername(); // JWT 토큰의 subject
+        log.info("UserDetails에서 추출한 username: {}", username);
 
-        Optional<User> userOptional = userRepository.findByLoginId(loginId);
-        if (userOptional.isEmpty()) {
-            log.warn("login_id로 사용자를 찾을 수 없습니다");
-            return null;
+        // 1. 먼저 email로 시도
+        Optional<User> userOptional = userRepository.findByEmail(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            log.info("email로 사용자 찾음 - ID: {} (email: {})", user.getId(), username);
+            return user.getId();
         }
 
-        User user = userOptional.get();
-        log.debug("사용자 ID 추출 완료: {}", user.getId());
-        return user.getId();
+        // 2. email로 찾지 못하면 loginId로 시도
+        userOptional = userRepository.findByLoginId(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            log.info("loginId로 사용자 찾음 - ID: {} (loginId: {})", user.getId(), username);
+            return user.getId();
+        }
+
+        log.warn("username '{}'로 사용자를 찾을 수 없습니다 (email, loginId 모두 시도)", username);
+        return null;
     }
 }

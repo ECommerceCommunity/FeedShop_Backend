@@ -19,8 +19,15 @@ import com.cMall.feedShop.review.domain.ReviewImage;
 import com.cMall.feedShop.review.domain.repository.ReviewRepository;
 import com.cMall.feedShop.review.domain.repository.ReviewImageRepository;
 import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
+import com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService;
+import com.cMall.feedShop.review.domain.enums.Cushion;
+import com.cMall.feedShop.review.domain.enums.SizeFit;
+import com.cMall.feedShop.review.domain.enums.Stability;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.application.service.BadgeService;
+import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.domain.model.ActivityType;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +63,11 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ReviewDuplicationValidator duplicationValidator;
+    private final ReviewPurchaseVerificationService purchaseVerificationService;
     private final ReviewImageService reviewImageService;
     private final ReviewImageRepository reviewImageRepository;
+    private final BadgeService badgeService;
+    private final UserLevelService userLevelService;
 
     // 선택적 의존성 주입으로 변경 (GCP만)
     @Autowired(required = false)
@@ -69,15 +79,21 @@ public class ReviewService {
             UserRepository userRepository,
             ProductRepository productRepository,
             ReviewDuplicationValidator duplicationValidator,
+            ReviewPurchaseVerificationService purchaseVerificationService,
             ReviewImageService reviewImageService,
-            ReviewImageRepository reviewImageRepository) {
+            ReviewImageRepository reviewImageRepository,
+            BadgeService badgeService,
+            UserLevelService userLevelService) {
 
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.duplicationValidator = duplicationValidator;
+        this.purchaseVerificationService = purchaseVerificationService;
         this.reviewImageService = reviewImageService;
         this.reviewImageRepository = reviewImageRepository;
+        this.badgeService = badgeService;
+        this.userLevelService = userLevelService;
 
     }
 
@@ -91,66 +107,8 @@ public class ReviewService {
      */
     @Transactional
     public ReviewCreateResponse createReview(ReviewCreateRequest request, List<MultipartFile> images) {
-        // SecurityContext에서 현재 로그인한 사용자 정보 가져오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(ErrorCode.UNAUTHORIZED);
-        }
-
-        // 디버깅 로그 추가
-        log.info("=== 사용자 인증 정보 디버깅 ===");
-        log.info("Authentication: {}", authentication);
-        log.info("Principal: {}", authentication.getPrincipal());
-        log.info("Name: {}", authentication.getName());
-        log.info("Authorities: {}", authentication.getAuthorities());
-
-        // Principal에서 직접 이메일 가져오기
-        String userEmail;
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof User) {
-            User user = (User) principal;
-            userEmail = user.getEmail();
-            log.info("Principal에서 직접 이메일 추출: '{}'", userEmail);
-        } else if (principal instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) principal;
-            userEmail = userDetails.getUsername();
-            log.info("UserDetails에서 이메일 추출: '{}'", userEmail);
-        } else {
-            userEmail = authentication.getName();
-            log.info("Authentication.getName()에서 이메일 추출: '{}'", userEmail);
-        }
-
-        log.info("Principal 타입: {}", principal.getClass().getSimpleName());
-        log.info("Authentication.getName(): '{}'", authentication.getName());
-        log.info("최종 조회할 이메일: '{}'", userEmail);
-
-        // 사용자 조회 전 디버깅
-        Optional<User> userOptional = userRepository.findByEmail(userEmail);
-        log.info("사용자 조회 결과: {}", userOptional.isPresent() ? "존재함" : "존재하지 않음");
-
-        if (!userOptional.isPresent()) {
-            log.error("데이터베이스에서 이메일 '{}' 로 사용자를 찾을 수 없습니다.", userEmail);
-
-            // 디버깅: 전체 사용자 목록 확인 (개발 환경에서만)
-            List<User> allUsers = userRepository.findAll();
-            log.info("전체 사용자 수: {}", allUsers.size());
-            for (User u : allUsers) {
-                log.info("DB에 존재하는 사용자 이메일: '{}'", u.getEmail());
-            }
-
-            // 대소문자 무시하고 다시 시도
-            log.info("대소문자 무시하고 사용자 재조회 시도...");
-            for (User u : allUsers) {
-                if (u.getEmail().equalsIgnoreCase(userEmail)) {
-                    log.info("대소문자 차이로 인한 문제 발견! DB: '{}', JWT: '{}'", u.getEmail(), userEmail);
-                }
-            }
-        }
-
-        // 사용자 조회 - 여러 방법 시도
-        User user = findUserByEmail(userEmail);
+        // 현재 로그인한 사용자 가져오기
+        User user = getCurrentUserFromSecurity();
 
         // Product 조회
         Product product = productRepository.findById(request.getProductId())
@@ -158,6 +116,9 @@ public class ReviewService {
 
         // 중복 리뷰 검증
         duplicationValidator.validateNoDuplicateActiveReview(user.getId(), product.getProductId());
+        
+        // 구매이력 검증
+        purchaseVerificationService.validateUserPurchasedProduct(user, product.getProductId());
 
         // ✅ DTO에서 직접 값 추출 (불변 필드)
         Review review = Review.builder()
@@ -211,6 +172,9 @@ public class ReviewService {
             log.info("리뷰 이미지 업로드 완료 (기존 방식): reviewId={}, imageCount={}",
                     savedReview.getReviewId(), images.size());
         }
+
+        // 뱃지 자동 수여 체크
+        checkAndAwardBadgesAfterReview(user.getId());
 
         return ReviewCreateResponse.builder()
                 .reviewId(savedReview.getReviewId())
@@ -521,6 +485,20 @@ public class ReviewService {
     }
 
     /**
+     * 임시 테스트용 사용자 반환 (개발 환경용)
+     */
+    private User getTestUser() {
+        // DB에서 첫 번째 사용자를 가져와서 테스트용으로 사용
+        List<User> allUsers = userRepository.findAll();
+        if (allUsers.isEmpty()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "테스트용 사용자가 없습니다. 사용자를 먼저 생성해주세요.");
+        }
+        User testUser = allUsers.get(0);
+        log.info("테스트용 사용자 사용: email={}, id={}", testUser.getEmail(), testUser.getId());
+        return testUser;
+    }
+
+    /**
      * 여러 방법으로 사용자 조회 시도
      */
     private User findUserByEmail(String userEmail) {
@@ -552,7 +530,9 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public ReviewListResponse getProductReviews(Long productId, int page, int size, String sort) {
-        log.info("상품 리뷰 목록 조회: 상품ID={}, 페이지={}, 크기={}, 정렬={}", productId, page, size, sort);
+        log.info("상품 리뷰 목록 조회 시작: 상품ID={}, 페이지={}, 크기={}, 정렬={}", productId, page, size, sort);
+        
+        try {
 
         // 페이지 검증 및 기본값 설정
         page = Math.max(0, page);
@@ -575,9 +555,59 @@ public class ReviewService {
         Double averageRating = reviewRepository.findAverageRatingByProductId(productId);
         Long totalReviews = reviewRepository.countActiveReviewsByProductId(productId);
 
-        log.info("리뷰 목록 조회 완료: 총 {}개, 평균 평점 {}", totalReviews, averageRating);
+            log.info("리뷰 목록 조회 완료: 총 {}개, 평균 평점 {}", totalReviews, averageRating);
 
-        return ReviewListResponse.of(reviewResponsePage, averageRating, totalReviews);
+            return ReviewListResponse.of(reviewResponsePage, averageRating, totalReviews);
+            
+        } catch (Exception e) {
+            log.error("상품 리뷰 목록 조회 중 오류 발생: 상품ID={}, 에러={}", productId, e.getMessage(), e);
+            throw new RuntimeException("리뷰 목록 조회에 실패했습니다: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 필터링이 적용된 상품별 리뷰 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public ReviewListResponse getProductReviewsWithFilters(Long productId, int page, int size, String sort, 
+                                                          Integer rating, String sizeFit, String cushion, String stability) {
+        log.info("필터링된 상품 리뷰 목록 조회 시작: 상품ID={}, 평점={}, 착용감={}, 쿠션감={}, 안정성={}", 
+                productId, rating, sizeFit, cushion, stability);
+        
+        try {
+            // 페이지 검증 및 기본값 설정
+            page = Math.max(0, page);
+            size = (size < 1 || size > 100) ? 20 : size;
+
+            Pageable pageable = PageRequest.of(page, size);
+
+            // 문자열을 enum으로 변환
+            SizeFit sizeFitEnum = sizeFit != null ? SizeFit.valueOf(sizeFit.toUpperCase()) : null;
+            Cushion cushionEnum = cushion != null ? Cushion.valueOf(cushion.toUpperCase()) : null;
+            Stability stabilityEnum = stability != null ? Stability.valueOf(stability.toUpperCase()) : null;
+
+            Page<Review> reviewPage = reviewRepository.findActiveReviewsByProductIdWithFilters(
+                    productId, rating, sizeFitEnum, cushionEnum, stabilityEnum, pageable);
+
+            List<ReviewResponse> reviewResponses = convertReviewsToResponses(reviewPage.getContent());
+            Page<ReviewResponse> reviewResponsePage = new PageImpl<>(
+                    reviewResponses, pageable, reviewPage.getTotalElements());
+
+            // 통계 정보 조회 (전체 리뷰 기준)
+            Double averageRating = reviewRepository.findAverageRatingByProductId(productId);
+            Long totalReviews = reviewRepository.countActiveReviewsByProductId(productId);
+
+            log.info("필터링된 리뷰 목록 조회 완료: 필터링된 {}개, 전체 {}개", reviewPage.getTotalElements(), totalReviews);
+
+            return ReviewListResponse.of(reviewResponsePage, averageRating, totalReviews);
+            
+        } catch (IllegalArgumentException e) {
+            log.error("잘못된 필터 값: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "잘못된 필터 값입니다: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("필터링된 상품 리뷰 목록 조회 중 오류 발생: 상품ID={}, 에러={}", productId, e.getMessage(), e);
+            throw new RuntimeException("필터링된 리뷰 목록 조회에 실패했습니다: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -615,15 +645,23 @@ public class ReviewService {
         // 이미지 조회 시도
         try {
             images = reviewImageService.getReviewImages(review.getReviewId());
+            log.info("✅ 리뷰 이미지 조회 성공: reviewId={}, 이미지 수={}", review.getReviewId(), images.size());
+            
+            // 이미지 URL 로깅
+            if (!images.isEmpty()) {
+                images.forEach(image -> 
+                    log.info("🖼️ 최종 이미지 URL: reviewImageId={}, url={}", image.getReviewImageId(), image.getImageUrl())
+                );
+            }
         } catch (Exception e) {
-            log.debug("이미지 조회 실패, 빈 리스트 사용: reviewId={}", review.getReviewId());
+            log.warn("이미지 조회 실패, 빈 리스트 사용: reviewId={}, 에러={}", review.getReviewId(), e.getMessage());
         }
 
         // 응답 생성 시도
         try {
             return ReviewResponse.from(review, images);
         } catch (Exception e) {
-            log.debug("이미지 포함 응답 생성 실패, 기본 응답 생성: reviewId={}", review.getReviewId());
+            log.warn("이미지 포함 응답 생성 실패, 기본 응답 생성: reviewId={}, 에러={}", review.getReviewId(), e.getMessage());
             return ReviewResponse.from(review);
         }
     }
@@ -1024,6 +1062,31 @@ public class ReviewService {
             private Integer rating;
             private String title;
             private LocalDateTime deletedAt;
+        }
+    }
+
+    /**
+     * 리뷰 작성 후 뱃지 자동 수여 체크
+     */
+    private void checkAndAwardBadgesAfterReview(Long userId) {
+        try {
+            // 1. 리뷰 작성 점수 부여
+            userLevelService.recordActivity(
+                userId, 
+                ActivityType.REVIEW_CREATION, 
+                "리뷰 작성", 
+                null, 
+                "REVIEW"
+            );
+            
+            // 2. 사용자의 총 리뷰 수 조회
+            Long totalReviews = reviewRepository.countByUserId(userId);
+            
+            // 3. 뱃지 자동 수여 체크 (뱃지 획득 시 보너스 점수도 자동 부여됨)
+            badgeService.checkAndAwardReviewBadges(userId, totalReviews);
+        } catch (Exception e) {
+            // 뱃지 수여 실패가 리뷰 프로세스에 영향을 주지 않도록 예외 처리
+            log.error("뱃지 자동 수여 중 오류 발생 - userId: {}, error: {}", userId, e.getMessage());
         }
     }
 }

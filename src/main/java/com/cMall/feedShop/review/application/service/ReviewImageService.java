@@ -74,15 +74,24 @@ public class ReviewImageService {
 
     public List<ReviewImageResponse> getReviewImages(Long reviewId) {
         List<ReviewImage> images = reviewImageRepository.findActiveImagesByReviewId(reviewId);
+        
+        log.info("🖼️ 리뷰 이미지 조회: reviewId={}, DB에서 조회된 이미지 수={}", reviewId, images.size());
+        log.info("🔗 baseUrl 설정값: {}", imageProperties.getBaseUrl());
 
         return images.stream()
-                .map(image -> ReviewImageResponse.builder()
-                        .reviewImageId(image.getReviewImageId())
-                        .originalFilename(image.getOriginalFilename())
-                        .imageUrl(image.getFullImageUrl(imageProperties.getBaseUrl()))
-                        .imageOrder(image.getImageOrder())
-                        .fileSize(image.getFileSize())
-                        .build())
+                .map(image -> {
+                    String fullUrl = image.getFullImageUrl(imageProperties.getBaseUrl());
+                    log.info("📷 이미지 URL 생성: reviewImageId={}, filePath={}, fullUrl={}", 
+                             image.getReviewImageId(), image.getFilePath(), fullUrl);
+                    
+                    return ReviewImageResponse.builder()
+                            .reviewImageId(image.getReviewImageId())
+                            .originalFilename(image.getOriginalFilename())
+                            .imageUrl(fullUrl)
+                            .imageOrder(image.getImageOrder())
+                            .fileSize(image.getFileSize())
+                            .build();
+                })
                 .toList();
     }
 

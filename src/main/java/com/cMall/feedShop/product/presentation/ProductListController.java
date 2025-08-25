@@ -12,6 +12,12 @@ import com.cMall.feedShop.product.domain.enums.Gender;
 import com.cMall.feedShop.product.domain.enums.ProductSortType;
 import com.cMall.feedShop.product.domain.enums.Size;
 import com.cMall.feedShop.product.domain.exception.ProductException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,10 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 상품 목록 조회 컨트롤러
- * - 상품 목록을 조회하는 API를 제공합니다.
- */
+@Tag(name = "상품 목록", description = "상품 목록 조회 및 검색 관련 API")
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
@@ -34,38 +37,56 @@ public class ProductListController {
 
     private final ProductReadService productReadService;
 
-    /**
-     * 상품 목록 조회 API
-     * @param q
-     * @param categoryId
-     * @param minPrice
-     * @param maxPrice
-     * @param storeId
-     * @param colors
-     * @param sizes
-     * @param genders
-     * @param inStockOnly
-     * @param discountedOnly
-     * @param page
-     * @param size
-     * @param sort
-     * @return
-     */
+    @Operation(
+            summary = "상품 목록 조회 및 검색",
+            description = "다양한 필터와 검색 조건으로 상품 목록을 조회합니다. 키워드 검색, 카테고리별 필터, 가격 범위, 색상/사이즈/성별 필터, 재고 및 할인 상품 필터를 지원합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = ProductPageResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 (가격 범위, 색상/사이즈/성별 값 오류)"
+            )
+    })
     @GetMapping
     @ApiResponseFormat(message = "상품 목록을 성공적으로 조회했습니다.")
     public ApiResponse<ProductPageResponse> getProductList(
+            @Parameter(description = "상품명/브랜드명 검색 키워드", example = "나이키")
             @RequestParam(value = "q", required = false) String q,
+            @Parameter(description = "카테고리 ID", example = "1")
             @RequestParam(required = false) Long categoryId,
+            @Parameter(description = "최소 가격", example = "10000")
             @RequestParam(required = false) BigDecimal minPrice,
+            @Parameter(description = "최대 가격", example = "100000")
             @RequestParam(required = false) BigDecimal maxPrice,
+            @Parameter(description = "가게 ID", example = "1")
             @RequestParam(required = false) Long storeId,
+            @Parameter(description = "색상 필터 (여러개 선택 가능)", example = "[\"RED\", \"BLUE\"]")
             @RequestParam(required = false) List<String> colors,
+            @Parameter(description = "사이즈 필터 (여러개 선택 가능)", example = "[\"S\", \"M\", \"L\"]")
             @RequestParam(required = false) List<String> sizes,
+            @Parameter(description = "성별 필터 (여러개 선택 가능)", example = "[\"MALE\", \"FEMALE\", \"UNISEX\"]")
             @RequestParam(required = false) List<String> genders,
+            @Parameter(description = "재고 있는 상품만 조회", example = "true")
             @RequestParam(required = false) Boolean inStockOnly,
+            @Parameter(description = "할인 상품만 조회", example = "true")
             @RequestParam(required = false) Boolean discountedOnly,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "20")
             @RequestParam(defaultValue = "20") int size,
+            @Parameter(
+                    description = "정렬 기준",
+                    schema = @Schema(
+                            type = "string",
+                            allowableValues = {"latest", "oldest", "price_asc", "price_desc", "popular", "review"}
+                    ),
+                    example = "latest"
+            )
             @RequestParam(defaultValue = "latest") String sort
     ) {
         // 1. 가격 범위 유효성을 검증한다.

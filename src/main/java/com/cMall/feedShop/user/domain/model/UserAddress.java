@@ -1,6 +1,7 @@
 package com.cMall.feedShop.user.domain.model;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -37,6 +38,7 @@ public class UserAddress extends BaseTimeEntity {
     private String addressLine2;
 
     @Column(name = "is_default", nullable = false)
+    @JsonProperty("isDefault")
     private boolean isDefault;
 
     @Builder

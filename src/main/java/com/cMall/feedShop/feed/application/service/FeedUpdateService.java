@@ -6,7 +6,7 @@ import com.cMall.feedShop.feed.application.dto.request.FeedUpdateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.FeedDetailResponseDto;
 import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;

@@ -1,6 +1,7 @@
 package com.cMall.feedShop.common.exception;
 
 import com.cMall.feedShop.common.dto.ApiResponse;
+import com.cMall.feedShop.review.domain.exception.ReviewPurchaseRequiredException;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
@@ -120,6 +121,22 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
+
+    // 리뷰 구매이력 필수 예외
+    @ExceptionHandler(ReviewPurchaseRequiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleReviewPurchaseRequiredException(
+            ReviewPurchaseRequiredException e) {
+        log.error("Review purchase required error: {}", e.getMessage());
+
+        ApiResponse<Void> response = ApiResponse.<Void>builder()
+                .success(false)
+                .message(e.getMessage())
+                .data(null)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     // 추가: IllegalArgumentException 처리 (서비스 레이어에서 발생하는 일반적인 예외)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {

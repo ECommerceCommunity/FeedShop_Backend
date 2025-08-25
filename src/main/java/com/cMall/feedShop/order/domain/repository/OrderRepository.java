@@ -30,4 +30,10 @@ public interface OrderRepository extends JpaRepository<Order, Long>, OrderQueryR
     default Optional<Order> findByOrderIdAndUser(Long orderId, User user) {
         return findByOrderIdAndUserId(orderId, user.getId());
     }
+
+    // 특정 사용자의 특정 상태 주문 개수 조회
+    Long countByUserIdAndOrderStatus(Long userId, OrderStatus orderStatus);
+    
+    // 특정 사용자의 총 주문 금액 조회 (COMPLETED 상태만)
+    Long findTotalOrderAmountByUserId(Long userId);
 }

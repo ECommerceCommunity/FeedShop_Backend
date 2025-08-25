@@ -5,8 +5,10 @@ import com.cMall.feedShop.user.application.dto.request.UserWithdrawRequest;
 import com.cMall.feedShop.user.application.dto.response.UserProfileResponse;
 import com.cMall.feedShop.user.application.service.UserProfileService;
 import com.cMall.feedShop.user.application.service.UserService;
+import com.cMall.feedShop.user.domain.model.DailyPoints;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -95,5 +99,26 @@ public class UserController {
     public ResponseEntity<String> withdrawUser(@RequestBody UserWithdrawRequest request) {
         userService.withdrawCurrentUserWithPassword(request.getEmail(), request.getPassword());
         return ResponseEntity.ok("회원 탈퇴 처리 완료");
+    }
+
+    // 특정 사용자의 일별 활동 점수 통계 조회
+    @GetMapping("/me/activity/daily-points")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<DailyPoints>> getDailyPoints(@AuthenticationPrincipal UserDetails userDetails,
+                                                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate) {
+
+        // 현재 로그인한 사용자 정보 가져오기
+        User currentUser = (User) userDetails;
+
+        // startDate가 없으면 기본값 설정 (예: 30일 전)
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusDays(30);
+        }
+
+        // 서비스 레이어의 비즈니스 로직 호출
+        List<DailyPoints> dailyStats = userService.getDailyPointsStatisticsForUser(currentUser, startDate);
+
+        // 결과를 HTTP 200 OK와 함께 반환
+        return ResponseEntity.ok(dailyStats);
     }
 }

@@ -105,4 +105,36 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     public Long countDeletedReviewsByUserId(Long userId) {
         return reviewQueryRepository.countDeletedReviewsByUserId(userId);
     }
+
+    // ========== 필터링 메서드 구현들 ==========
+
+    @Override
+    public Page<Review> findActiveReviewsByProductIdAndRating(Long productId, Integer rating, Pageable pageable) {
+        return reviewQueryRepository.findActiveReviewsByProductIdAndRating(productId, rating, pageable);
+    }
+
+    @Override
+    public Page<Review> findActiveReviewsByProductIdAndSizeFit(Long productId, SizeFit sizeFit, Pageable pageable) {
+        return reviewQueryRepository.findActiveReviewsByProductIdAndSizeFit(productId, sizeFit, pageable);
+    }
+
+    @Override
+    public Page<Review> findActiveReviewsByProductIdAndCushion(Long productId, Cushion cushion, Pageable pageable) {
+        return reviewQueryRepository.findActiveReviewsByProductIdAndCushion(productId, cushion, pageable);
+    }
+
+    @Override
+    public Page<Review> findActiveReviewsByProductIdAndStability(Long productId, Stability stability, Pageable pageable) {
+        return reviewQueryRepository.findActiveReviewsByProductIdAndStability(productId, stability, pageable);
+    }
+
+    @Override
+    public Page<Review> findActiveReviewsByProductIdWithFilters(Long productId, Integer rating, SizeFit sizeFit, Cushion cushion, Stability stability, Pageable pageable) {
+        return reviewQueryRepository.findActiveReviewsByProductIdWithFilters(productId, rating, sizeFit, cushion, stability, pageable);
+    }
+
+    @Override
+    public Long countByUserId(Long userId) {
+        return reviewQueryRepository.countByUserId(userId);
+    }
 }

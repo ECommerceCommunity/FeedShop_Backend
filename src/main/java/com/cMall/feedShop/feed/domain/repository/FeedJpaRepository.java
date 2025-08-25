@@ -1,7 +1,7 @@
 package com.cMall.feedShop.feed.domain.repository;
 
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
