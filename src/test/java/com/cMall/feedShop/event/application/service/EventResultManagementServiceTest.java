@@ -65,6 +65,15 @@ class EventResultManagementServiceTest {
                 .maxParticipants(20)
                 .build();
 
+        // Event ID 설정 (reflection 사용)
+        try {
+            java.lang.reflect.Field idField = Event.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(testEvent, 1L);
+        } catch (Exception e) {
+            // reflection 실패 시 테스트 스킵
+        }
+
         // 테스트 사용자 설정
         testUser = User.builder().build();
 
@@ -75,6 +84,15 @@ class EventResultManagementServiceTest {
                 .event(testEvent)
                 .build();
 
+        // Feed ID 설정 (reflection 사용)
+        try {
+            java.lang.reflect.Field feedIdField = Feed.class.getDeclaredField("id");
+            feedIdField.setAccessible(true);
+            feedIdField.set(testFeed, 1L);
+        } catch (Exception e) {
+            // reflection 실패 시 테스트 스킵
+        }
+
         // 테스트 이벤트 결과 설정
         testEventResult = EventResult.builder()
                 .event(testEvent)
@@ -82,6 +100,15 @@ class EventResultManagementServiceTest {
                 .totalParticipants(1)
                 .totalVotes(10L)
                 .build();
+
+        // EventResult ID 설정 (reflection 사용)
+        try {
+            java.lang.reflect.Field resultIdField = EventResult.class.getDeclaredField("id");
+            resultIdField.setAccessible(true);
+            resultIdField.set(testEventResult, 1L);
+        } catch (Exception e) {
+            // reflection 실패 시 테스트 스킵
+        }
     }
 
     @Test
