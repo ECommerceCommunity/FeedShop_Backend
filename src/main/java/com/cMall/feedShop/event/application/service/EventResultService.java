@@ -6,8 +6,6 @@ import com.cMall.feedShop.event.domain.repository.EventResultRepository;
 import com.cMall.feedShop.feed.domain.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedVoteRepository;
-import com.cMall.feedShop.user.application.service.PointService;
-import com.cMall.feedShop.user.application.service.UserLevelService;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +33,6 @@ public class EventResultService {
     private final EventResultRepository eventResultRepository;
     private final FeedRepository feedRepository;
     private final FeedVoteRepository feedVoteRepository;
-    private final PointService pointService;
-    private final UserLevelService userLevelService;
 
     /**
      * 이벤트 결과 계산 및 발표
