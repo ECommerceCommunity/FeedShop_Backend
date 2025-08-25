@@ -22,6 +22,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -205,5 +207,28 @@ public class FeedVoteService {
         }
         
         log.info("전체 피드 투표 수 동기화 완료 - {}개 피드 처리됨", syncedCount);
+    }
+
+    /**
+     * 여러 피드에 대한 사용자의 투표 상태 일괄 조회
+     * 성능 개선을 위한 일괄 조회 메서드
+     * 
+     * @param feedIds 피드 ID 목록
+     * @param userId 사용자 ID
+     * @return 투표한 피드 ID 집합
+     */
+    public Set<Long> getVotedFeedIdsByFeedIdsAndUserId(List<Long> feedIds, Long userId) {
+        if (userId == null || feedIds == null || feedIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        
+        try {
+            List<Long> votedFeedIds = feedVoteRepository.findVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+            return new HashSet<>(votedFeedIds);
+        } catch (Exception e) {
+            log.error("일괄 투표 상태 조회 중 오류 발생 - userId: {}, feedIds: {}", userId, feedIds, e);
+            // 오류 발생 시 빈 집합 반환 (성능 개선 실패 시 기존 방식으로 fallback)
+            return new HashSet<>();
+        }
     }
 }

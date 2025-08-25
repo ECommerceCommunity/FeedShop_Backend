@@ -69,4 +69,11 @@ public interface FeedVoteRepository extends JpaRepository<FeedVote, Long> {
      */
     @Query("select v.feed from FeedVote v where v.event.id = :eventId and v.voter.id = :userId")
     Optional<com.cMall.feedShop.feed.domain.entity.Feed> findVotedFeedByEventAndUser(@Param("eventId") Long eventId, @Param("userId") Long userId);
+
+    /**
+     * 여러 피드에 대한 사용자의 투표 상태 일괄 조회
+     * 성능 개선을 위한 일괄 조회 메서드
+     */
+    @Query("SELECT fv.feed.id FROM FeedVote fv WHERE fv.feed.id IN :feedIds AND fv.voter.id = :userId")
+    List<Long> findVotedFeedIdsByFeedIdsAndUserId(@Param("feedIds") List<Long> feedIds, @Param("userId") Long userId);
 }

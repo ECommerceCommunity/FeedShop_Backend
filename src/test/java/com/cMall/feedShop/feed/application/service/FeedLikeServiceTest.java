@@ -33,6 +33,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -325,5 +326,95 @@ class FeedLikeServiceTest {
         // then
         assertThat(result).isFalse();
         verify(feedLikeRepository).existsByFeed_IdAndUser_Id(1L, 1L);
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 좋아요 상태 일괄 조회 성공")
+    void getLikedFeedIdsByFeedIdsAndUserId_success() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L, 4L, 5L);
+        Long userId = 1L;
+        List<Long> likedFeedIds = List.of(1L, 3L, 5L); // 홀수 ID만 좋아요
+        
+        when(feedLikeRepository.findLikedFeedIdsByFeedIdsAndUserId(feedIds, userId))
+                .thenReturn(likedFeedIds);
+
+        // when
+        Set<Long> result = feedLikeService.getLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).hasSize(3);
+        assertThat(result).containsExactlyInAnyOrder(1L, 3L, 5L);
+        verify(feedLikeRepository).findLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 좋아요 상태 일괄 조회 - 사용자 ID가 null인 경우")
+    void getLikedFeedIdsByFeedIdsAndUserId_userIdNull_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L);
+        Long userId = null;
+
+        // when
+        Set<Long> result = feedLikeService.getLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedLikeRepository, never()).findLikedFeedIdsByFeedIdsAndUserId(any(), any());
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 좋아요 상태 일괄 조회 - 피드 ID 목록이 비어있는 경우")
+    void getLikedFeedIdsByFeedIdsAndUserId_emptyFeedIds_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of();
+        Long userId = 1L;
+
+        // when
+        Set<Long> result = feedLikeService.getLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedLikeRepository, never()).findLikedFeedIdsByFeedIdsAndUserId(any(), any());
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 좋아요 상태 일괄 조회 - Repository 오류 발생 시 빈 집합 반환")
+    void getLikedFeedIdsByFeedIdsAndUserId_repositoryError_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L);
+        Long userId = 1L;
+        
+        when(feedLikeRepository.findLikedFeedIdsByFeedIdsAndUserId(feedIds, userId))
+                .thenThrow(new RuntimeException("Database error"));
+
+        // when
+        Set<Long> result = feedLikeService.getLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedLikeRepository).findLikedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+    }
+
+    @Test
+    @DisplayName("피드별 좋아요 사용자 목록 조회 성공")
+    void getLikeUsersByFeed_success() {
+        // given
+        Long feedId = 1L;
+        Pageable pageable = PageRequest.of(0, 10);
+        List<FeedLike> feedLikes = List.of(feedLike);
+        Page<FeedLike> feedLikePage = new PageImpl<>(feedLikes, pageable, 1);
+
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feed.isDeleted()).thenReturn(false);
+        when(feedLikeRepository.findByFeed_Id(feedId)).thenReturn(feedLikes);
+
+        // when
+        List<LikeUserResponseDto> result = feedLikeService.getLikeUsersByFeed(feedId, pageable);
+
+        // then
+        assertThat(result).hasSize(1);
+        verify(feedRepository).findById(feedId);
+        verify(feedLikeRepository).findByFeed_Id(feedId);
     }
 }

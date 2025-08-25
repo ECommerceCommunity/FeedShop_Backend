@@ -3,13 +3,19 @@ package com.cMall.feedShop.feed.application.service;
 import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.response.FeedVoteResponseDto;
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedType;
-import com.cMall.feedShop.event.domain.Event;
+import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.entity.FeedVote;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedVoteRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.domain.model.ActivityType;
+import com.cMall.feedShop.user.application.service.PointService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,9 +23,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,7 +60,7 @@ class FeedVoteServiceTest {
     private User user;
 
     @Mock
-    private Event event;
+    private FeedVote feedVote;
 
     @InjectMocks
     private FeedVoteService feedVoteService;
@@ -66,8 +79,7 @@ class FeedVoteServiceTest {
         Long eventId = 1L;
 
         when(feed.getFeedType()).thenReturn(FeedType.EVENT);
-        when(feed.getEvent()).thenReturn(event);
-        when(event.getId()).thenReturn(eventId);
+        when(feed.getEvent()).thenReturn(null); // Event 객체는 직접 생성하지 않음
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
@@ -94,8 +106,7 @@ class FeedVoteServiceTest {
         Long eventId = 1L;
 
         when(feed.getFeedType()).thenReturn(FeedType.EVENT);
-        when(feed.getEvent()).thenReturn(event);
-        when(event.getId()).thenReturn(eventId);
+        when(feed.getEvent()).thenReturn(null); // Event 객체는 직접 생성하지 않음
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
@@ -124,7 +135,7 @@ class FeedVoteServiceTest {
 
         // when & then
         assertThatThrownBy(() -> feedVoteService.voteFeed(feedId, userId))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(FeedNotFoundException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FEED_NOT_FOUND);
 
         verify(feedVoteRepository, never()).save(any());
@@ -191,7 +202,7 @@ class FeedVoteServiceTest {
 
         // when & then
         assertThatThrownBy(() -> feedVoteService.getVoteCount(feedId))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(FeedNotFoundException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.FEED_NOT_FOUND);
     }
 
@@ -205,8 +216,8 @@ class FeedVoteServiceTest {
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feed.getEvent()).thenReturn(event);
-        when(event.getId()).thenReturn(eventId);
+        when(feed.getEvent()).thenReturn(null); // Event 객체는 직접 생성하지 않음
+        when(feed.getEvent().getId()).thenReturn(eventId);
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
 
         // when
@@ -227,8 +238,8 @@ class FeedVoteServiceTest {
 
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(feed.getEvent()).thenReturn(event);
-        when(event.getId()).thenReturn(eventId);
+        when(feed.getEvent()).thenReturn(null); // Event 객체는 직접 생성하지 않음
+        when(feed.getEvent().getId()).thenReturn(eventId);
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
 
         // when
@@ -312,5 +323,73 @@ class FeedVoteServiceTest {
         verify(feed1, times(2)).incrementVoteCount(); // 3 -> 5
         verify(feed2, never()).incrementVoteCount(); // 변경 없음
         verify(feed2, never()).decrementVoteCount(); // 변경 없음
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 투표 상태 일괄 조회 성공")
+    void getVotedFeedIdsByFeedIdsAndUserId_success() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L, 4L, 5L);
+        Long userId = 1L;
+        List<Long> votedFeedIds = List.of(2L, 4L); // 짝수 ID만 투표
+        
+        when(feedVoteRepository.findVotedFeedIdsByFeedIdsAndUserId(feedIds, userId))
+                .thenReturn(votedFeedIds);
+
+        // when
+        Set<Long> result = feedVoteService.getVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactlyInAnyOrder(2L, 4L);
+        verify(feedVoteRepository).findVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 투표 상태 일괄 조회 - 사용자 ID가 null인 경우")
+    void getVotedFeedIdsByFeedIdsAndUserId_userIdNull_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L);
+        Long userId = null;
+
+        // when
+        Set<Long> result = feedVoteService.getVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedVoteRepository, never()).findVotedFeedIdsByFeedIdsAndUserId(any(), any());
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 투표 상태 일괄 조회 - 피드 ID 목록이 비어있는 경우")
+    void getVotedFeedIdsByFeedIdsAndUserId_emptyFeedIds_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of();
+        Long userId = 1L;
+
+        // when
+        Set<Long> result = feedVoteService.getVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedVoteRepository, never()).findVotedFeedIdsByFeedIdsAndUserId(any(), any());
+    }
+
+    @Test
+    @DisplayName("여러 피드에 대한 사용자의 투표 상태 일괄 조회 - Repository 오류 발생 시 빈 집합 반환")
+    void getVotedFeedIdsByFeedIdsAndUserId_repositoryError_returnsEmptySet() {
+        // given
+        List<Long> feedIds = List.of(1L, 2L, 3L);
+        Long userId = 1L;
+        
+        when(feedVoteRepository.findVotedFeedIdsByFeedIdsAndUserId(feedIds, userId))
+                .thenThrow(new RuntimeException("Database error"));
+
+        // when
+        Set<Long> result = feedVoteService.getVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(feedVoteRepository).findVotedFeedIdsByFeedIdsAndUserId(feedIds, userId);
     }
 }

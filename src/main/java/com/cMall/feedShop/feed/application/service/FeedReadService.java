@@ -17,7 +17,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 피드 조회 서비스
@@ -60,12 +63,28 @@ public class FeedReadService {
         // Feed 엔티티를 DTO로 변환
         Page<FeedListResponseDto> responsePage = feedPage.map(feedMapper::toFeedListResponseDto);
 
-        // 사용자별 좋아요 상태 설정
+        // 사용자별 좋아요/투표 상태 일괄 조회 (성능 개선)
+        final Set<Long> likedFeedIds = new HashSet<>();
+        final Set<Long> votedFeedIds = new HashSet<>();
+        
+        if (userDetails != null) {
+            Long userId = feedServiceUtils.getUserIdFromUserDetails(userDetails);
+            List<Long> feedIds = responsePage.getContent().stream()
+                    .map(FeedListResponseDto::getFeedId)
+                    .collect(Collectors.toList());
+            
+            // 일괄 조회로 성능 향상 (N+1 문제 해결)
+            likedFeedIds.addAll(feedLikeService.getLikedFeedIdsByFeedIdsAndUserId(feedIds, userId));
+            votedFeedIds.addAll(feedVoteService.getVotedFeedIdsByFeedIdsAndUserId(feedIds, userId));
+            
+            log.info("일괄 상태 조회 완료 - userId: {}, 피드 수: {}, 좋아요: {}개, 투표: {}개", 
+                    userId, feedIds.size(), likedFeedIds.size(), votedFeedIds.size());
+        }
+
+        // 상태 설정 (Set.contains() 사용으로 O(1) 성능)
         responsePage = responsePage.map(dto -> {
-            boolean isLiked = userDetails != null ? 
-                    feedLikeService.isLikedByUser(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
-            boolean isVoted = userDetails != null ? 
-                    feedVoteService.hasVoted(dto.getFeedId(), feedServiceUtils.getUserIdFromUserDetails(userDetails)) : false;
+            boolean isLiked = likedFeedIds.contains(dto.getFeedId());
+            boolean isVoted = votedFeedIds.contains(dto.getFeedId());
             return FeedListResponseDto.builder()
                     .feedId(dto.getFeedId())
                     .title(dto.getTitle())
