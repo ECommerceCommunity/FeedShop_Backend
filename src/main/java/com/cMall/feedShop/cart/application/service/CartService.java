@@ -22,6 +22,7 @@ import com.cMall.feedShop.user.domain.exception.UserException;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -52,6 +54,8 @@ public class CartService {
      * @return CartItemResponse 장바구니 아이템 응답
      */
     public CartItemResponse addCartItem(CartItemCreateRequest request, String loginId) {
+        log.info("장바구니 상품 추가 시작 - optionId: {}, quantity: {}", request.getOptionId(), request.getQuantity());
+        
         // 1. 현재 사용자 조회
         User currentUser = getCurrentUser(loginId);
 
@@ -94,6 +98,9 @@ public class CartService {
 
         // 9. DB에 저장
         cartItemRepository.save(cartItem);
+        
+        log.info("장바구니 상품 추가 완료 - cartItemId: {}, userId: {}, optionId: {}", 
+                cartItem.getCartItemId(), currentUser.getId(), request.getOptionId());
 
         // 10. 응답값 리턴
         return CartItemResponse.from(cartItem);
@@ -107,6 +114,8 @@ public class CartService {
      */
     @Transactional(readOnly = true)
     public CartItemListResponse getCartItems(String loginId) {
+        log.debug("장바구니 조회 시작");
+        
         // 1. 현재 사용자 조회
         User currentUser = getCurrentUser(loginId);
 
@@ -167,7 +176,10 @@ public class CartService {
                 .toList();
 
         // 5. 장바구니 아이템 가격 계산 후 최종 리스트 응답 생성
-        return calculateCartSummary(items);
+        CartItemListResponse response = calculateCartSummary(items);
+        log.debug("장바구니 조회 완료 - 아이템 수: {}, 총 금액: {}", items.size(), response.getTotalDiscountPrice());
+        
+        return response;
     }
 
     /**
@@ -178,6 +190,8 @@ public class CartService {
      * @param loginId
      */
     public void updateCartItem(Long cartItemId, CartItemUpdateRequest request, String loginId) {
+        log.info("장바구니 아이템 업데이트 시작 - cartItemId: {}", cartItemId);
+        
         // 1. 현재 사용자 조회
         User currentUser = getCurrentUser(loginId);
 
@@ -202,6 +216,8 @@ public class CartService {
 
         // 5. DB에 저장 (트랜잭션 관리)
         cartItemRepository.save(cartItem);
+        
+        log.info("장바구니 아이템 업데이트 완료 - cartItemId: {}, userId: {}", cartItemId, currentUser.getId());
     }
 
     /**
@@ -211,6 +227,8 @@ public class CartService {
      * @param loginId 현재 로그인한 사용자 정보
      */
     public void deleteCartItem(Long cartItemId, String loginId) {
+        log.info("장바구니 아이템 삭제 시작 - cartItemId: {}", cartItemId);
+        
         // 1. 현재 사용자 조회
         User currentUser = getCurrentUser(loginId);
 
@@ -220,6 +238,8 @@ public class CartService {
 
         // 3. 장바구니 아이템 삭제
         cartItemRepository.delete(cartItem);
+        
+        log.info("장바구니 아이템 삭제 완료 - cartItemId: {}, userId: {}", cartItemId, currentUser.getId());
     }
 
     private CartItemListResponse calculateCartSummary(List<CartItemInfo> items) {
@@ -270,6 +290,8 @@ public class CartService {
     private void validateStock(ProductOption productOption, Integer quantity) {
         // 재고가 충분한지 확인한다.
         if (!productOption.isInStock() || productOption.getStock() < quantity) {
+            log.warn("재고 부족 - optionId: {}, 요청수량: {}, 현재재고: {}", 
+                    productOption.getOptionId(), quantity, productOption.getStock());
             throw new ProductException(ErrorCode.OUT_OF_STOCK);
         }
     }

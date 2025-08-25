@@ -20,12 +20,14 @@ import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -41,6 +43,8 @@ public class ProductService {
     // 상품 등록
     @Transactional
     public ProductCreateResponse createProduct(ProductCreateRequest request, List<MultipartFile> mainImages, List<MultipartFile> detailImages, String loginId) {
+        log.info("상품 등록 시작 - 상품명: {}, 가격: {}", request.getName(), request.getPrice());
+        
         // 1. 현재 사용자 정보 가져오기 및 권한 검증
         User currentUser = getCurrentUser(loginId);
 
@@ -80,12 +84,18 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
 
         // 10. 응답값 리턴
-        return ProductCreateResponse.of(savedProduct.getProductId());
+        ProductCreateResponse response = ProductCreateResponse.of(savedProduct.getProductId());
+        log.info("상품 등록 완료 - productId: {}, userId: {}, 상품명: {}", 
+                savedProduct.getProductId(), currentUser.getId(), request.getName());
+        
+        return response;
     }
 
     // 상품 수정
     @Transactional
     public void updateProduct(Long productId, ProductUpdateRequest request, List<MultipartFile> mainImages, List<MultipartFile> detailImages, String loginId) {
+        log.info("상품 수정 시작 - productId: {}", productId);
+        
         // 1. 현재 사용자 정보 가져오기 및 권한 검증
         User currentUser = getCurrentUser(loginId);
 
@@ -128,11 +138,15 @@ public class ProductService {
 
         // 9. DB 저장
         productRepository.save(product);
+        
+        log.info("상품 수정 완료 - productId: {}, userId: {}", productId, currentUser.getId());
     }
 
     // 상품 삭제
     @Transactional
     public void deleteProduct(Long productId, String loginId) {
+        log.info("상품 삭제 시작 - productId: {}", productId);
+        
         // 1. 현재 사용자 정보 가져오기 및 권한 검증
         User currentUser = getCurrentUser(loginId);
 
@@ -145,8 +159,13 @@ public class ProductService {
         // 4. 주문에 포함된 상품인지 확인
         validateProductNotInOrder(product);
 
-        // 5. DB 에서 삭제 (CASCADE DELETE)
+        // 5. 소프트 딜리트
+        product.delete();
+
+        // 6. DB 에서 삭제 (CASCADE DELETE)
         productRepository.delete(product);
+        
+        log.info("상품 삭제 완료 - productId: {}, userId: {}", productId, currentUser.getId());
     }
 
     // JWT 에서 현재 사용자 추출
@@ -202,6 +221,7 @@ public class ProductService {
     // 상품명 중복 확인 (상품 등록 시)
     private void validateProductNameDuplication(Store store, String productName) {
         if (productRepository.existsByStoreAndName(store, productName)) {
+            log.warn("상품명 중복 - storeId: {}, 상품명: {}", store.getStoreId(), productName);
             throw new ProductException(ErrorCode.DUPLICATE_PRODUCT_NAME);
         }
     }
@@ -221,6 +241,8 @@ public class ProductService {
         // 상품 옵션들 중 하나라도 주문에 포함되어 있다면 삭제 불가
         for (ProductOption option : productOptions) {
             if (orderItemRepository.existsByProductOption(option)) {
+                log.warn("주문에 포함된 상품이라 삭제 불가 - productId: {}, optionId: {}", 
+                        product.getProductId(), option.getOptionId());
                 throw new ProductException(ErrorCode.PRODUCT_IN_ORDER);
             }
         }
@@ -228,6 +250,11 @@ public class ProductService {
 
     // 상품 필드 업데이트
     private void updateBasicInfo(Product product, ProductUpdateRequest request, Category category) {
+        // 상품이 삭제된 상태인지 확인
+        if (product.isDeleted()) {
+            throw new ProductException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
         // 기본 필드 업데이트
         product.updateInfo(request.getName(), request.getPrice(), request.getDescription());
 

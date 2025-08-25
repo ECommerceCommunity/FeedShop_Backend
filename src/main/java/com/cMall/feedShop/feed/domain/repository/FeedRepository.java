@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-public interface FeedRepository {
+public interface FeedRepository extends FeedQueryRepository {
     
     // 기본 CRUD
     Feed save(Feed feed);

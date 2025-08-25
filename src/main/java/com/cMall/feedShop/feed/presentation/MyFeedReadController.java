@@ -2,7 +2,7 @@ package com.cMall.feedShop.feed.presentation;
 
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.common.dto.PaginatedResponse;
-import com.cMall.feedShop.feed.application.dto.response.MyFeedListResponseDto;
+import com.cMall.feedShop.feed.application.dto.response.FeedListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.MyFeedCountResponse;
 import com.cMall.feedShop.feed.application.service.MyFeedReadService;
 import com.cMall.feedShop.feed.domain.FeedType;
@@ -19,7 +19,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -36,8 +35,6 @@ public class MyFeedReadController {
     private final UserRepository userRepository;
 
     /**
-     * 마이피드 목록 조회 (FD-802)
-     *
      * @param userDetails JWT 토큰에서 추출된 사용자 정보
      * @param feedType 피드 타입 (DAILY, EVENT, RANKING)
      * @param page 페이지 번호 (기본값: 0)
@@ -46,7 +43,7 @@ public class MyFeedReadController {
      * @return 마이피드 목록 페이지
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<PaginatedResponse<MyFeedListResponseDto>>> getMyFeeds(
+    public ResponseEntity<ApiResponse<PaginatedResponse<FeedListResponseDto>>> getMyFeeds(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String feedType,
             @RequestParam(defaultValue = "0") int page,
@@ -88,7 +85,7 @@ public class MyFeedReadController {
         Pageable pageable = PageRequest.of(page, size, sortConfig);
 
         // 서비스 호출
-        Page<MyFeedListResponseDto> feedPage;
+        Page<FeedListResponseDto> feedPage;
         if (type != null) {
             feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable, userDetails);
         } else {
@@ -96,7 +93,7 @@ public class MyFeedReadController {
         }
 
         // 응답 생성
-        PaginatedResponse<MyFeedListResponseDto> response = PaginatedResponse.<MyFeedListResponseDto>builder()
+        PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()
                 .content(feedPage.getContent())
                 .page(feedPage.getNumber())
                 .size(feedPage.getSize())
@@ -123,7 +120,7 @@ public class MyFeedReadController {
      * @return 마이피드 목록 페이지
      */
     @GetMapping("/type/{feedType}")
-    public ResponseEntity<ApiResponse<PaginatedResponse<MyFeedListResponseDto>>> getMyFeedsByType(
+    public ResponseEntity<ApiResponse<PaginatedResponse<FeedListResponseDto>>> getMyFeedsByType(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String feedType,
             @RequestParam(defaultValue = "0") int page,
@@ -156,10 +153,10 @@ public class MyFeedReadController {
             Pageable pageable = PageRequest.of(page, size, sortConfig);
 
             // 서비스 호출
-            Page<MyFeedListResponseDto> feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable, userDetails);
+            Page<FeedListResponseDto> feedPage = myFeedReadService.getMyFeedsByType(userId, type, pageable, userDetails);
 
             // 응답 생성
-            PaginatedResponse<MyFeedListResponseDto> response = PaginatedResponse.<MyFeedListResponseDto>builder()
+            PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()
                     .content(feedPage.getContent())
                     .page(feedPage.getNumber())
                     .size(feedPage.getSize())
@@ -268,4 +265,4 @@ public class MyFeedReadController {
         log.debug("사용자 ID 추출 완료: {}", user.getId());
         return user.getId();
     }
-} 
+}
