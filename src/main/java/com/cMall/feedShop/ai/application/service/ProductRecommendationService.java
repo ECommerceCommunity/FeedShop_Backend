@@ -1,10 +1,11 @@
 package com.cMall.feedShop.ai.application.service;
 
+import com.cMall.feedShop.ai.application.dto.response.ProductRecommendationAIResponse;
 import com.cMall.feedShop.ai.domain.enums.ProductRecommendationConfig;
 import com.cMall.feedShop.ai.domain.fallback.ProductRecommendationFallback;
 import com.cMall.feedShop.ai.domain.repository.ProductRecommendationRepository;
 import com.cMall.feedShop.ai.domain.template.ProductRecommendationTemplate;
-import com.cMall.feedShop.common.ai.CommonAIService;
+import com.cMall.feedShop.common.ai.BaseAIService;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.user.domain.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class ProductRecommendationService {
-    private final CommonAIService aiService;
+    private final BaseAIService aiService;
     private final ProductRecommendationRepository productRecommendationRepository;
     private final ObjectMapper objectMapper;
     private final ProductRecommendationTemplate template;
@@ -40,10 +41,10 @@ public class ProductRecommendationService {
             // 생성된 AI 프롬프트로 물어보기
             String aiResponse = aiService.generateText(aiPrompt);
 
-            // AI 응답을 Map 으로 파싱
-            Map<String, Object> responseMap = aiService.getResponseMap(aiResponse);
+            // AI 응답을 파싱
+            ProductRecommendationAIResponse responseMap = aiService.parseAIResponse(aiResponse, ProductRecommendationAIResponse.class);
 
-            // Map 으로 파싱한 결과에서 상품 ID 추출
+            // 상품 ID 추출
             List<Long> recommendedProductIds = extractProductIds(responseMap, safeLimit);
 
             // 상품 ID로 상품 조회
@@ -59,29 +60,27 @@ public class ProductRecommendationService {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Long> extractProductIds(Map<String, Object> responseMap, int limit) {
+    private List<Long> extractProductIds(ProductRecommendationAIResponse responseMap, int limit) {
         try {
-            Object statusObj = responseMap.get("status");
-            if (statusObj != null && !"OK".equalsIgnoreCase(String.valueOf(statusObj))) {
-                log.warn("AI 응답 status가 OK가 아님: {}, fallback 사용", statusObj);
+            if (!responseMap.isSuccess()) {
+                log.warn("AI 응답 실패: {}, fallback 사용", responseMap.getMessage());
                 return fallback.getFallbackProductIds(limit);
             }
 
-            Object raw = responseMap.get("productIds");
-            if (!(raw instanceof List<?> list) || list.isEmpty()) {
+            List<Long> productIds = responseMap.getProductIds();
+            if (productIds.isEmpty()) {
                 log.warn("AI 응답에서 productIds를 찾을 수 없음, fallback 사용");
                 return fallback.getFallbackProductIds(limit);
             }
 
-            return ((List<?>) raw).stream()
-                    .filter(elem -> elem instanceof Number)
-                    .map(elem -> ((Number) elem).longValue())
+            return productIds.stream()
+                    .filter(id -> id != null && id > 0)
                     .distinct()
                     .limit(limit)
                     .collect(Collectors.toList());
+
         } catch (Exception e) {
-            log.warn("AI 응답 파싱 실패: {}", e.getMessage());
+            log.warn("상품 ID 추출 실패: {}", e.getMessage());
             return fallback.getFallbackProductIds(limit);
         }
     }

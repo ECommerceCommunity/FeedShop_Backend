@@ -1,6 +1,5 @@
 package com.cMall.feedShop.common.ai;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,14 +9,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CommonAIService {
+public class BaseAIService {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
 
@@ -48,20 +46,41 @@ public class CommonAIService {
         }
     }
 
-    // AI 응답을 Map<String, Object>로 파싱, 실패 시 빈 맵 반환
-    public Map<String, Object> getResponseMap(String response) {
+    // AI 응답을 BaseAIResponse 객체로 변환
+    public <T extends BaseAIResponse<?>> T parseAIResponse(String response, Class<T> responseClass) {
         try {
-            if (response == null || response.isBlank()) {
-                return Map.of();
+            if (response == null || response.trim().isEmpty()) {
+                log.warn("AI 응답이 비어있음");
+                return createEmptyResponse(responseClass);
             }
+
             String cleanJson = cleanJsonResponse(response);
             if (cleanJson.isBlank()) {
-                return Map.of();
+                log.warn("정리된 JSON이 비어있음");
+                return createEmptyResponse(responseClass);
             }
-            return objectMapper.readValue(cleanJson, new TypeReference<Map<String, Object>>() {});
+
+            T result = objectMapper.readValue(cleanJson, responseClass);
+            if (result == null) {
+                log.warn("파싱 결과가 null");
+                return createEmptyResponse(responseClass);
+            }
+
+            log.debug("AI 응답 파싱 성공: {}", responseClass.getSimpleName());
+            return result;
+
         } catch (Exception e) {
-            log.warn("AI 응답 파싱 실패: {}", e.getMessage());
-            return Map.of(); // 빈 맵 반환
+            log.warn("AI 응답 파싱 실패 ({}): {}", responseClass.getSimpleName(), e.getMessage());
+            return createEmptyResponse(responseClass);
+        }
+    }
+
+    private <T extends BaseAIResponse<?>> T createEmptyResponse(Class<T> responseClass) {
+        try {
+            return responseClass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            log.error("빈 응답 객체 생성 실패: {}", responseClass.getSimpleName(), e);
+            throw new RuntimeException("기본 응답 객체 생성 실패", e);
         }
     }
 
