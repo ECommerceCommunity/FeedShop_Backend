@@ -17,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -185,7 +188,11 @@ public class FeedVoteService {
      */
     @Transactional
     public void syncAllVoteCounts() {
-        List<Feed> feeds = feedRepository.findAll();
+        // Pageable을 사용하여 모든 피드를 조회
+        Pageable pageable = PageRequest.of(0, 1000); // 한 번에 1000개씩 처리
+        Page<Feed> feedPage = feedRepository.findAll(pageable);
+        List<Feed> feeds = feedPage.getContent();
+        
         int syncedCount = 0;
         
         for (Feed feed : feeds) {

@@ -130,7 +130,7 @@ public class FeedReadController {
             Pageable pageable = PageRequest.of(page, size, sortConfig);
             
             // 서비스 호출
-            Page<FeedListResponseDto> feedPage = feedReadService.getFeedsByType(type, pageable, userDetails);
+            Page<FeedListResponseDto> feedPage = feedReadService.getFeeds(type, pageable, userDetails);
             
             // 응답 생성
             PaginatedResponse<FeedListResponseDto> response = PaginatedResponse.<FeedListResponseDto>builder()
