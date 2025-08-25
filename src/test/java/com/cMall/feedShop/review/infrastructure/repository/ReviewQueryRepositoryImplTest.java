@@ -112,6 +112,7 @@ class ReviewQueryRepositoryImplTest {
 
     private void setupLenientStubbing() {
         lenient().when(queryFactory.selectFrom(review)).thenReturn(reviewQuery);
+        lenient().when(reviewQuery.where(any(Predicate.class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.where(any(Predicate[].class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.orderBy(any(OrderSpecifier.class))).thenReturn(reviewQuery);
         lenient().when(reviewQuery.orderBy(any(OrderSpecifier[].class))).thenReturn(reviewQuery);
@@ -121,12 +122,12 @@ class ReviewQueryRepositoryImplTest {
 
         lenient().when(queryFactory.select(review.count())).thenReturn(countQuery);
         lenient().when(countQuery.from(review)).thenReturn(countQuery);
+        lenient().when(countQuery.where(any(Predicate.class))).thenReturn(countQuery);
         lenient().when(countQuery.where(any(Predicate[].class))).thenReturn(countQuery);
-        // 🔥 이 라인을 삭제! 🔥
-        // lenient().when(countQuery.fetchOne()).thenReturn(1L);
 
         lenient().when(queryFactory.select(review.rating.avg())).thenReturn(avgQuery);
         lenient().when(avgQuery.from(review)).thenReturn(avgQuery);
+        lenient().when(avgQuery.where(any(Predicate.class))).thenReturn(avgQuery);
         lenient().when(avgQuery.where(any(Predicate[].class))).thenReturn(avgQuery);
         lenient().when(avgQuery.fetchOne()).thenReturn(4.5);
 
@@ -134,6 +135,7 @@ class ReviewQueryRepositoryImplTest {
         lenient().when(queryFactory.select(review.sizeFit, review.count())).thenReturn(tupleQuery);
         lenient().when(queryFactory.select(review.stability, review.count())).thenReturn(tupleQuery);
         lenient().when(tupleQuery.from(review)).thenReturn(tupleQuery);
+        lenient().when(tupleQuery.where(any(Predicate.class))).thenReturn(tupleQuery);
         lenient().when(tupleQuery.where(any(Predicate[].class))).thenReturn(tupleQuery);
         // 🔥 핵심 수정: groupBy 체인 연결! 🔥
         lenient().when(tupleQuery.groupBy(any(Expression.class))).thenReturn(tupleQuery);
@@ -322,5 +324,164 @@ class ReviewQueryRepositoryImplTest {
         assertThat(result.getTotalElements()).isEqualTo(0L); // 이제 0L 반환!
     }
 
+    // ========== 필터링 메서드 테스트들 ==========
+
+    @Test
+    @DisplayName("평점별로 리뷰를 필터링할 수 있다")
+    void findActiveReviewsByProductIdAndRating() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdAndRating(1L, 5, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getRating()).isEqualTo(5);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("착용감별로 리뷰를 필터링할 수 있다")
+    void findActiveReviewsByProductIdAndSizeFit() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdAndSizeFit(1L, SizeFit.NORMAL, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getSizeFit()).isEqualTo(SizeFit.NORMAL);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("쿠션감별로 리뷰를 필터링할 수 있다")
+    void findActiveReviewsByProductIdAndCushion() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdAndCushion(1L, Cushion.SOFT, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getCushion()).isEqualTo(Cushion.SOFT);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("안정성별로 리뷰를 필터링할 수 있다")
+    void findActiveReviewsByProductIdAndStability() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdAndStability(1L, Stability.STABLE, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getStability()).isEqualTo(Stability.STABLE);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("복합 필터링으로 리뷰를 조회할 수 있다 - 모든 조건 지정")
+    void findActiveReviewsByProductIdWithFilters_AllFilters() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdWithFilters(
+                1L, 5, SizeFit.NORMAL, Cushion.SOFT, Stability.STABLE, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getRating()).isEqualTo(5);
+        assertThat(result.getContent().get(0).getSizeFit()).isEqualTo(SizeFit.NORMAL);
+        assertThat(result.getContent().get(0).getCushion()).isEqualTo(Cushion.SOFT);
+        assertThat(result.getContent().get(0).getStability()).isEqualTo(Stability.STABLE);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("복합 필터링으로 리뷰를 조회할 수 있다 - 일부 조건만 지정")
+    void findActiveReviewsByProductIdWithFilters_PartialFilters() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when - rating과 sizeFit만 지정, 나머지는 null
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdWithFilters(
+                1L, 5, SizeFit.NORMAL, null, null, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getRating()).isEqualTo(5);
+        assertThat(result.getContent().get(0).getSizeFit()).isEqualTo(SizeFit.NORMAL);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("복합 필터링 - 필터 없음 (모든 조건 null)")
+    void findActiveReviewsByProductIdWithFilters_NoFilters() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when - 모든 필터가 null
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdWithFilters(
+                1L, null, null, null, null, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("필터링 결과가 없는 경우 빈 페이지를 반환한다")
+    void findActiveReviewsByProductIdWithFilters_EmptyResult() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> emptyReviews = List.of();
+        
+        given(reviewQuery.fetch()).willReturn(emptyReviews);
+        given(countQuery.fetchOne()).willReturn(0L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdWithFilters(
+                1L, 1, SizeFit.VERY_BIG, Cushion.VERY_FIRM, Stability.VERY_UNSTABLE, pageable);
+
+        // then
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(0L);
+    }
 
 }

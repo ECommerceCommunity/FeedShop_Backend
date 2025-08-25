@@ -18,9 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class FeedVoteService {
 
     private final FeedVoteRepository feedVoteRepository;
@@ -55,9 +58,10 @@ public class FeedVoteService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "이벤트 참여 피드에만 투표할 수 있습니다.");
         }
 
-        // 4. 이미 투표했는지 확인
-        if (feedVoteRepository.existsByFeed_IdAndVoter_Id(feedId, userId)) {
-            throw new BusinessException(ErrorCode.DUPLICATE_REQUEST, "이미 투표한 피드입니다.");
+        // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인
+        if (feedVoteRepository.existsByEventIdAndUserId(feed.getEvent().getId(), userId)) {
+            log.info("이미 해당 이벤트에 투표함 - 이벤트ID: {}, 사용자ID: {}", feed.getEvent().getId(), userId);
+            return FeedVoteResponseDto.success(false, feed.getParticipantVoteCount());
         }
 
         // 5. 투표 생성
@@ -89,13 +93,7 @@ public class FeedVoteService {
             // 리워드 지급 실패가 투표에 영향을 주지 않도록 예외를 던지지 않음
         }
 
-        return FeedVoteResponseDto.builder()
-                .voteId(savedVote.getId())
-                .feedId(feedId)
-                .userId(userId)
-                .eventId(feed.getEvent().getId())
-                .votedAt(savedVote.getCreatedAt())
-                .build();
+        return FeedVoteResponseDto.success(true, feed.getParticipantVoteCount());
     }
 
     /**
@@ -152,5 +150,53 @@ public class FeedVoteService {
      */
     public long getEventVoteCount(Long eventId) {
         return feedVoteRepository.countByEvent_Id(eventId);
+    }
+
+    /**
+     * 투표 수 동기화 (Feed 엔티티의 participantVoteCount와 실제 투표 수 동기화)
+     */
+    @Transactional
+    public void syncVoteCount(Long feedId) {
+        Feed feed = feedRepository.findById(feedId)
+                .orElseThrow(() -> new FeedNotFoundException(feedId));
+        
+        long actualVoteCount = feedVoteRepository.countByFeed_Id(feedId);
+        long currentCount = feed.getParticipantVoteCount();
+        
+        if (actualVoteCount != currentCount) {
+            log.info("투표 수 동기화 - feedId: {}, 현재: {}, 실제: {}", feedId, currentCount, actualVoteCount);
+            
+            // 차이값만큼 조정
+            long difference = actualVoteCount - currentCount;
+            if (difference > 0) {
+                for (int i = 0; i < difference; i++) {
+                    feed.incrementVoteCount();
+                }
+            } else {
+                for (int i = 0; i < Math.abs(difference); i++) {
+                    feed.decrementVoteCount();
+                }
+            }
+        }
+    }
+
+    /**
+     * 모든 피드의 투표 수 동기화
+     */
+    @Transactional
+    public void syncAllVoteCounts() {
+        List<Feed> feeds = feedRepository.findAll();
+        int syncedCount = 0;
+        
+        for (Feed feed : feeds) {
+            try {
+                syncVoteCount(feed.getId());
+                syncedCount++;
+            } catch (Exception e) {
+                log.error("피드 투표 수 동기화 실패 - feedId: {}", feed.getId(), e);
+            }
+        }
+        
+        log.info("전체 피드 투표 수 동기화 완료 - {}개 피드 처리됨", syncedCount);
     }
 }

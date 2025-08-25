@@ -66,6 +66,11 @@ public class ReviewImage extends BaseTimeEntity {
     }
 
     public String getFullImageUrl(String baseUrl) {
+        // 이미 완전한 URL인 경우 그대로 반환
+        if (this.filePath != null && (this.filePath.startsWith("http://") || this.filePath.startsWith("https://"))) {
+            return this.filePath;
+        }
+        // 상대 경로인 경우 baseUrl과 조합
         return baseUrl + "/" + this.filePath;
     }
 

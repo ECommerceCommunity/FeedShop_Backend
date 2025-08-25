@@ -38,6 +38,9 @@ class FeedDetailServiceTest {
     private FeedLikeService feedLikeService;
 
     @Mock
+    private FeedVoteService feedVoteService; // Added FeedVoteService
+
+    @Mock
     private FeedServiceUtils feedServiceUtils;
 
     @InjectMocks
@@ -101,11 +104,12 @@ class FeedDetailServiceTest {
         assertThat(result.getCommentCount()).isEqualTo(5);
         assertThat(result.getParticipantVoteCount()).isEqualTo(3);
         assertThat(result.getIsLiked()).isFalse(); // 로그인하지 않은 사용자는 false
+        assertThat(result.getIsVoted()).isFalse(); // 로그인하지 않은 사용자는 false
     }
 
     @Test
-    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요하지 않은 상태)")
-    void getFeedDetail_Success_WithUser_NotLiked() {
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요하지 않은 상태, 투표하지 않은 상태)")
+    void getFeedDetail_Success_WithUser_NotLiked_NotVoted() {
         // given
         Long feedId = 1L;
         UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
@@ -114,6 +118,7 @@ class FeedDetailServiceTest {
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
         when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
         when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(false);
+        when(feedVoteService.hasVoted(feedId, 1L)).thenReturn(false);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
@@ -123,11 +128,12 @@ class FeedDetailServiceTest {
         assertThat(result.getFeedId()).isEqualTo(feedId);
         assertThat(result.getTitle()).isEqualTo("테스트 피드");
         assertThat(result.getIsLiked()).isFalse(); // 좋아요하지 않은 상태
+        assertThat(result.getIsVoted()).isFalse(); // 투표하지 않은 상태
     }
 
     @Test
-    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요한 상태)")
-    void getFeedDetail_Success_WithUser_Liked() {
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요한 상태, 투표하지 않은 상태)")
+    void getFeedDetail_Success_WithUser_Liked_NotVoted() {
         // given
         Long feedId = 1L;
         UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
@@ -136,6 +142,7 @@ class FeedDetailServiceTest {
         when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
         when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
         when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(true);
+        when(feedVoteService.hasVoted(feedId, 1L)).thenReturn(false);
 
         // when
         FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
@@ -145,6 +152,55 @@ class FeedDetailServiceTest {
         assertThat(result.getFeedId()).isEqualTo(feedId);
         assertThat(result.getTitle()).isEqualTo("테스트 피드");
         assertThat(result.getIsLiked()).isTrue(); // 좋아요한 상태
+        assertThat(result.getIsVoted()).isFalse(); // 투표하지 않은 상태
+    }
+
+    @Test
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요하지 않은 상태, 투표한 상태)")
+    void getFeedDetail_Success_WithUser_NotLiked_Voted() {
+        // given
+        Long feedId = 1L;
+        UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
+        
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
+        when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
+        when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
+        when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(false);
+        when(feedVoteService.hasVoted(feedId, 1L)).thenReturn(true);
+
+        // when
+        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getFeedId()).isEqualTo(feedId);
+        assertThat(result.getTitle()).isEqualTo("테스트 피드");
+        assertThat(result.getIsLiked()).isFalse(); // 좋아요하지 않은 상태
+        assertThat(result.getIsVoted()).isTrue(); // 투표한 상태
+    }
+
+    @Test
+    @DisplayName("피드 상세 조회 성공 - 로그인한 사용자 (좋아요한 상태, 투표한 상태)")
+    void getFeedDetail_Success_WithUser_Liked_Voted() {
+        // given
+        Long feedId = 1L;
+        UserDetails userDetails = org.mockito.Mockito.mock(UserDetails.class);
+        
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(mockFeed));
+        when(feedMapper.toFeedDetailResponseDto(mockFeed)).thenReturn(mockResponseDto);
+        when(feedServiceUtils.getUserIdFromUserDetails(userDetails)).thenReturn(1L);
+        when(feedLikeService.isLikedByUser(feedId, 1L)).thenReturn(true);
+        when(feedVoteService.hasVoted(feedId, 1L)).thenReturn(true);
+
+        // when
+        FeedDetailResponseDto result = feedDetailService.getFeedDetail(feedId, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getFeedId()).isEqualTo(feedId);
+        assertThat(result.getTitle()).isEqualTo("테스트 피드");
+        assertThat(result.getIsLiked()).isTrue(); // 좋아요한 상태
+        assertThat(result.getIsVoted()).isTrue(); // 투표한 상태
     }
 
     @Test

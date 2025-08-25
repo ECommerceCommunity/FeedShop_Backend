@@ -14,6 +14,13 @@ public enum RewardType {
     EVENT_PARTICIPATION("이벤트 참여", "이벤트 참여 보상"),
     EVENT_WINNER("이벤트 당첨", "이벤트 당첨 보상"),
     
+    // 피드 관련
+    FEED_CREATION("피드 작성", "피드 작성 뱃지 점수"),
+    FEED_LIKES_MILESTONE("좋아요 마일스톤", "좋아요 100개당 뱃지 점수"),
+    EVENT_FEED_PARTICIPATION("이벤트 피드 참여", "이벤트 피드 작성 보상"),
+    COMMENT_DAILY_ACHIEVEMENT("댓글 일일 달성", "하루 댓글 10개 작성 보상"),
+    DIVERSE_PRODUCT_FEED("다양 상품 피드", "다양한 상품으로 피드 작성 보상"),
+    
     // 리뷰 관련
     REVIEW_WRITE("리뷰 작성", "리뷰 작성 보상"),
     REVIEW_PHOTO("리뷰 사진", "리뷰 사진 첨부 보상"),
@@ -28,13 +35,6 @@ public enum RewardType {
     // 추천인
     REFERRAL("추천인", "친구 추천 보상"),
     REFERRED("피추천인", "추천받은 사용자 보상"),
-    
-    // 피드 관련 (신규 추가)
-    FEED_CREATION("피드 작성", "피드 작성 뱃지 점수"),
-    FEED_LIKES_MILESTONE("좋아요 마일스톤", "좋아요 100개당 뱃지 점수"),
-    EVENT_FEED_PARTICIPATION("이벤트 피드 참여", "이벤트 피드 작성 보상"),
-    COMMENT_DAILY_ACHIEVEMENT("댓글 일일 달성", "하루 댓글 10개 작성 보상"),
-    DIVERSE_PRODUCT_FEED("다양 상품 피드", "다양한 상품으로 피드 작성 보상"),
     
     // 기타
     COMPENSATION("보상", "기타 보상"),
