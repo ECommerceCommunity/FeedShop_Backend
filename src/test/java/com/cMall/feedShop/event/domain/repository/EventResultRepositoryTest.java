@@ -49,7 +49,9 @@ class EventResultRepositoryTest {
                 .status(EventStatus.UPCOMING)
                 .maxParticipants(10)
                 .build();
-        entityManager.persistAndFlush(testEvent);
+        
+        // ID를 직접 설정하여 관계 문제 해결
+        testEvent = entityManager.persistAndFlush(testEvent);
 
         // 테스트 이벤트 결과 생성
         testEventResult = EventResult.createForEvent(
@@ -58,7 +60,7 @@ class EventResultRepositoryTest {
                 2,
                 25L
         );
-        entityManager.persistAndFlush(testEventResult);
+        testEventResult = entityManager.persistAndFlush(testEventResult);
     }
 
     @Test
