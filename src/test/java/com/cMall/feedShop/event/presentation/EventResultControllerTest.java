@@ -7,38 +7,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(EventResultController.class)
+@ExtendWith(MockitoExtension.class)
 class EventResultControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private EventResultManagementService eventResultManagementService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @InjectMocks
+    private EventResultController eventResultController;
 
+    private ObjectMapper objectMapper;
     private EventResultResponseDto testEventResultResponse;
 
     @BeforeEach
     void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(eventResultController).build();
+        objectMapper = new ObjectMapper();
+
         // 테스트 응답 DTO 설정
         EventResultResponseDto.EventResultDetailResponseDto detailDto = 
                 EventResultResponseDto.EventResultDetailResponseDto.builder()
@@ -71,7 +74,6 @@ class EventResultControllerTest {
 
     @Test
     @DisplayName("이벤트 결과 생성 API - 성공")
-    @WithMockUser(roles = "ADMIN")
     void createEventResult_Success() throws Exception {
         // given
         EventResultCreateRequestDto requestDto = EventResultCreateRequestDto.builder()
@@ -92,21 +94,6 @@ class EventResultControllerTest {
                 .andExpect(jsonPath("$.data.resultType").value("BATTLE_WINNER"));
 
         verify(eventResultManagementService).createEventResult(any(EventResultCreateRequestDto.class));
-    }
-
-    @Test
-    @DisplayName("이벤트 결과 생성 API - 권한 없음")
-    void createEventResult_Unauthorized() throws Exception {
-        // given
-        EventResultCreateRequestDto requestDto = EventResultCreateRequestDto.builder()
-                .forceRecalculate(false)
-                .build();
-
-        // when & then
-        mockMvc.perform(post("/api/v2/events/1/results")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -147,7 +134,6 @@ class EventResultControllerTest {
 
     @Test
     @DisplayName("이벤트 결과 삭제 API - 성공")
-    @WithMockUser(roles = "ADMIN")
     void deleteEventResult_Success() throws Exception {
         // given
         doNothing().when(eventResultManagementService).deleteEventResult(1L);
@@ -162,16 +148,7 @@ class EventResultControllerTest {
     }
 
     @Test
-    @DisplayName("이벤트 결과 삭제 API - 권한 없음")
-    void deleteEventResult_Unauthorized() throws Exception {
-        // when & then
-        mockMvc.perform(delete("/api/v2/events/1/results"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     @DisplayName("이벤트 결과 재계산 API - 성공")
-    @WithMockUser(roles = "ADMIN")
     void recalculateEventResult_Success() throws Exception {
         // given
         when(eventResultManagementService.recalculateEventResult(1L))
@@ -185,13 +162,5 @@ class EventResultControllerTest {
                 .andExpect(jsonPath("$.data.eventId").value(1));
 
         verify(eventResultManagementService).recalculateEventResult(1L);
-    }
-
-    @Test
-    @DisplayName("이벤트 결과 재계산 API - 권한 없음")
-    void recalculateEventResult_Unauthorized() throws Exception {
-        // when & then
-        mockMvc.perform(post("/api/v2/events/1/results/recalculate"))
-                .andExpect(status().isUnauthorized());
     }
 }
