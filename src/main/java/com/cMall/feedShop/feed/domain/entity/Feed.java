@@ -1,9 +1,10 @@
-package com.cMall.feedShop.feed.domain;
+package com.cMall.feedShop.feed.domain.entity;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

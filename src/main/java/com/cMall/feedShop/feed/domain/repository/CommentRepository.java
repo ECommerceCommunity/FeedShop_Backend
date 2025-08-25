@@ -1,6 +1,6 @@
 package com.cMall.feedShop.feed.domain.repository;
 
-import com.cMall.feedShop.feed.domain.Comment;
+import com.cMall.feedShop.feed.domain.entity.Comment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

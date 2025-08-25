@@ -1,7 +1,6 @@
 package com.cMall.feedShop.feed.domain.repository;
 
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedVote;
+import com.cMall.feedShop.feed.domain.entity.FeedVote;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,55 +13,67 @@ import java.util.Optional;
 public interface FeedVoteRepository extends JpaRepository<FeedVote, Long> {
 
     /**
+     * 특정 피드에 특정 사용자가 투표했는지 확인
+     */
+    boolean existsByFeed_IdAndVoter_Id(Long feedId, Long voterId);
+
+    /**
+     * 특정 피드에 특정 사용자의 투표 조회
+     */
+    Optional<FeedVote> findByFeed_IdAndVoter_Id(Long feedId, Long voterId);
+
+    /**
+     * 특정 피드의 투표 목록 조회
+     */
+    List<FeedVote> findByFeed_Id(Long feedId);
+
+    /**
+     * 특정 사용자의 투표 목록 조회
+     */
+    List<FeedVote> findByVoter_Id(Long voterId);
+
+    /**
+     * 특정 이벤트의 투표 목록 조회
+     */
+    List<FeedVote> findByEvent_Id(Long eventId);
+
+    /**
      * 특정 피드의 투표 개수 조회
      */
-    @Query("select count(v) from FeedVote v where v.feed.id = :feedId")
-    long countByFeedId(@Param("feedId") Long feedId);
+    long countByFeed_Id(Long feedId);
 
     /**
-     * 특정 사용자가 특정 피드에 투표했는지 확인
+     * 특정 이벤트의 투표 개수 조회
      */
-    @Query("select v from FeedVote v where v.feed.id = :feedId and v.voter.id = :userId")
-    Optional<FeedVote> findByFeedIdAndUserId(@Param("feedId") Long feedId, @Param("userId") Long userId);
+    long countByEvent_Id(Long eventId);
 
     /**
-     * 특정 피드의 투표 존재 여부 확인
+     * 특정 사용자가 특정 이벤트에 투표했는지 확인
      */
-    boolean existsByFeedId(Long feedId);
+    boolean existsByVoter_IdAndEvent_Id(Long voterId, Long eventId);
 
     /**
-     * 특정 이벤트에서 특정 사용자가 투표했는지 확인
+     * 특정 이벤트에서 특정 사용자가 투표했는지 확인 (develop 브랜치 호환)
      */
     @Query("select count(v) > 0 from FeedVote v where v.event.id = :eventId and v.voter.id = :userId")
     boolean existsByEventIdAndUserId(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
     /**
-     * 특정 이벤트의 투표 개수 조회
+     * 특정 이벤트의 투표 개수 조회 (develop 브랜치 호환)
      */
     @Query("select count(v) from FeedVote v where v.event.id = :eventId")
     long countByEventId(@Param("eventId") Long eventId);
 
     /**
-     * 특정 사용자가 특정 이벤트에 투표한 피드 조회
+     * 특정 사용자가 특정 이벤트에 투표한 피드 조회 (develop 브랜치 호환)
      */
     @Query("select v.feed from FeedVote v where v.event.id = :eventId and v.voter.id = :userId")
-    Optional<Feed> findVotedFeedByEventAndUser(@Param("eventId") Long eventId, @Param("userId") Long userId);
+    Optional<com.cMall.feedShop.feed.domain.entity.Feed> findVotedFeedByEventAndUser(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
     /**
-     * 특정 이벤트에서 가장 많은 투표를 받은 피드들 조회 (리워드용)
+     * 여러 피드에 대한 사용자의 투표 상태 일괄 조회
+     * 성능 개선을 위한 일괄 조회 메서드
      */
-    @Query("select v.feed, count(v) as voteCount from FeedVote v where v.event.id = :eventId group by v.feed order by voteCount desc")
-    List<Object[]> findTopVotedFeedsByEvent(@Param("eventId") Long eventId);
-
-    /**
-     * 특정 이벤트에서 가장 많이 투표한 사용자들 조회 (참여 보상용)
-     */
-    @Query("select v.voter, count(v) as voteCount from FeedVote v where v.event.id = :eventId group by v.voter order by voteCount desc")
-    List<Object[]> findTopVotersByEvent(@Param("eventId") Long eventId);
-
-    /**
-     * 🔧 개선: 모든 피드의 투표 수를 일괄 동기화 (배치 작업용)
-     */
-    @Query("select v.feed.id, count(v) as voteCount from FeedVote v group by v.feed.id")
-    List<Object[]> getAllFeedVoteCounts();
+    @Query("SELECT fv.feed.id FROM FeedVote fv WHERE fv.feed.id IN :feedIds AND fv.voter.id = :userId")
+    List<Long> findVotedFeedIdsByFeedIdsAndUserId(@Param("feedIds") List<Long> feedIds, @Param("userId") Long userId);
 }

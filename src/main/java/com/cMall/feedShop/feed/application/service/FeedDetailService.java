@@ -5,7 +5,7 @@ import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
 import com.cMall.feedShop.feed.application.service.FeedLikeService;
 import com.cMall.feedShop.feed.application.service.FeedVoteService;
 import com.cMall.feedShop.feed.application.service.FeedServiceUtils;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.feed.application.service.FeedMapper;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +66,4 @@ public class FeedDetailService {
         
         return dto;
     }
-    
-
 }
