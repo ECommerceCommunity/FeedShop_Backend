@@ -183,7 +183,7 @@ class FeedLikeServiceTest {
         when(feedRepository.findById(anyLong())).thenReturn(Optional.of(feed));
         
         Page<FeedLike> feedLikePage = new PageImpl<>(List.of(feedLike));
-        when(feedLikeRepository.findByFeed_Id(anyLong())).thenReturn(List.of(feedLike));
+        when(feedLikeRepository.findByFeed_Id(anyLong(), any(Pageable.class))).thenReturn(feedLikePage);
 
         // when
         PaginatedResponse<LikeUserResponseDto> result = feedLikeService.getLikedUsers(1L, 0, 20);
@@ -191,7 +191,7 @@ class FeedLikeServiceTest {
         // then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
-        verify(feedLikeRepository).findByFeed_Id(anyLong());
+        verify(feedLikeRepository).findByFeed_Id(anyLong(), any(Pageable.class));
     }
 
     @Test
