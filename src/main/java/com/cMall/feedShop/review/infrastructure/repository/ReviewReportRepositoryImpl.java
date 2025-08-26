@@ -52,4 +52,19 @@ public class ReviewReportRepositoryImpl implements ReviewReportRepository {
     public void deleteById(Long reportId) {
         reviewReportJpaRepository.deleteById(reportId);
     }
+
+    @Override
+    public Page<Long> findDistinctReviewIdsWithUnprocessedReports(Pageable pageable) {
+        return reviewReportJpaRepository.findDistinctReviewIdsWithUnprocessedReports(pageable);
+    }
+
+    @Override
+    public long countDistinctReviewsWithUnprocessedReports() {
+        return reviewReportJpaRepository.countDistinctReviewsWithUnprocessedReports();
+    }
+
+    @Override
+    public List<ReviewReport> findUnprocessedReportsByReviewIds(List<Long> reviewIds) {
+        return reviewReportJpaRepository.findUnprocessedReportsByReviewIds(reviewIds);
+    }
 }

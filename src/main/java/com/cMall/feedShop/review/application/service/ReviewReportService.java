@@ -76,9 +76,22 @@ public class ReviewReportService {
     @Transactional(readOnly = true)
     public PaginatedResponse<ReportedReviewResponse> getReportedReviews(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ReviewReport> reportPage = reviewReportRepository.findUnprocessedReports(pageable);
-
-        List<ReportedReviewResponse> responses = reportPage.getContent().stream()
+        
+        Page<Long> reviewIdPage = reviewReportRepository.findDistinctReviewIdsWithUnprocessedReports(pageable);
+        
+        if (reviewIdPage.getContent().isEmpty()) {
+            return PaginatedResponse.<ReportedReviewResponse>builder()
+                    .content(List.of())
+                    .page(page)
+                    .size(size)
+                    .totalElements(0L)
+                    .totalPages(0)
+                    .build();
+        }
+        
+        List<ReviewReport> reports = reviewReportRepository.findUnprocessedReportsByReviewIds(reviewIdPage.getContent());
+        
+        List<ReportedReviewResponse> responses = reports.stream()
                 .collect(Collectors.groupingBy(report -> report.getReview().getReviewId()))
                 .values().stream()
                 .map(this::mapToReportedReviewResponse)
@@ -88,8 +101,8 @@ public class ReviewReportService {
                 .content(responses)
                 .page(page)
                 .size(size)
-                .totalElements((long) responses.size())
-                .totalPages((int) Math.ceil((double) responses.size() / size))
+                .totalElements(reviewIdPage.getTotalElements())
+                .totalPages(reviewIdPage.getTotalPages())
                 .build();
     }
 

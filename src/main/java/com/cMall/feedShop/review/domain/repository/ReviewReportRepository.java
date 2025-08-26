@@ -17,4 +17,7 @@ public interface ReviewReportRepository {
     Page<ReviewReport> findUnprocessedReports(Pageable pageable);
     long countByReview(Review review);
     void deleteById(Long reportId);
+    Page<Long> findDistinctReviewIdsWithUnprocessedReports(Pageable pageable);
+    long countDistinctReviewsWithUnprocessedReports();
+    List<ReviewReport> findUnprocessedReportsByReviewIds(List<Long> reviewIds);
 }
