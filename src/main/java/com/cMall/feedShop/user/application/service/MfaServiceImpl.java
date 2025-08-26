@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
@@ -116,8 +117,8 @@ public class MfaServiceImpl implements MfaService {
                 return verifyTotpToken(userMfa, token, maskedEmail, maskedToken);
             }
             
-            // 백업 코드 검증 시도
-            return verifyBackupCode(email, token);
+            // 백업 코드 검증 시도 - 새로운 트랜잭션으로 실행
+            return verifyBackupCodeInNewTransaction(email, token);
 
         } catch (MfaException e) {
             log.warn("MFA 토큰 검증 실패 - 사용자: {}, 토큰: {}, 오류: {}", maskedEmail, maskedToken, e.getMessage());
@@ -279,6 +280,11 @@ public class MfaServiceImpl implements MfaService {
                      maskedEmail, maskedBackupCode, e.getMessage());
             return false;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean verifyBackupCodeInNewTransaction(String email, String backupCode) {
+        return verifyBackupCode(email, backupCode);
     }
 
     // =========================== Private Helper Methods ===========================
