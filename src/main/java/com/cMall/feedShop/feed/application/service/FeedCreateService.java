@@ -15,6 +15,7 @@ import com.cMall.feedShop.order.domain.repository.OrderRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import java.util.List;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import org.springframework.web.multipart.MultipartFile;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
@@ -35,6 +36,7 @@ public class FeedCreateService {
     private final EventRepository eventRepository;
     private final FeedMapper feedMapper;
     private final FeedRewardEventHandler feedRewardEventHandler;
+    private final FeedImageService feedImageService;
     
     /**
      * 피드 생성
@@ -112,6 +114,81 @@ public class FeedCreateService {
         }
         
         // 12. 응답 DTO 변환 및 반환
+        return feedMapper.toFeedCreateResponseDto(savedFeed);
+    }
+
+    /**
+     * 피드 생성 (이미지 업로드 포함)
+     */
+    @Transactional
+    public FeedCreateResponseDto createFeedWithImages(FeedCreateRequestDto requestDto, List<MultipartFile> images, String loginId) {
+        // 1. 사용자 조회
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        
+        // 2. 구매한 상품 목록 조회 (API 활용)
+        List<PurchasedItemInfo> purchasedItems = purchasedItemService.getPurchasedItems(user.getLoginId()).getItems();
+        
+        // 3. 해당 주문 상품이 구매 목록에 있는지 검증
+        PurchasedItemInfo purchasedItem = purchasedItems.stream()
+                .filter(item -> item.getOrderItemId().equals(requestDto.getOrderItemId()))
+                .findFirst()
+                .orElseThrow(() -> new OrderItemNotFoundException(requestDto.getOrderItemId()));
+        
+        // 4. OrderItem 엔티티 조회 (API 검증 후)
+        OrderItem orderItem = orderRepository.findAll().stream()
+                .flatMap(order -> order.getOrderItems().stream())
+                .filter(item -> item.getOrderItemId().equals(requestDto.getOrderItemId()))
+                .findFirst()
+                .orElseThrow(() -> new OrderItemNotFoundException(requestDto.getOrderItemId()));
+        
+        // 5. 이벤트 조회 및 검증 (이벤트 참여 시)
+        Event event = null;
+        if (requestDto.getEventId() != null) {
+            event = eventRepository.findById(requestDto.getEventId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+            
+            // 이벤트 참여 가능 여부 검증
+            validateEventAvailability(event);
+        }
+        
+        // 6. 피드 생성
+        Feed feed = feedMapper.toFeed(requestDto, orderItem, user, event);
+        
+        // 7. 해시태그 추가 (있는 경우)
+        if (requestDto.getHashtags() != null && !requestDto.getHashtags().isEmpty()) {
+            feed.addHashtags(requestDto.getHashtags());
+        }
+        
+        // 8. 피드 저장 (이미지 업로드 전에 저장)
+        Feed savedFeed = feedRepository.save(feed);
+        
+        // 9. 이미지 업로드 (있는 경우)
+        if (images != null && !images.isEmpty()) {
+            try {
+                feedImageService.uploadImages(savedFeed, images);
+                log.info("피드 이미지 업로드 완료 - feedId: {}, imageCount: {}", savedFeed.getId(), images.size());
+            } catch (Exception e) {
+                log.error("피드 이미지 업로드 실패 - feedId: {}", savedFeed.getId(), e);
+                // 이미지 업로드 실패가 피드 생성에 영향을 주지 않도록 예외를 던지지 않음
+            }
+        }
+        
+        // 10. 피드 생성 리워드 이벤트 생성
+        try {
+            feedRewardEventHandler.createFeedCreationEvent(user, savedFeed);
+            
+            // 이벤트 피드인 경우 이벤트 참여 리워드 이벤트도 생성
+            if (event != null) {
+                feedRewardEventHandler.createEventFeedParticipationEvent(user, savedFeed, event.getId());
+            }
+            
+        } catch (Exception e) {
+            log.warn("피드 생성 리워드 이벤트 생성 중 오류 발생 - userId: {}, feedId: {}", 
+                    user.getId(), savedFeed.getId(), e);
+        }
+        
+        // 11. 응답 DTO 변환 및 반환
         return feedMapper.toFeedCreateResponseDto(savedFeed);
     }
     

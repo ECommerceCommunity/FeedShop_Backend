@@ -8,6 +8,7 @@ import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.feed.application.service.FeedImageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +22,7 @@ public class FeedDeleteService {
 
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
+    private final FeedImageService feedImageService;
 
     /**
      * 본인 피드 소프트 삭제
@@ -52,6 +54,17 @@ public class FeedDeleteService {
         // 소유권 확인
         if (feed.getUser() == null || !feed.getUser().getId().equals(requester.getId())) {
             throw new FeedAccessDeniedException("본인의 피드만 삭제할 수 있습니다.");
+        }
+
+        // 이미지 파일 삭제 (피드 삭제 전에 처리)
+        if (!feed.getImages().isEmpty()) {
+            try {
+                feedImageService.deleteImages(feed, feed.getImages());
+                log.info("피드 이미지 파일 삭제 완료 - feedId: {}, imageCount: {}", feedId, feed.getImages().size());
+            } catch (Exception e) {
+                log.error("피드 이미지 파일 삭제 실패 - feedId: {}", feedId, e);
+                // 이미지 삭제 실패가 피드 삭제에 영향을 주지 않도록 예외를 던지지 않음
+            }
         }
 
         // 소프트 삭제
