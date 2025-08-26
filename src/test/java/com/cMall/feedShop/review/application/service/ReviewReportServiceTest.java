@@ -243,10 +243,13 @@ class ReviewReportServiceTest {
         int size = 10;
         Pageable pageable = PageRequest.of(page, size);
 
+        List<Long> reviewIds = List.of(1L);
+        Page<Long> reviewIdPage = new PageImpl<>(reviewIds, pageable, 1);
+        
         List<ReviewReport> reports = List.of(reviewReport);
-        Page<ReviewReport> reportPage = new PageImpl<>(reports, pageable, 1);
 
-        given(reviewReportRepository.findUnprocessedReports(pageable)).willReturn(reportPage);
+        given(reviewReportRepository.findDistinctReviewIdsWithUnprocessedReports(pageable)).willReturn(reviewIdPage);
+        given(reviewReportRepository.findUnprocessedReportsByReviewIds(reviewIds)).willReturn(reports);
 
         // when
         PaginatedResponse<ReportedReviewResponse> response = reviewReportService.getReportedReviews(page, size);

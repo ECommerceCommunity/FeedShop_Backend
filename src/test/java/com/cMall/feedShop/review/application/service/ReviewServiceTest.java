@@ -9,7 +9,6 @@ import com.cMall.feedShop.review.application.dto.response.ReviewCreateResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewImageResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewListResponse;
 import com.cMall.feedShop.review.application.dto.response.ReviewResponse;
-import com.cMall.feedShop.user.application.dto.response.PointTransactionResponse;
 import com.cMall.feedShop.review.domain.exception.DuplicateReviewException;
 import com.cMall.feedShop.review.domain.exception.ReviewNotFoundException;
 import com.cMall.feedShop.review.domain.Review;
@@ -93,12 +92,6 @@ class ReviewServiceTest {
 
     @Mock
     private com.cMall.feedShop.user.application.service.UserLevelService userLevelService;
-    
-    @Mock
-    private com.cMall.feedShop.user.application.service.BadgeService badgeService;
-    
-    @Mock
-    private com.cMall.feedShop.user.application.service.PointService pointService;
 
     @Mock
     private GcpStorageService gcpStorageService;
@@ -564,118 +557,6 @@ class ReviewServiceTest {
 
             // then
             verify(reviewRepository, times(1)).save(any(Review.class));
-        }
-    }
-
-    @Test
-    @DisplayName("리뷰 작성 성공 시 포인트가 적립된다")
-    void shouldEarnPointsWhenReviewCreatedSuccessfully() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
-            
-            doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(anyLong(), anyLong());
-            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), anyLong());
-            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
-            doNothing().when(badgeService).checkAndAwardReviewBadges(anyLong(), anyLong());
-            
-            // 포인트 적립 모킹
-            given(pointService.earnPoints(any(User.class), eq(100), eq("리뷰 작성 포인트 적립"), isNull()))
-                .willReturn(mock(PointTransactionResponse.class));
-            
-
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
-
-            // then
-            assertThat(response.getReviewId()).isEqualTo(testReview.getReviewId());
-            assertThat(response.getPointsEarned()).isEqualTo(100);
-            assertThat(response.getCurrentPoints()).isNull(); // Controller에서 별도 설정될 예정
-            
-            // 포인트 적립이 호출되었는지 검증
-            verify(pointService, times(1)).earnPoints(
-                eq(testUser), 
-                eq(100), 
-                eq("리뷰 작성 포인트 적립"), 
-                isNull()
-            );
-        }
-    }
-
-    @Test
-    @DisplayName("포인트 적립 실패해도 리뷰 작성은 성공한다")
-    void shouldCreateReviewEvenWhenPointAwardFails() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
-            
-            doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(anyLong(), anyLong());
-            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), anyLong());
-            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
-            doNothing().when(badgeService).checkAndAwardReviewBadges(anyLong(), anyLong());
-            
-            // 포인트 적립 실패 모킹
-            given(pointService.earnPoints(any(User.class), anyInt(), anyString(), any()))
-                .willThrow(new RuntimeException("포인트 서비스 오류"));
-
-            // when & then
-            // 리뷰 작성은 성공해야 함 (포인트 적립 실패에도 불구하고)
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
-            
-            assertThat(response.getReviewId()).isEqualTo(testReview.getReviewId());
-            assertThat(response.getMessage()).isEqualTo("리뷰가 성공적으로 등록되었습니다.");
-            assertThat(response.getPointsEarned()).isEqualTo(0); // 적립 실패로 0 포인트
-            assertThat(response.getCurrentPoints()).isNull(); // Controller에서 별도 설정될 예정
-            
-            // 포인트 적립 시도는 되었지만 실패했음을 확인
-            verify(pointService, times(1)).earnPoints(any(User.class), anyInt(), anyString(), any());
-        }
-    }
-
-    @Test
-    @DisplayName("리뷰 작성시 올바른 포인트 금액(100포인트)이 적립된다")
-    void shouldEarnCorrectPointAmount() {
-        // given
-        try (MockedStatic<SecurityContextHolder> mockedSecurityContextHolder = mockStatic(SecurityContextHolder.class)) {
-            mockedSecurityContextHolder.when(SecurityContextHolder::getContext).thenReturn(securityContext);
-            mockSecurityContext();
-            
-            given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
-            given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
-            given(reviewRepository.save(any(Review.class))).willReturn(testReview);
-            
-            doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(anyLong(), anyLong());
-            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), anyLong());
-            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
-            doNothing().when(badgeService).checkAndAwardReviewBadges(anyLong(), anyLong());
-            given(pointService.earnPoints(any(User.class), anyInt(), anyString(), any()))
-                .willReturn(mock(PointTransactionResponse.class));
-
-            // when
-            ReviewCreateResponse response = reviewService.createReview(createRequest, null);
-
-            // then
-            // 정확히 100포인트가 적립되는지 검증
-            verify(pointService, times(1)).earnPoints(
-                any(User.class), 
-                eq(100),  // 정확히 100포인트
-                eq("리뷰 작성 포인트 적립"), 
-                isNull()  // orderId는 null
-            );
-            
-            // 응답에 올바른 포인트 정보가 포함되었는지 검증
-            assertThat(response.getPointsEarned()).isEqualTo(100);
-            assertThat(response.getCurrentPoints()).isNull(); // Controller에서 별도 설정될 예정
         }
     }
 

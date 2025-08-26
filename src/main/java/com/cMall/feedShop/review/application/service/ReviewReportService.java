@@ -76,9 +76,22 @@ public class ReviewReportService {
     @Transactional(readOnly = true)
     public PaginatedResponse<ReportedReviewResponse> getReportedReviews(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ReviewReport> reportPage = reviewReportRepository.findUnprocessedReports(pageable);
-
-        List<ReportedReviewResponse> responses = reportPage.getContent().stream()
+        
+        Page<Long> reviewIdPage = reviewReportRepository.findDistinctReviewIdsWithUnprocessedReports(pageable);
+        
+        if (reviewIdPage.getContent().isEmpty()) {
+            return PaginatedResponse.<ReportedReviewResponse>builder()
+                    .content(List.of())
+                    .page(page)
+                    .size(size)
+                    .totalElements(0L)
+                    .totalPages(0)
+                    .build();
+        }
+        
+        List<ReviewReport> reports = reviewReportRepository.findUnprocessedReportsByReviewIds(reviewIdPage.getContent());
+        
+        List<ReportedReviewResponse> responses = reports.stream()
                 .collect(Collectors.groupingBy(report -> report.getReview().getReviewId()))
                 .values().stream()
                 .map(this::mapToReportedReviewResponse)
@@ -88,8 +101,8 @@ public class ReviewReportService {
                 .content(responses)
                 .page(page)
                 .size(size)
-                .totalElements((long) responses.size())
-                .totalPages((int) Math.ceil((double) responses.size() / size))
+                .totalElements(reviewIdPage.getTotalElements())
+                .totalPages(reviewIdPage.getTotalPages())
                 .build();
     }
 
@@ -146,20 +159,42 @@ public class ReviewReportService {
     }
 
     private ReportedReviewResponse mapToReportedReviewResponse(List<ReviewReport> reports) {
+        if (reports == null || reports.isEmpty()) {
+            throw new IllegalArgumentException("신고 목록이 비어있거나 존재하지 않습니다.");
+        }
+
         ReviewReport firstReport = reports.get(0);
         Review review = firstReport.getReview();
+        
+        if (review == null) {
+            throw new IllegalStateException("신고된 리뷰 정보가 존재하지 않습니다.");
+        }
+        
+        if (review.getUser() == null) {
+            throw new IllegalStateException("리뷰 작성자 정보가 존재하지 않습니다.");
+        }
+        
+        if (review.getProduct() == null) {
+            throw new IllegalStateException("리뷰 상품 정보가 존재하지 않습니다.");
+        }
 
         List<ReportedReviewResponse.ReportInfo> reportInfos = reports.stream()
-                .map(report -> ReportedReviewResponse.ReportInfo.builder()
-                        .reportId(report.getReportId())
-                        .reporterId(report.getReporter().getId())
-                        .reporterName(report.getReporter().getUserProfile() != null ? 
-                                report.getReporter().getUserProfile().getNickname() : "사용자")
-                        .reason(report.getReason())
-                        .description(report.getDescription())
-                        .isProcessed(report.isProcessed())
-                        .createdAt(report.getCreatedAt())
-                        .build())
+                .map(report -> {
+                    if (report.getReporter() == null) {
+                        throw new IllegalStateException("신고자 정보가 존재하지 않습니다.");
+                    }
+                    
+                    return ReportedReviewResponse.ReportInfo.builder()
+                            .reportId(report.getReportId())
+                            .reporterId(report.getReporter().getId())
+                            .reporterName(report.getReporter().getUserProfile() != null ? 
+                                    report.getReporter().getUserProfile().getNickname() : "사용자")
+                            .reason(report.getReason())
+                            .description(report.getDescription())
+                            .isProcessed(report.isProcessed())
+                            .createdAt(report.getCreatedAt())
+                            .build();
+                })
                 .toList();
 
         return ReportedReviewResponse.builder()
