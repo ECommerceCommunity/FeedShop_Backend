@@ -40,8 +40,8 @@ public class FeedCreateController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @AuthenticationPrincipal UserDetails userDetails) {
         
-        User currentUser = (User) userDetails;
-        FeedCreateResponseDto response = feedCreateService.createFeedWithImages(requestDto, images, currentUser.getLoginId());
+        String loginId = userDetails.getUsername();
+        FeedCreateResponseDto response = feedCreateService.createFeedWithImages(requestDto, images, loginId);
         return ApiResponse.success(response);
     }
 
@@ -57,8 +57,8 @@ public class FeedCreateController {
             @Valid @RequestBody FeedCreateRequestDto requestDto,
             @AuthenticationPrincipal UserDetails userDetails) {
         
-        User currentUser = (User) userDetails;
-        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, currentUser.getLoginId());
+        String loginId = userDetails.getUsername();
+        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, loginId);
         return ApiResponse.success(response);
     }
 } 
