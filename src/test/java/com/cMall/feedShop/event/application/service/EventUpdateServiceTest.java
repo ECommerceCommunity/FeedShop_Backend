@@ -94,7 +94,7 @@ class EventUpdateServiceTest {
         // Given
         EventUpdateRequestDto dto = EventUpdateRequestDto.builder()
                 .eventId(1L)
-                .type(EventType.MISSION)
+                .type(EventType.RANKING)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
 
@@ -102,7 +102,7 @@ class EventUpdateServiceTest {
         eventUpdateService.updateEvent(dto);
 
         // Then
-        assertThat(event.getType()).isEqualTo(EventType.MISSION);
+        assertThat(event.getType()).isEqualTo(EventType.RANKING);
         // JPA Dirty Checking으로 자동 처리되므로 save() 호출 검증 제거
     }
 
