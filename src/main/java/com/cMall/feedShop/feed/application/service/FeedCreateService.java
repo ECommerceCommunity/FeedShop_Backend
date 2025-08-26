@@ -260,6 +260,8 @@ public class FeedCreateService {
         // 11. 응답 DTO 변환 및 반환
         return feedMapper.toFeedCreateResponseDto(savedFeed);
     }
+
+
     
     /**
      * 이벤트 참여자 생성
