@@ -89,8 +89,8 @@ class UserProfileServiceTest {
     void getUserProfile_Success_WithProfile() {
         // given
         Long userId = 1L;
-        given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
-        given(userProfileRepository.findByUser(testUser)).willReturn(Optional.of(testUserProfile));
+        testUser.setUserProfile(testUserProfile);
+        given(userRepository.findByIdWithProfile(userId)).willReturn(Optional.of(testUser));
 
         // when
         UserProfileResponse response = userProfileService.getUserProfile(userId);
@@ -98,7 +98,7 @@ class UserProfileServiceTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        assertThat(response.getLoginId()).isEqualTo("testuser");
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getName()).isEqualTo("테스트유저");
         assertThat(response.getNickname()).isEqualTo("테스트닉네임");
@@ -110,8 +110,7 @@ class UserProfileServiceTest {
         assertThat(response.getFootSize()).isEqualTo(270);
         assertThat(response.getProfileImageUrl()).isEqualTo("https://example.com/profile.jpg");
 
-        verify(userRepository).findById(userId);
-        verify(userProfileRepository).findByUser(testUser);
+        verify(userRepository).findByIdWithProfile(userId);
     }
 
     @Test
@@ -119,8 +118,8 @@ class UserProfileServiceTest {
     void getUserProfile_Success_WithoutProfile() {
         // given
         Long userId = 1L;
-        given(userRepository.findById(userId)).willReturn(Optional.of(testUser));
-        given(userProfileRepository.findByUser(testUser)).willReturn(Optional.empty());
+        testUser.setUserProfile(null);
+        given(userRepository.findByIdWithProfile(userId)).willReturn(Optional.of(testUser));
 
         // when
         UserProfileResponse response = userProfileService.getUserProfile(userId);
@@ -128,7 +127,7 @@ class UserProfileServiceTest {
         // then
         assertThat(response).isNotNull();
         assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUsername()).isEqualTo("testuser");
+        assertThat(response.getLoginId()).isEqualTo("testuser");
         assertThat(response.getEmail()).isEqualTo("test@example.com");
         assertThat(response.getName()).isNull();
         assertThat(response.getNickname()).isNull();
@@ -140,8 +139,7 @@ class UserProfileServiceTest {
         assertThat(response.getFootSize()).isNull();
         assertThat(response.getProfileImageUrl()).isNull();
 
-        verify(userRepository).findById(userId);
-        verify(userProfileRepository).findByUser(testUser);
+        verify(userRepository).findByIdWithProfile(userId);
     }
 
     @Test
@@ -149,15 +147,14 @@ class UserProfileServiceTest {
     void getUserProfile_Fail_UserNotFound() {
         // given
         Long userId = 999L;
-        given(userRepository.findById(userId)).willReturn(Optional.empty());
+        given(userRepository.findByIdWithProfile(userId)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> userProfileService.getUserProfile(userId))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("User not found with ID: " + userId);
 
-        verify(userRepository).findById(userId);
-        verify(userProfileRepository, never()).findByUser(any());
+        verify(userRepository).findByIdWithProfile(userId);
     }
 
     @Test
