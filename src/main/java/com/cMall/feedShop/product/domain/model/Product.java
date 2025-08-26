@@ -1,5 +1,6 @@
 package com.cMall.feedShop.product.domain.model;
 
+import com.cMall.feedShop.cart.domain.model.WishList;
 import com.cMall.feedShop.common.BaseTimeEntity;
 import com.cMall.feedShop.product.application.calculator.DiscountCalculator;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
@@ -10,16 +11,22 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products", indexes = {
+        @Index(name = "IDX_product_deleted_at", columnList = "deleted_at"),
+        @Index(name = "IDX_product_store_deleted", columnList = "store_id, deleted_at"),
+})
 @Getter
 @NoArgsConstructor
+@Where(clause = "deleted_at IS NULL") // Soft delete를 위한 조건
 public class Product extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,6 +52,9 @@ public class Product extends BaseTimeEntity {
     @Column(name="discount_value")
     private BigDecimal discountValue;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id")
     private Store store;
@@ -61,6 +71,9 @@ public class Product extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "product", cascade =  CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<WishList> wishlist = new ArrayList<>();
 
     @Builder
     public Product(String name, BigDecimal price, Store store, Category category,
@@ -128,4 +141,15 @@ public class Product extends BaseTimeEntity {
         return productOptions.stream()
                 .anyMatch(ProductOption::isInStock);
     }
+
+    // 상품 삭제 처리
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    // 상품이 삭제되었는지 확인
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
+
 }

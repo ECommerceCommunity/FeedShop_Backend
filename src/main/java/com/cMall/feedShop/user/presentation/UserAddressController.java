@@ -1,8 +1,8 @@
 package com.cMall.feedShop.user.presentation;
 
 import com.cMall.feedShop.common.dto.ApiResponse;
-import com.cMall.feedShop.user.application.dto.request.AddressRequestDto;
-import com.cMall.feedShop.user.application.dto.response.AddressResponseDto;
+import com.cMall.feedShop.user.application.dto.request.AddressRequest;
+import com.cMall.feedShop.user.application.dto.response.AddressResponse;
 import com.cMall.feedShop.user.application.service.UserAddressService;
 import com.cMall.feedShop.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
@@ -20,19 +20,19 @@ public class UserAddressController {
     private final UserAddressService userAddressService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AddressResponseDto>>> getAddresses(@AuthenticationPrincipal User user) {
-        List<AddressResponseDto> addresses = userAddressService.getAddresses(user.getId());
+    public ResponseEntity<ApiResponse<List<AddressResponse>>> getAddresses(@AuthenticationPrincipal User user) {
+        List<AddressResponse> addresses = userAddressService.getAddresses(user.getId());
         return ResponseEntity.ok(ApiResponse.success("Successfully retrieved addresses.", addresses));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<AddressResponseDto>> addAddress(@AuthenticationPrincipal User user, @RequestBody AddressRequestDto requestDto) {
-        AddressResponseDto address = userAddressService.addAddress(user.getId(), requestDto);
+    public ResponseEntity<ApiResponse<AddressResponse>> addAddress(@AuthenticationPrincipal User user, @RequestBody AddressRequest requestDto) {
+        AddressResponse address = userAddressService.addAddress(user.getId(), requestDto);
         return ResponseEntity.ok(ApiResponse.success("Successfully added address.", address));
     }
 
     @PutMapping("/{addressId}")
-    public ResponseEntity<ApiResponse<Void>> updateAddress(@AuthenticationPrincipal User user, @PathVariable Long addressId, @RequestBody AddressRequestDto requestDto) {
+    public ResponseEntity<ApiResponse<Void>> updateAddress(@AuthenticationPrincipal User user, @PathVariable Long addressId, @RequestBody AddressRequest requestDto) {
         userAddressService.updateAddress(user.getId(), addressId, requestDto);
         return ResponseEntity.ok(ApiResponse.success("Successfully updated address.", null));
     }
