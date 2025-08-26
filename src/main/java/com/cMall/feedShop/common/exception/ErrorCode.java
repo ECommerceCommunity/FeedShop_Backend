@@ -109,7 +109,7 @@ public enum ErrorCode {
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
     INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
     EVENT_NOT_AVAILABLE(400, "E004", "참여할 수 없는 이벤트입니다."),
-    
+    ALREADY_PARTICIPATED_IN_EVENT(409, "E005", "이미 해당 이벤트에 참여하셨습니다."),
     // 피드
     FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
     INVALID_REQUEST(400, "F002", "잘못된 요청입니다."),

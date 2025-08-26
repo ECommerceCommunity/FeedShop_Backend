@@ -14,6 +14,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,10 +34,9 @@ public class FeedCreateController {
     @ApiResponseFormat(message = "피드가 성공적으로 생성되었습니다.")
     public ApiResponse<FeedCreateResponseDto> createFeed(
             @Valid @RequestBody FeedCreateRequestDto requestDto,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @RequestParam String username) {
         
-        User currentUser = (User) userDetails;
-        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, currentUser.getLoginId());
+        FeedCreateResponseDto response = feedCreateService.createFeed(requestDto, username);
         return ApiResponse.success(response);
     }
 } 
