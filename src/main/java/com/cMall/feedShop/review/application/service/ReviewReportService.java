@@ -159,20 +159,42 @@ public class ReviewReportService {
     }
 
     private ReportedReviewResponse mapToReportedReviewResponse(List<ReviewReport> reports) {
+        if (reports == null || reports.isEmpty()) {
+            throw new IllegalArgumentException("신고 목록이 비어있거나 존재하지 않습니다.");
+        }
+
         ReviewReport firstReport = reports.get(0);
         Review review = firstReport.getReview();
+        
+        if (review == null) {
+            throw new IllegalStateException("신고된 리뷰 정보가 존재하지 않습니다.");
+        }
+        
+        if (review.getUser() == null) {
+            throw new IllegalStateException("리뷰 작성자 정보가 존재하지 않습니다.");
+        }
+        
+        if (review.getProduct() == null) {
+            throw new IllegalStateException("리뷰 상품 정보가 존재하지 않습니다.");
+        }
 
         List<ReportedReviewResponse.ReportInfo> reportInfos = reports.stream()
-                .map(report -> ReportedReviewResponse.ReportInfo.builder()
-                        .reportId(report.getReportId())
-                        .reporterId(report.getReporter().getId())
-                        .reporterName(report.getReporter().getUserProfile() != null ? 
-                                report.getReporter().getUserProfile().getNickname() : "사용자")
-                        .reason(report.getReason())
-                        .description(report.getDescription())
-                        .isProcessed(report.isProcessed())
-                        .createdAt(report.getCreatedAt())
-                        .build())
+                .map(report -> {
+                    if (report.getReporter() == null) {
+                        throw new IllegalStateException("신고자 정보가 존재하지 않습니다.");
+                    }
+                    
+                    return ReportedReviewResponse.ReportInfo.builder()
+                            .reportId(report.getReportId())
+                            .reporterId(report.getReporter().getId())
+                            .reporterName(report.getReporter().getUserProfile() != null ? 
+                                    report.getReporter().getUserProfile().getNickname() : "사용자")
+                            .reason(report.getReason())
+                            .description(report.getDescription())
+                            .isProcessed(report.isProcessed())
+                            .createdAt(report.getCreatedAt())
+                            .build();
+                })
                 .toList();
 
         return ReportedReviewResponse.builder()
