@@ -53,12 +53,12 @@ public class ReviewUserController {
 
     // ============= 리뷰 작성 API =============
 
-    @PostMapping
+    @PostMapping(consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
     @ApiResponseFormat(message = "리뷰가 성공적으로 작성되었습니다.")
-    @Operation(summary = "리뷰 작성", description = "새로운 리뷰를 작성합니다. 로그인이 필요합니다.")
+    @Operation(summary = "리뷰 작성", description = "새로운 리뷰를 작성합니다. 개발 환경에서는 인증 없이 접근 가능합니다.")
     public ApiResponse<ReviewCreateResponse> createReview(
-            @Valid @RequestPart("review") ReviewCreateRequest request,
+            @Valid @RequestPart(value = "review") ReviewCreateRequest request,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
 
         ReviewCreateResponse response = reviewService.createReview(request, images);

@@ -14,7 +14,7 @@ import java.util.List;
 public class ReviewImageProperties {
 
     private String uploadPath = "feedshop-dev-bucket/images/reviews";
-    private String baseUrl = "https://storage.googleapis.com";
+    private String baseUrl = "https://dev.cdn-feedshop.store";
     private long maxFileSize = 5 * 1024 * 1024; // 5MB
     private int maxImageCount = 5;
     private List<String> allowedExtensions = List.of("jpg", "jpeg", "png", "gif", "webp");

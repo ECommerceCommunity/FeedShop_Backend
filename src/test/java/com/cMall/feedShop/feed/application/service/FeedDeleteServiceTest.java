@@ -4,7 +4,7 @@ import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.exception.FeedAccessDeniedException;
 import com.cMall.feedShop.feed.application.exception.FeedNotFoundException;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.order.domain.model.OrderItem;
 import com.cMall.feedShop.user.domain.model.User;

@@ -4,7 +4,7 @@ import com.cMall.feedShop.common.exception.BusinessException;
 import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.response.MyCommentItemDto;
 import com.cMall.feedShop.feed.application.dto.response.MyCommentListResponseDto;
-import com.cMall.feedShop.feed.domain.Comment;
+import com.cMall.feedShop.feed.domain.entity.Comment;
 import com.cMall.feedShop.feed.domain.repository.CommentRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
