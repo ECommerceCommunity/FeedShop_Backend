@@ -7,9 +7,9 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: feedshop-backend
+  SERVICE_NAME: feedshop-springboot
   REGION: asia-northeast3
-  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feedshop-backend
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/feedshop-springboot
 
 jobs:
   deploy:
@@ -55,18 +55,26 @@ jobs:
 
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
-
+        
       - name: Build Docker Image
         run: |
           docker build -t $IMAGE_NAME:$GITHUB_SHA \
                        -t $IMAGE_NAME:latest \
                        .
-
+                       
       - name: Push Docker Image to GCR
         run: |
           docker push $IMAGE_NAME:$GITHUB_SHA
           docker push $IMAGE_NAME:latest
-
+          
+      - name: Clear existing environment variables and secrets
+        run: |
+          echo "Clearing existing environment variables and secrets..."
+          gcloud run services update $SERVICE_NAME \
+            --region $REGION \
+            --clear-env-vars \
+            --clear-secrets || echo "Service might not exist yet, continuing..."
+            
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy $SERVICE_NAME \
@@ -74,12 +82,15 @@ jobs:
             --platform managed \
             --region $REGION \
             --allow-unauthenticated \
-            --memory 2Gi \
-            --cpu 2 \
+            --memory 4Gi \
+            --cpu 4 \
             --concurrency 1000 \
             --max-instances 10 \
-            --min-instances 1 \
+            --min-instances 0 \
             --port 8080 \
+            --timeout 900s \
+            --cpu-throttling \
+            --execution-environment gen2 \
             --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
             --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
             --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
@@ -91,21 +102,45 @@ jobs:
             --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
             --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
             --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
-            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}" \
-            --timeout 900s
-
+            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}"
+    
+      - name: Check deployment status
+        if: failure()
+        run: |
+          echo "Getting service details..."
+          gcloud run services describe $SERVICE_NAME --region=$REGION --format="export"
+          
+          echo "Getting latest revision details..."
+          LATEST_REVISION=$(gcloud run revisions list --service=$SERVICE_NAME --region=$REGION --limit=1 --format="value(metadata.name)" || echo "none")
+          if [ "$LATEST_REVISION" != "none" ]; then
+            gcloud run revisions describe $LATEST_REVISION --region=$REGION --format="export"
+          fi
+          
       - name: Get Service URL
         run: |
           SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)")
           echo "Service deployed at: $SERVICE_URL"
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
-
+          
       - name: Health Check
         run: |
           echo "Waiting for service to be ready..."
-          sleep 30
-          curl -f $SERVICE_URL/actuator/health || (echo "Health check failed" && exit 1)
-          echo "✅ Deployment successful and service is healthy!"
+          sleep 60  # Spring Boot 시작 시간 고려하여 증가
+          
+          # 헬스체크 재시도 로직 추가
+          for i in {1..5}; do
+            echo "Health check attempt $i/5..."
+            if curl -f --max-time 30 $SERVICE_URL/actuator/health; then
+              echo "✅ Deployment successful and service is healthy!"
+              exit 0
+            else
+              echo "❌ Health check failed, retrying in 30 seconds..."
+              sleep 30
+            fi
+          done
+          
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
 
   notification:
     needs: deploy

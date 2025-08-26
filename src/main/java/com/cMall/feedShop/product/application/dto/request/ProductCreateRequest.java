@@ -29,9 +29,6 @@ public class ProductCreateRequest {
 
     private String description;
 
-    @Valid
-    @NotEmpty(message = "상품 이미지는 최소 1개 이상 등록해야 합니다.")
-    private List<ProductImageRequest> images;
 
     @Valid
     @NotEmpty(message = "상품 옵션은 최소 1개 이상 등록해야 합니다.")

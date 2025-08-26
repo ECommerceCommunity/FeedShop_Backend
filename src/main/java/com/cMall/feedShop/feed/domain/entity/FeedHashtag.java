@@ -1,6 +1,7 @@
-package com.cMall.feedShop.feed.domain;
+package com.cMall.feedShop.feed.domain.entity;
 
 import com.cMall.feedShop.common.BaseTimeEntity;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

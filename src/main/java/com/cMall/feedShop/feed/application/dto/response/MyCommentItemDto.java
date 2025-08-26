@@ -1,8 +1,8 @@
 package com.cMall.feedShop.feed.application.dto.response;
 
-import com.cMall.feedShop.feed.domain.Comment;
-import com.cMall.feedShop.feed.domain.Feed;
-import com.cMall.feedShop.feed.domain.FeedType;
+import com.cMall.feedShop.feed.domain.entity.Comment;
+import com.cMall.feedShop.feed.domain.entity.Feed;
+import com.cMall.feedShop.feed.domain.enums.FeedType;
 import lombok.Builder;
 import lombok.Getter;
 

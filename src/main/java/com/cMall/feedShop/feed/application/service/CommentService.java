@@ -6,8 +6,8 @@ import com.cMall.feedShop.common.exception.ErrorCode;
 import com.cMall.feedShop.feed.application.dto.request.CommentCreateRequestDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentListResponseDto;
 import com.cMall.feedShop.feed.application.dto.response.CommentResponseDto;
-import com.cMall.feedShop.feed.domain.Comment;
-import com.cMall.feedShop.feed.domain.Feed;
+import com.cMall.feedShop.feed.domain.entity.Comment;
+import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.CommentRepository;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
 import com.cMall.feedShop.user.domain.model.User;
@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -32,6 +31,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final FeedRepository feedRepository;
     private final UserRepository userRepository;
+    private final FeedRewardEventHandler feedRewardEventHandler;
 
     /**
      * 댓글 생성
@@ -55,6 +55,14 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
         log.info("댓글 생성 완료 - 피드ID: {}, 사용자ID: {}, 댓글ID: {}", feedId, userId, savedComment.getId());
+
+        // 댓글 작성 리워드 이벤트 생성
+        try {
+            feedRewardEventHandler.createCommentDailyAchievementEvent(user, feed);
+        } catch (Exception e) {
+            log.warn("댓글 작성 리워드 이벤트 생성 중 오류 발생 - userId: {}, feedId: {}", userId, feedId, e);
+            // 리워드 이벤트 생성 실패가 댓글 생성에 영향을 주지 않도록 예외를 던지지 않음
+        }
 
         return CommentResponseDto.from(savedComment);
     }
