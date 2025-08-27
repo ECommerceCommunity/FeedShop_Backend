@@ -78,9 +78,16 @@ class UserServiceTest {
 
     // 일반 사용자 권한 설정을 위한 헬퍼 메서드
     private void setupUserAuthentication(String email) {
+        // 테스트용 사용자 생성 (로그인 ID는 이메일과 동일하게 설정)
+        User testUser = new User(email, "encodedPassword", email, UserRole.USER);
+        testUser.setId(1L);
+        
+        // UserRepository mock 설정
+        given(userRepository.findByLoginId(email)).willReturn(Optional.of(testUser));
+        
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        email,
+                        email, // 이제 이것은 로그인 ID로 사용됨
                         null,
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
                 );
@@ -495,13 +502,21 @@ class UserServiceTest {
         String rawPassword = "password123!";
         String encodedPassword = "encoded_password";
 
-        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        User user = new User("testuser", encodedPassword, email, UserRole.USER);
+        user.setId(1L);
         user.setStatus(UserStatus.ACTIVE);
 
         given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
         given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
 
-        setupUserAuthentication(email); // 사용자 권한 설정
+        // 사용자 권한 설정 (JWT 토큰의 subject는 email)
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        email, // JWT 토큰의 subject는 email
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // When
         userService.withdrawCurrentUserWithPassword(email, rawPassword);
@@ -536,7 +551,13 @@ class UserServiceTest {
         String targetUserEmail = "target@example.com";
         String rawPassword = "password123!";
 
-        setupUserAuthentication(loggedInUserEmail); // 로그인된 사용자
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        loggedInUserEmail, // JWT 토큰의 subject는 email
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // When & Then
         UserException thrown = assertThrows(UserException.class, () ->
@@ -554,15 +575,26 @@ class UserServiceTest {
         // Given
         String email = "nonexistent@example.com";
         String rawPassword = "password123!";
-        given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+        String loginId = "someuser";
+        
+        // 로그인된 사용자 설정 (다른 사용자)
+        User loggedInUser = new User(loginId, "encodedPassword", "different@example.com", UserRole.USER);
+        loggedInUser.setId(1L);
+        given(userRepository.findByLoginId(loginId)).willReturn(Optional.of(loggedInUser));
 
-        setupUserAuthentication(email); // 로그인된 사용자
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        loginId, // loginId
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // When & Then
         UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
                 userService.withdrawCurrentUserWithPassword(email, rawPassword)
         );
-        assertThat(thrown.getErrorCode()).isEqualTo(USER_NOT_FOUND); // ErrorCode 사용
+        assertThat(thrown.getErrorCode()).isEqualTo(FORBIDDEN); // 다른 사용자 계정이므로 FORBIDDEN
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -573,14 +605,23 @@ class UserServiceTest {
         String email = "test@example.com";
         String rawPassword = "wrong_password";
         String encodedPassword = "encoded_password";
+        String loginId = "testuser";
 
-        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        User user = new User(loginId, encodedPassword, email, UserRole.USER);
+        user.setId(1L);
         user.setStatus(UserStatus.ACTIVE);
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(userRepository.findByLoginId(loginId)).willReturn(Optional.of(user));
         given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(false); // 비밀번호 불일치
 
-        setupUserAuthentication(email); // 로그인된 사용자
+        // 사용자 권한 설정 (authentication.getName()은 loginId를 반환)
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        loginId, // loginId
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // When & Then
         UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException
@@ -597,14 +638,23 @@ class UserServiceTest {
         String email = "test@example.com";
         String rawPassword = "password123!";
         String encodedPassword = "encoded_password";
+        String loginId = "testuser";
 
-        User user = new User("loginId", encodedPassword, email, UserRole.USER);
+        User user = new User(loginId, encodedPassword, email, UserRole.USER);
+        user.setId(1L);
         user.setStatus(UserStatus.DELETED); // 이미 DELETED 상태
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(userRepository.findByLoginId(loginId)).willReturn(Optional.of(user));
         given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
 
-        setupUserAuthentication(email); // 로그인된 사용자
+        // 사용자 권한 설정 (authentication.getName()은 loginId를 반환)
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        loginId, // loginId
+                        null,
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         // When & Then
         UserException thrown = assertThrows(UserException.class, () -> // BusinessException -> UserException

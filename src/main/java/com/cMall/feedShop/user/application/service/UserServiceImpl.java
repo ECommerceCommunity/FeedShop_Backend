@@ -216,20 +216,31 @@ public class UserServiceImpl implements UserService{
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UserException(UNAUTHORIZED, "로그인된 사용자만 탈퇴할 수 있습니다.");
         }
-        String currentLoggedInUserEmail = authentication.getName();
-        if (!currentLoggedInUserEmail.equals(email)) {
-            log.warn("Forbidden withdrawal attempt: User '{}' tried to delete account of '{}'.", currentLoggedInUserEmail, email); // 로그 추가
+        
+        // authentication.getName()은 loginId를 반환하므로, 이를 이메일로 변환해야 함
+        String currentLoginId = authentication.getName();
+        log.debug("Current authenticated loginId: {}", currentLoginId);
+        
+        // loginId로 사용자를 찾아서 실제 이메일과 비교
+        User currentUser = userRepository.findByLoginId(currentLoginId)
+                .orElseThrow(() -> new UserException(UNAUTHORIZED, "현재 로그인된 사용자 정보를 찾을 수 없습니다."));
+        
+        String currentUserEmail = currentUser.getEmail();
+        log.debug("Current user email: {}", currentUserEmail);
+        
+        // 요청된 이메일과 현재 로그인된 사용자의 이메일이 일치하는지 확인
+        if (!currentUserEmail.equals(email)) {
+            log.warn("Forbidden withdrawal attempt: User '{}' (loginId: {}) tried to delete account of '{}'.", 
+                    currentUserEmail, currentLoginId, email);
             throw new UserException(FORBIDDEN, "다른 사용자의 계정을 탈퇴할 수 없습니다.");
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserException(USER_NOT_FOUND, "사용자를 찾을 수 없습니다. 이메일: " + email)); // UserException 사용
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(rawPassword, currentUser.getPassword())) {
             throw new UserException(INVALID_PASSWORD);
         }
 
-        deleteUser(user);
+        deleteUser(currentUser);
     }
 
     @Transactional(readOnly = true)
