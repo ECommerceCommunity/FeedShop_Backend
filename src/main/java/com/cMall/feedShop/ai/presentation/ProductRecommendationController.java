@@ -10,6 +10,8 @@ import com.cMall.feedShop.product.application.service.ProductMapper;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Tag(name = "상품 AI 추천", description = "추천 상품 조회 관련 API")
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
@@ -33,6 +36,10 @@ public class ProductRecommendationController {
     private final ProductMapper productMapper;
     private final UserRepository userRepository;
 
+    @Operation(
+            summary = "상품 AI 추천",
+            description = "프로필 신체 정보를 반영하여 사용자 맞춤형 상품을 AI가 추천합니다. (로그인 사용자에 한함)"
+    )
     @PostMapping("/products/recommend")
     @ApiResponseFormat(message = "AI 추천 완료")
     public ApiResponse<ProductRecommendationResponse> recommend(
