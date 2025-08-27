@@ -32,5 +32,5 @@ public class FeedCreateRequestDto {
     
     private List<String> hashtags;  // 해시태그 목록
     
-    private List<String> imageUrls;  // 이미지 URL 목록
+    private List<String> imageUrls;  // 이미지 URL 목록 (기존 호환성 유지)
 } 

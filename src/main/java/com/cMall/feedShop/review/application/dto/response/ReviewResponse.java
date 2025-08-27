@@ -23,6 +23,13 @@ public class ReviewResponse {
     private Integer points;
     private Long userId;
     private String userName;
+    
+    // 사용자 신체 정보 추가
+    private Integer userHeight;
+    private Integer userWeight;
+    private Integer userFootSize;
+    private String userFootWidth;
+    
     private Long productId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -44,6 +51,16 @@ public class ReviewResponse {
                 .userId(review.getUser().getId())
                 .userName(review.getUser().getUserProfile() != null ?
                         review.getUser().getUserProfile().getName() : "익명")
+                // 사용자 신체 정보 추가
+                .userHeight(review.getUser().getUserProfile() != null ? 
+                        review.getUser().getUserProfile().getHeight() : null)
+                .userWeight(review.getUser().getUserProfile() != null ? 
+                        review.getUser().getUserProfile().getWeight() : null)
+                .userFootSize(review.getUser().getUserProfile() != null ? 
+                        review.getUser().getUserProfile().getFootSize() : null)
+                .userFootWidth(review.getUser().getUserProfile() != null && 
+                        review.getUser().getUserProfile().getFootWidth() != null ?
+                        review.getUser().getUserProfile().getFootWidth().name() : null)
                 .productId(review.getProduct().getProductId())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())

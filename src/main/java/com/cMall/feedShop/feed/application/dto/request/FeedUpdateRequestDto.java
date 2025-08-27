@@ -42,4 +42,14 @@ public class FeedUpdateRequestDto {
     private List<@Size(max = 30, message = "태그는 최대 30자까지 가능합니다.")
                  @Pattern(regexp = "^[A-Za-z0-9_가-힣]+$", message = "태그는 영문/숫자/밑줄/한글만 사용할 수 있습니다.")
                  String> hashtags;
+
+    /**
+     * 삭제할 이미지 ID 목록: 선택
+     */
+    private List<Long> deleteImageIds;
+
+    /**
+     * 새로 추가할 이미지 URL 목록: 선택 (기존 호환성 유지)
+     */
+    private List<String> newImageUrls;
 }
