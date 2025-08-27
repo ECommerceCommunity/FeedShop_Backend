@@ -100,7 +100,7 @@ public class Review3ElementStatisticsService {
                 .orElse(null);
     }
 
-    // Cushion을 1-5점으로 환산 (VERY_SOFT=1, SOFT=2, MEDIUM=3, FIRM=4, VERY_FIRM=5)
+    // Cushion을 1-5점으로 환산 (VERY_FIRM=1, FIRM=2, MEDIUM=3, SOFT=4, VERY_SOFT=5)
     private Double calculateCushionAverageScore(Map<Cushion, Long> distribution, Long totalReviews) {
         double totalScore = 0.0;
         for (Map.Entry<Cushion, Long> entry : distribution.entrySet()) {
@@ -132,11 +132,11 @@ public class Review3ElementStatisticsService {
 
     private int getCushionScore(Cushion cushion) {
         return switch (cushion) {
-            case VERY_SOFT -> 1;
-            case SOFT -> 2;
-            case MEDIUM -> 3;
-            case FIRM -> 4;
-            case VERY_FIRM -> 5;
+            case VERY_FIRM -> 1;    // 매우 딱딱함
+            case FIRM -> 2;         // 딱딱함
+            case MEDIUM -> 3;       // 적당함
+            case SOFT -> 4;         // 푹신함
+            case VERY_SOFT -> 5;    // 매우 푹신함
         };
     }
 
