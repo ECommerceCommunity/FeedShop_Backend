@@ -1,7 +1,6 @@
 package com.cMall.feedShop.event.application.scheduler;
 
 import com.cMall.feedShop.event.application.service.EventStatusService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,15 +20,12 @@ class EventStatusSchedulerTest {
     @InjectMocks
     private EventStatusScheduler eventStatusScheduler;
 
-    @BeforeEach
-    void setUp() {
-        // Mock 설정
-        doNothing().when(eventStatusService).updateAllEventStatuses();
-    }
-
     @Test
     @DisplayName("일일 이벤트 상태 업데이트 스케줄러 - 성공")
     void updateAllEventStatusesDaily_Success() {
+        // Given
+        doNothing().when(eventStatusService).updateAllEventStatuses();
+
         // When
         eventStatusScheduler.updateAllEventStatusesDaily();
 

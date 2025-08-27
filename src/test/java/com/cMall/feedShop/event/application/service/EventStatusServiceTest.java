@@ -5,13 +5,14 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
-import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.common.util.TimeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -158,11 +159,17 @@ class EventStatusServiceTest {
     @Test
     @DisplayName("이벤트 참여 가능 여부 확인 - 참여 가능한 이벤트")
     void isEventParticipatable_ParticipatableEvent() {
-        // When
-        boolean isParticipatable = eventStatusService.isEventParticipatable(ongoingEvent);
+        // Given
+        // Mock TimeUtil.nowDate() to return today
+        try (MockedStatic<TimeUtil> mockedTimeUtil = mockStatic(TimeUtil.class)) {
+            mockedTimeUtil.when(TimeUtil::nowDate).thenReturn(today);
+            
+            // When
+            boolean isParticipatable = eventStatusService.isEventParticipatable(ongoingEvent);
 
-        // Then
-        assertThat(isParticipatable).isTrue();
+            // Then
+            assertThat(isParticipatable).isTrue();
+        }
     }
 
     @Test
@@ -178,11 +185,17 @@ class EventStatusServiceTest {
     @Test
     @DisplayName("이벤트 상태가 최신인지 확인 - 최신 상태")
     void isEventStatusUpToDate_UpToDateStatus() {
-        // When
-        boolean isUpToDate = eventStatusService.isEventStatusUpToDate(ongoingEvent);
+        // Given
+        // Mock TimeUtil.nowDate() to return today
+        try (MockedStatic<TimeUtil> mockedTimeUtil = mockStatic(TimeUtil.class)) {
+            mockedTimeUtil.when(TimeUtil::nowDate).thenReturn(today);
+            
+            // When
+            boolean isUpToDate = eventStatusService.isEventStatusUpToDate(ongoingEvent);
 
-        // Then
-        assertThat(isUpToDate).isTrue();
+            // Then
+            assertThat(isUpToDate).isTrue();
+        }
     }
 
     @Test
@@ -229,13 +242,18 @@ class EventStatusServiceTest {
     void updateEventStatus_NoStatusChangeNeeded() {
         // Given
         when(eventRepository.findById(2L)).thenReturn(Optional.of(ongoingEvent));
+        
+        // Mock TimeUtil.nowDate() to return today
+        try (MockedStatic<TimeUtil> mockedTimeUtil = mockStatic(TimeUtil.class)) {
+            mockedTimeUtil.when(TimeUtil::nowDate).thenReturn(today);
 
-        // When
-        boolean updated = eventStatusService.updateEventStatus(2L);
+            // When
+            boolean updated = eventStatusService.updateEventStatus(2L);
 
-        // Then
-        assertThat(updated).isFalse();
-        verify(eventRepository).findById(2L);
+            // Then
+            assertThat(updated).isFalse();
+            verify(eventRepository).findById(2L);
+        }
     }
 
     @Test
@@ -244,15 +262,20 @@ class EventStatusServiceTest {
         // Given
         List<Event> events = Arrays.asList(upcomingEvent, ongoingEvent, endedEvent);
         when(eventRepository.findAll()).thenReturn(events);
+        
+        // Mock TimeUtil.nowDate() to return today
+        try (MockedStatic<TimeUtil> mockedTimeUtil = mockStatic(TimeUtil.class)) {
+            mockedTimeUtil.when(TimeUtil::nowDate).thenReturn(today);
 
-        // When
-        eventStatusService.updateAllEventStatuses();
+            // When
+            eventStatusService.updateAllEventStatuses();
 
-        // Then
-        verify(eventRepository).findAll();
-        // 각 이벤트의 상태가 올바르게 설정되었는지 확인
-        assertThat(upcomingEvent.getStatus()).isEqualTo(EventStatus.UPCOMING);
-        assertThat(ongoingEvent.getStatus()).isEqualTo(EventStatus.ONGOING);
-        assertThat(endedEvent.getStatus()).isEqualTo(EventStatus.ENDED);
+            // Then
+            verify(eventRepository).findAll();
+            // 각 이벤트의 상태가 올바르게 설정되었는지 확인
+            assertThat(upcomingEvent.getStatus()).isEqualTo(EventStatus.UPCOMING);
+            assertThat(ongoingEvent.getStatus()).isEqualTo(EventStatus.ONGOING);
+            assertThat(endedEvent.getStatus()).isEqualTo(EventStatus.ENDED);
+        }
     }
 }
