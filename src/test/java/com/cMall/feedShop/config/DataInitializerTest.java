@@ -29,6 +29,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("dev")
@@ -46,6 +49,9 @@ class DataInitializerTest {
 
     @Mock
     private UserProfileRepository userProfileRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private DataInitializer dataInitializer;
@@ -70,6 +76,9 @@ class DataInitializerTest {
                 .user(testUser)
                 .currentLevel(defaultLevel)
                 .build();
+
+        // PasswordEncoder 모킹 설정 (lenient로 설정하여 불필요한 모킹 오류 방지)
+        lenient().when(passwordEncoder.encode(anyString())).thenReturn("encoded_password");
     }
 
     @Test
@@ -201,7 +210,7 @@ class DataInitializerTest {
         given(userRepository.save(any())).willReturn(testUser);
         given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.of(defaultLevel));
         given(userStatsRepository.save(any())).willReturn(testUserStats);
-        given(userProfileRepository.save(any())).willReturn(null); // UserProfile 저장
+        // userProfileRepository.save()는 cascade로 자동 저장되므로 모킹하지 않음
         given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(Arrays.asList(defaultLevel));
 
         // when
@@ -211,7 +220,7 @@ class DataInitializerTest {
         // then
         verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
         verify(userRepository, times(3)).save(any()); // user, admin, seller
-        verify(userProfileRepository, times(3)).save(any()); // user, admin, seller
+        // userProfileRepository.save()는 cascade로 자동 저장되므로 검증하지 않음
         verify(userStatsRepository, times(3)).save(any()); // user, admin, seller
     }
 
@@ -254,7 +263,7 @@ class DataInitializerTest {
         given(userRepository.save(any())).willReturn(testUser);
         given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.of(defaultLevel));
         given(userStatsRepository.save(any())).willReturn(testUserStats);
-        given(userProfileRepository.save(any())).willReturn(null); // UserProfile 저장
+        // userProfileRepository.save()는 cascade로 자동 저장되므로 모킹하지 않음
 
         // when
         CommandLineRunner runner = dataInitializer.initializeData();
@@ -266,7 +275,7 @@ class DataInitializerTest {
         verify(userRepository).findUsersWithoutStats();
         verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
         verify(userRepository, times(3)).save(any()); // user, admin, seller
-        verify(userProfileRepository, times(3)).save(any()); // user, admin, seller
+        // userProfileRepository.save()는 cascade로 자동 저장되므로 검증하지 않음
         verify(userStatsRepository, times(3)).save(any()); // user, admin, seller
     }
 

@@ -16,6 +16,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,7 @@ public class DataInitializer {
     private final UserStatsRepository userStatsRepository;
     private final UserLevelRepository userLevelRepository;
     private final UserProfileRepository userProfileRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Bean
     @Profile("dev")
@@ -215,10 +217,10 @@ public class DataInitializer {
         }
 
         try {
-            // 테스트 사용자 생성
+            // 테스트 사용자 생성 - PasswordEncoder를 사용하여 비밀번호 암호화
             User testUser = new User(
                     loginId,
-                    "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDa", // "password" 암호화
+                    passwordEncoder.encode("password123!"), // 실제 암호화
                     email,
                     role
             );
@@ -226,21 +228,19 @@ public class DataInitializer {
             // 테스트 계정은 ACTIVE 상태로 설정
             testUser.setStatus(UserStatus.ACTIVE);
             
-            User savedUser = userRepository.save(testUser);
-            
             // 사용자 프로필 생성
             String displayName = getDisplayNameByRole(role);
             UserProfile userProfile = UserProfile.builder()
-                    .user(savedUser)
+                    .user(testUser)
                     .name(displayName)
                     .nickname(displayName)
                     .phone("010-1234-5678")
                     .build();
             
-            // 양방향 관계 설정
-            userProfile.setUser(savedUser);
+            // 양방향 관계 설정 (User 엔티티의 setUserProfile 메서드 사용)
+            testUser.setUserProfile(userProfile);
             
-            userProfileRepository.save(userProfile);
+            User savedUser = userRepository.save(testUser);
             
             // 기본 레벨 조회
             UserLevel defaultLevel = userLevelRepository.findByMinPointsRequired(0)
@@ -254,7 +254,7 @@ public class DataInitializer {
             
             userStatsRepository.save(userStats);
             
-            log.info("테스트 {} 계정 생성 완료: {} (비밀번호: password, 닉네임: {})", role.name(), email, displayName);
+            log.info("테스트 {} 계정 생성 완료: {} (비밀번호: password123!, 닉네임: {})", role.name(), email, displayName);
             
         } catch (Exception e) {
             log.error("테스트 {} 계정 생성 실패: {}", role.name(), e.getMessage());
