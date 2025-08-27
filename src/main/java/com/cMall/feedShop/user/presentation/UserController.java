@@ -273,4 +273,25 @@ public class UserController {
         List<DailyPoints> data = userService.getDailyPointsStatisticsForUser(currentUser, startDate);
         return ApiResponse.success(data);
     }
+
+    // 특정 사용자의 일별 활동 점수 통계 조회
+    @GetMapping("/me/activity/daily-points")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<DailyPoints>> getDailyPoints(@AuthenticationPrincipal UserDetails userDetails,
+                                                            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate) {
+
+        // 현재 로그인한 사용자 정보 가져오기
+        User currentUser = (User) userDetails;
+
+        // startDate가 없으면 기본값 설정 (예: 30일 전)
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusDays(30);
+        }
+
+        // 서비스 레이어의 비즈니스 로직 호출
+        List<DailyPoints> dailyStats = userService.getDailyPointsStatisticsForUser(currentUser, startDate);
+
+        // 결과를 HTTP 200 OK와 함께 반환
+        return ResponseEntity.ok(dailyStats);
+    }
 }
