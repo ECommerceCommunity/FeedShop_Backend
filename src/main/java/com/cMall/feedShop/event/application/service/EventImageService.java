@@ -111,6 +111,17 @@ public class EventImageService {
     }
 
     /**
+     * 이벤트의 모든 이미지 삭제
+     */
+    public void deleteAllImages(Event event) {
+        List<EventImage> images = getEventImages(event);
+        if (!images.isEmpty()) {
+            deleteImageFilesSafely(images);
+            event.getImages().clear();
+        }
+    }
+
+    /**
      * 이미지 파일 삭제
      */
     private void deleteImageFilesSafely(List<EventImage> images) {

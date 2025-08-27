@@ -8,6 +8,7 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.event.application.service.EventImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ class EventCreateServiceTest {
 
     @Mock
     private EventValidator eventValidator;
+
+    @Mock
+    private EventImageService eventImageService;
 
     @InjectMocks
     private EventCreateService eventCreateService;

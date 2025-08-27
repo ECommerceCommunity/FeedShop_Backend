@@ -15,6 +15,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -22,6 +28,7 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
+@Tag(name = "Event", description = "이벤트 관리 API")
 public class EventCreateController {
     private final EventCreateService eventCreateService;
     private final ObjectMapper objectMapper;
@@ -31,7 +38,15 @@ public class EventCreateController {
      */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEvent(@RequestBody EventCreateRequestDto requestDto) {
+    @Operation(summary = "이벤트 생성", description = "이미지 없이 이벤트를 생성합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "이벤트 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음")
+    })
+    public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEvent(
+            @Parameter(description = "이벤트 생성 요청 정보", required = true)
+            @RequestBody EventCreateRequestDto requestDto) {
         log.info("이벤트 생성 요청 받음: title={}, type={}", requestDto.getTitle(), requestDto.getType());
         
         try {
@@ -58,6 +73,12 @@ public class EventCreateController {
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "이벤트 생성 (이미지 포함)", description = "이미지와 함께 이벤트를 생성합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "이벤트 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음")
+    })
     public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEventWithImages(
         @RequestParam("type") String type,
         @RequestParam("title") String title,

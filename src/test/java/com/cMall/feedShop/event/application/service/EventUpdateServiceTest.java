@@ -7,6 +7,7 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.event.application.service.EventImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,10 @@ import static org.mockito.Mockito.*;
 class EventUpdateServiceTest {
     @Mock
     private EventRepository eventRepository;
+    
+    @Mock
+    private EventImageService eventImageService;
+    
     @InjectMocks
     private EventUpdateService eventUpdateService;
 

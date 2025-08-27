@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,12 +22,21 @@ import java.util.List;
 public class EventUpdateService {
     private final EventRepository eventRepository;
     private final ObjectMapper objectMapper;
+    private final EventImageService eventImageService;
 
     /**
      * 이벤트 수정 비즈니스 로직
      */
     @Transactional
     public void updateEvent(EventUpdateRequestDto dto) {
+        updateEventWithImages(dto, null);
+    }
+
+    /**
+     * 이미지와 함께 이벤트 수정
+     */
+    @Transactional
+    public void updateEventWithImages(EventUpdateRequestDto dto, List<MultipartFile> images) {
         Event event = eventRepository.findDetailById(dto.getEventId())
                 .orElseThrow(() -> new EventNotFoundException(dto.getEventId()));
         
@@ -67,6 +77,13 @@ public class EventUpdateService {
             }
         }
         
+        // 이미지 업데이트 처리
+        if (images != null && !images.isEmpty()) {
+            log.info("이벤트 이미지 업데이트 시작 - 이미지 개수: {}", images.size());
+            eventImageService.replaceImages(event, images);
+            log.info("이벤트 이미지 업데이트 완료");
+        }
+
         // 상태 자동 업데이트
         event.updateStatusAutomatically();
         
