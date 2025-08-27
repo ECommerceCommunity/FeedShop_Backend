@@ -72,8 +72,43 @@ public class UserServiceImpl implements UserService{
                 sendVerificationEmail(existingUser, "회원가입 재인증을 완료해주세요.", "회원가입 재인증을 요청하셨습니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
                 // 재인증 메일 발송 후 예외 처리 (DUPLICATE_EMAIL과 함께 메시지 전달)
                 throw new UserException(DUPLICATE_EMAIL, "재인증 메일이 발송되었습니다. 메일을 확인하여 인증을 완료해주세요.");
+            } else if (existingUser.getStatus() == UserStatus.DELETED) {
+                // DELETED 상태의 사용자는 재가입을 허용하되, 기존 데이터를 정리하고 새로운 사용자로 처리
+                log.info("DELETED 상태의 사용자 재가입 시도: {}", request.getEmail());
+                
+                // 기존 사용자 데이터 정리 (필요한 경우)
+                // userRepository.delete(existingUser); // 하드 삭제 시
+                
+                // 새로운 사용자 생성 (기존 데이터는 그대로 두고 새로 생성)
+                String generatedLoginId = UUID.randomUUID().toString();
+                String finalPasswordToSave = passwordEncoder.encode(request.getPassword());
+                
+                User newUser = new User(
+                        generatedLoginId,
+                        finalPasswordToSave,
+                        request.getEmail(),
+                        UserRole.USER
+                );
+                newUser.setStatus(UserStatus.PENDING);
+                newUser.setPasswordChangedAt(LocalDateTime.now());
+
+                updateVerificationToken(newUser);
+
+                UserProfile userProfile = UserProfile.builder()
+                        .user(newUser)
+                        .name(request.getName())
+                        .nickname(request.getNickname())
+                        .phone(request.getPhone())
+                        .build();
+
+                newUser.setUserProfile(userProfile);
+
+                userRepository.save(newUser);
+                sendVerificationEmail(newUser, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
+
+                return UserResponse.from(newUser);
             }
-            // 기타 다른 상태 (DELETED 등)에 대한 처리도 추가할 수 있습니다.
+            // 기타 다른 상태 (INACTIVE, BLOCKED 등)에 대한 처리도 추가할 수 있습니다.
         }
 
         // loginId 자동 생성 (UUID 사용)

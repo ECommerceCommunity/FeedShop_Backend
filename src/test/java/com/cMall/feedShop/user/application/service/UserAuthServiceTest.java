@@ -157,6 +157,29 @@ class UserAuthServiceTest {
     }
 
     @Test
+    @DisplayName("로그인 실패 - DELETED 상태 사용자")
+    void login_fail_deletedUser() {
+        // Given
+        User deletedUser = new User("login1", "password123", "deleted@example.com", UserRole.USER);
+        deletedUser.setId(1L);
+        deletedUser.setStatus(UserStatus.DELETED);
+        
+        when(userRepository.findByEmail(loginRequest.getEmail()))
+                .thenReturn(Optional.of(deletedUser));
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userAuthService.login(loginRequest)
+        );
+        
+        assertEquals(ErrorCode.USER_ALREADY_DELETED, thrown.getErrorCode());
+        assertEquals("탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.", thrown.getMessage());
+        
+        // AuthenticationManager가 호출되지 않아야 함
+        verify(authenticationManager, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
     @DisplayName("비밀번호 재설정 요청 - 성공")
     void requestPasswordReset_success() {
         // given

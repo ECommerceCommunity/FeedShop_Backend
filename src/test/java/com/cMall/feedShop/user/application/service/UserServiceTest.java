@@ -214,8 +214,6 @@ class UserServiceTest {
         assertThat(existingPendingUser.getVerificationTokenExpiry()).isAfter(LocalDateTime.now());
     }
 
-
-
     @Test
     @DisplayName("회원가입 성공 - 비밀번호가 이미 암호화된 경우")
     void signUp_Success_PreEncryptedPassword() {
@@ -256,6 +254,52 @@ class UserServiceTest {
         verify(userRepository, times(1)).save(any(User.class));
     }
 
+    @Test
+    @DisplayName("회원가입 성공 - DELETED 상태 사용자 재가입")
+    void signUp_Success_DeletedUser_Rejoin() {
+        // Given
+        User existingDeletedUser = new User(
+                "oldLoginId", "oldEncodedPw", signUpRequest.getEmail(), UserRole.USER);
+        existingDeletedUser.setId(1L);
+        existingDeletedUser.setStatus(UserStatus.DELETED);
+        UserProfile oldProfile = UserProfile.builder()
+                .user(existingDeletedUser)
+                .name("OldName")
+                .nickname("OldNickname")
+                .phone("010-1234-5678")
+                .build();
+        existingDeletedUser.setUserProfile(oldProfile);
+
+        given(userRepository.findByEmail(signUpRequest.getEmail())).willReturn(Optional.of(existingDeletedUser));
+        given(passwordEncoder.encode(anyString())).willReturn("encoded_password");
+        given(userRepository.save(any(User.class))).willAnswer(invocation -> {
+            User savedUser = invocation.getArgument(0);
+            savedUser.setId(2L); // 새로운 ID
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name(signUpRequest.getName())
+                    .nickname(signUpRequest.getNickname())
+                    .phone(signUpRequest.getPhone())
+                    .build();
+            savedUser.setUserProfile(userProfile);
+            return savedUser;
+        });
+
+        // When
+        UserResponse response = userService.signUp(signUpRequest);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getEmail()).isEqualTo(signUpRequest.getEmail());
+        assertThat(response.getStatus()).isEqualTo(UserStatus.PENDING); // PENDING 상태 확인
+        assertThat(response.getUserId()).isEqualTo(2L); // 새로운 ID 확인
+        verify(emailService, times(1)).sendSimpleEmail(
+                eq(signUpRequest.getEmail()),
+                contains("회원가입을 완료해주세요"),
+                contains("인증을 완료해주세요")
+        );
+        verify(userRepository, times(1)).save(any(User.class));
+    }
 
     // 이메일 인증 성공
     @Test
