@@ -110,8 +110,8 @@ class EventCreateServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getEventId()).isEqualTo(1L);
         assertThat(result.getTitle()).isEqualTo("테스트 이벤트");
-        assertThat(result.getType()).isEqualTo("battle");
-        assertThat(result.getStatus()).isEqualTo("upcoming");
+        assertThat(result.getType()).isEqualTo("BATTLE");
+        assertThat(result.getStatus()).isEqualTo("UPCOMING");
         assertThat(result.getMaxParticipants()).isEqualTo(100);
     }
 

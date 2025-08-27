@@ -106,18 +106,6 @@ public class Event extends BaseTimeEntity {
         if (this.eventDetail != null) {
             this.eventDetail.updateFromDto(dto);
         }
-    }
-
-    /**
-     * 이벤트 정보 업데이트 (영속성 유지)
-     */
-    public void update(EventType type, Integer maxParticipants) {
-        if (type != null) {
-            this.type = type;
-        }
-        if (maxParticipants != null) {
-            this.maxParticipants = maxParticipants;
-        }
         this.updatedBy = LocalDateTime.now();
     }
 
@@ -141,17 +129,5 @@ public class Event extends BaseTimeEntity {
      */
     public boolean isDeleted() {
         return this.deletedAt != null;
-    }
-
-    /**
-     * 이벤트 참여 가능 여부 확인
-     * 종료일은 다음날 자정까지 유효하도록 처리
-     */
-    public boolean isParticipatable() {
-        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
-            return false;
-        }
-        LocalDate today = TimeUtil.nowDate();
-        return !today.isBefore(eventDetail.getEventStartDate()) && !today.isAfter(eventDetail.getEventEndDate());
     }
 }

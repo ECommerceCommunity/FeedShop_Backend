@@ -38,7 +38,7 @@ public class EventDetailResponseDto {
     /**
      * Event 엔티티로부터 DTO 생성
      */
-    public static EventDetailResponseDto from(Event event) {
+    public static EventDetailResponseDto from(Event event, Boolean isParticipatable) {
         EventDetail detail = event.getEventDetail();
         
         return EventDetailResponseDto.builder()
@@ -70,7 +70,7 @@ public class EventDetailResponseDto {
                         event.getRewards().stream()
                                 .map(RewardDto::from)
                                 .collect(Collectors.toList()) : null)
-                .isParticipatable(event.isParticipatable())
+                .isParticipatable(isParticipatable)
                 .build();
     }
 

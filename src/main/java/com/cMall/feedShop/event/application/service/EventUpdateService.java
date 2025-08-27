@@ -43,7 +43,7 @@ public class EventUpdateService {
                 .orElseThrow(() -> new EventNotFoundException(dto.getEventId()));
         
         // 이벤트 기본 정보 업데이트 (영속성 유지)
-        event.update(dto.getType(), dto.getMaxParticipants());
+        event.updateFromDto(dto);
         
         // EventDetail 업데이트는 별도로 처리
         if (event.getEventDetail() != null) {

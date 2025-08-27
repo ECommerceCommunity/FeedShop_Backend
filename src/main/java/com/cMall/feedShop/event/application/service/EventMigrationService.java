@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 /**
  * 이벤트 마이그레이션 서비스
@@ -138,10 +139,10 @@ public class EventMigrationService {
     }
 
     /**
-     * 배틀 매치 생성
+     * 배틀 이벤트 매치 생성
      */
     private List<EventMatch> createBattleMatches(Event event, List<Feed> feeds) {
-        List<EventMatch> matches = new java.util.ArrayList<>();
+        List<EventMatch> matches = new ArrayList<>();
         
         // 2명씩 매칭
         for (int i = 0; i < feeds.size() - 1; i += 2) {
@@ -176,6 +177,33 @@ public class EventMigrationService {
             
             matches.add(match);
         }
+        
+        return matches;
+    }
+
+    /**
+     * 홀수 참여자 처리 (자동 승리)
+     */
+    private List<EventMatch> createAutoWinMatches(Event event, List<Feed> feeds) {
+        List<EventMatch> matches = new ArrayList<>();
+        
+        // TODO: Feed를 EventParticipant로 변환하는 로직 필요
+        
+        /*
+        Feed lastParticipant = feeds.get(feeds.size() - 1);
+        
+        EventMatch match = EventMatch.builder()
+                .event(event)
+                .matchGroup(String.valueOf(matchGroup))
+                .participant1(lastParticipant)
+                .participant2(null)
+                .metadata(EventMatch.createBattleMetadata(matchGroup, "자동 승리"))
+                .build();
+        
+        // 자동 승리 처리
+        match.complete(lastParticipant);
+        matches.add(match);
+        */
         
         return matches;
     }

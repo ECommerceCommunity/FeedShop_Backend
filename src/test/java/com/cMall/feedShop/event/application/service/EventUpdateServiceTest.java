@@ -31,6 +31,9 @@ class EventUpdateServiceTest {
     private EventRepository eventRepository;
     
     @Mock
+    private EventStatusService eventStatusService;
+    
+    @Mock
     private EventImageService eventImageService;
     
     @InjectMocks
@@ -67,6 +70,7 @@ class EventUpdateServiceTest {
                 .description("수정된 설명")
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);
@@ -102,6 +106,7 @@ class EventUpdateServiceTest {
                 .type(EventType.RANKING)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);
@@ -120,6 +125,7 @@ class EventUpdateServiceTest {
                 .maxParticipants(200)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);

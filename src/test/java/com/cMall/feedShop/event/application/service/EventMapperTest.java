@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
@@ -20,6 +21,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,66 +34,74 @@ class EventMapperTest {
     @InjectMocks
     private EventMapper mapper;
 
-    @BeforeEach
-    void setUp() {
-        // EventStatusService Mock 설정
-        when(eventStatusService.calculateEventStatus(any(Event.class), any(LocalDate.class)))
-                .thenReturn(EventStatus.ENDED);
-    }
-
     @Test
     void toSummaryDto_모든필드_정상매핑() {
-        EventDetail detail = EventDetail.builder()
-                .title("이벤트 제목")
-                .description("설명")
-                .eventStartDate(LocalDate.of(2024, 7, 1))
-                .eventEndDate(LocalDate.of(2024, 7, 10))
-                .purchaseStartDate(LocalDate.of(2024, 6, 1))
-                .purchaseEndDate(LocalDate.of(2024, 6, 30))
-                .announcement(LocalDate.of(2024, 7, 15))
-                .participationMethod("참여방법")
-                .selectionCriteria("선정기준")
-                .imageUrl("http://img.com")
-                .precautions("주의사항")
-                .build();
-        EventReward reward = EventReward.builder()
-                .conditionValue("1")
-                .rewardValue("상품권")
-                .build();
-        Event event = Event.builder()
-                .id(1L)
-                .type(EventType.BATTLE)
-                .status(EventStatus.ONGOING)
-                .maxParticipants(100)
-                .createdBy(LocalDateTime.of(2024, 5, 1, 12, 0))
-                .eventDetail(detail)
-                .rewards(List.of(reward))
-                .build();
-        detail.setEvent(event);
-        EventSummaryDto dto = mapper.toSummaryDto(event);
-        assertThat(dto.getEventId()).isEqualTo(1L);
-        assertThat(dto.getTitle()).isEqualTo("이벤트 제목");
-        assertThat(dto.getType()).isEqualTo("battle");
-        assertThat(dto.getStatus()).isEqualTo("ended");
-        assertThat(dto.getEventStartDate()).isEqualTo("2024-07-01");
-        assertThat(dto.getEventEndDate()).isEqualTo("2024-07-10");
-        assertThat(dto.getImageUrl()).isEqualTo("http://img.com");
-        assertThat(dto.getMaxParticipants()).isEqualTo(100);
-        assertThat(dto.getDescription()).isEqualTo("설명");
-        assertThat(dto.getRewards()).hasSize(1);
-        assertThat(dto.getRewards().get(0).getRank()).isEqualTo(1);
-        assertThat(dto.getRewards().get(0).getReward()).isEqualTo("상품권");
-        assertThat(dto.getParticipationMethod()).isEqualTo("참여방법");
-        assertThat(dto.getSelectionCriteria()).isEqualTo("선정기준");
-        assertThat(dto.getPrecautions()).isEqualTo("주의사항");
-        assertThat(dto.getCreatedAt()).isEqualTo("2024-05-01T12:00");
-        assertThat(dto.getPurchasePeriod()).isEqualTo("2024-06-01 ~ 2024-06-30");
-        assertThat(dto.getVotePeriod()).isEqualTo("2024-07-01 ~ 2024-07-10");
-        assertThat(dto.getAnnouncementDate()).isEqualTo("2024-07-15");
+        // Given
+        LocalDate testDate = LocalDate.of(2024, 7, 15);
+        
+        // Mock TimeUtil.nowDate() and EventStatusService
+        try (MockedStatic<TimeUtil> mockedTimeUtil = mockStatic(TimeUtil.class)) {
+            mockedTimeUtil.when(TimeUtil::nowDate).thenReturn(testDate);
+            when(eventStatusService.calculateEventStatus(any(Event.class), eq(testDate)))
+                    .thenReturn(EventStatus.ENDED);
+            
+            EventDetail detail = EventDetail.builder()
+                    .title("이벤트 제목")
+                    .description("설명")
+                    .eventStartDate(LocalDate.of(2024, 7, 1))
+                    .eventEndDate(LocalDate.of(2024, 7, 10))
+                    .purchaseStartDate(LocalDate.of(2024, 6, 1))
+                    .purchaseEndDate(LocalDate.of(2024, 6, 30))
+                    .announcement(LocalDate.of(2024, 7, 15))
+                    .participationMethod("참여방법")
+                    .selectionCriteria("선정기준")
+                    .imageUrl("http://img.com")
+                    .precautions("주의사항")
+                    .build();
+            EventReward reward = EventReward.builder()
+                    .conditionValue("1")
+                    .rewardValue("상품권")
+                    .build();
+            Event event = Event.builder()
+                    .id(1L)
+                    .type(EventType.BATTLE)
+                    .status(EventStatus.ONGOING)
+                    .maxParticipants(100)
+                    .createdBy(LocalDateTime.of(2024, 5, 1, 12, 0))
+                    .eventDetail(detail)
+                    .rewards(List.of(reward))
+                    .build();
+            detail.setEvent(event);
+            
+            // When
+            EventSummaryDto dto = mapper.toSummaryDto(event);
+            
+            // Then
+            assertThat(dto.getEventId()).isEqualTo(1L);
+            assertThat(dto.getTitle()).isEqualTo("이벤트 제목");
+            assertThat(dto.getType()).isEqualTo("battle");
+            assertThat(dto.getStatus()).isEqualTo("ended");
+            assertThat(dto.getEventStartDate()).isEqualTo("2024-07-01");
+            assertThat(dto.getEventEndDate()).isEqualTo("2024-07-10");
+            assertThat(dto.getImageUrl()).isEqualTo("http://img.com");
+            assertThat(dto.getMaxParticipants()).isEqualTo(100);
+            assertThat(dto.getDescription()).isEqualTo("설명");
+            assertThat(dto.getRewards()).hasSize(1);
+            assertThat(dto.getRewards().get(0).getRank()).isEqualTo(1);
+            assertThat(dto.getRewards().get(0).getReward()).isEqualTo("상품권");
+            assertThat(dto.getParticipationMethod()).isEqualTo("참여방법");
+            assertThat(dto.getSelectionCriteria()).isEqualTo("선정기준");
+            assertThat(dto.getPrecautions()).isEqualTo("주의사항");
+            assertThat(dto.getCreatedAt()).isEqualTo("2024-05-01T12:00");
+            assertThat(dto.getPurchasePeriod()).isEqualTo("2024-06-01 ~ 2024-06-30");
+            assertThat(dto.getVotePeriod()).isEqualTo("2024-07-01 ~ 2024-07-10");
+            assertThat(dto.getAnnouncementDate()).isEqualTo("2024-07-15");
+        }
     }
 
     @Test
     void toSummaryDto_nullSafe_테스트() {
+        // Given
         Event event = Event.builder()
                 .id(2L)
                 .type(null)
@@ -100,7 +111,11 @@ class EventMapperTest {
                 .eventDetail(null)
                 .rewards(null)
                 .build();
+        
+        // When
         EventSummaryDto dto = mapper.toSummaryDto(event);
+        
+        // Then
         assertThat(dto.getType()).isNull();
         assertThat(dto.getStatus()).isNull();
         assertThat(dto.getTitle()).isEqualTo("");
