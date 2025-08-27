@@ -218,7 +218,7 @@ public class DataInitializer {
             // 테스트 사용자 생성
             User testUser = new User(
                     loginId,
-                    "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDa", // "password" 암호화
+                    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.", // "password123!" 암호화
                     email,
                     role
             );
@@ -254,7 +254,7 @@ public class DataInitializer {
             
             userStatsRepository.save(userStats);
             
-            log.info("테스트 {} 계정 생성 완료: {} (비밀번호: password, 닉네임: {})", role.name(), email, displayName);
+            log.info("테스트 {} 계정 생성 완료: {} (비밀번호: password123!, 닉네임: {})", role.name(), email, displayName);
             
         } catch (Exception e) {
             log.error("테스트 {} 계정 생성 실패: {}", role.name(), e.getMessage());
