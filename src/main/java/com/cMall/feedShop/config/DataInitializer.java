@@ -3,10 +3,13 @@ package com.cMall.feedShop.config;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserLevel;
 import com.cMall.feedShop.user.domain.model.UserStats;
+import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.enums.UserRole;
+import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.domain.repository.UserStatsRepository;
 import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -29,6 +32,7 @@ public class DataInitializer {
     private final UserRepository userRepository;
     private final UserStatsRepository userStatsRepository;
     private final UserLevelRepository userLevelRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Bean
     @Profile("dev")
@@ -191,45 +195,78 @@ public class DataInitializer {
     }
 
     /**
-     * 개발 환경용 테스트 관리자 계정 생성
+     * 개발 환경용 테스트 계정 생성
+     * USER, ADMIN, SELLER 역할의 테스트 계정을 모두 생성
      */
     private void createTestAdminUser() {
-        String adminEmail = "admin@feedshop.dev";
-        
+        createTestUser("user@feedshop.dev", "user", UserRole.USER);
+        createTestUser("admin@feedshop.dev", "admin", UserRole.ADMIN);
+        createTestUser("seller@feedshop.dev", "seller", UserRole.SELLER);
+    }
+    
+    /**
+     * 테스트 계정 생성 헬퍼 메서드
+     */
+    private void createTestUser(String email, String loginId, UserRole role) {
         // 이미 존재하는지 확인
-        if (userRepository.existsByEmail(adminEmail)) {
-            log.info("테스트 관리자 계정이 이미 존재합니다: {}", adminEmail);
+        if (userRepository.existsByEmail(email)) {
+            log.info("테스트 {} 계정이 이미 존재합니다: {}", role.name(), email);
             return;
         }
 
         try {
-            // 테스트 관리자 사용자 생성
-            User adminUser = new User(
-                    "admin",
-                    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // "password" 암호화
-                    adminEmail,
-                    UserRole.ADMIN
+            // 테스트 사용자 생성
+            User testUser = new User(
+                    loginId,
+                    "$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEFDa", // "password" 암호화
+                    email,
+                    role
             );
             
-            User savedAdmin = userRepository.save(adminUser);
+            // 테스트 계정은 ACTIVE 상태로 설정
+            testUser.setStatus(UserStatus.ACTIVE);
+            
+            User savedUser = userRepository.save(testUser);
+            
+            // 사용자 프로필 생성
+            String displayName = getDisplayNameByRole(role);
+            UserProfile userProfile = UserProfile.builder()
+                    .user(savedUser)
+                    .name(displayName)
+                    .nickname(displayName)
+                    .phone("010-1234-5678")
+                    .build();
+            
+            userProfileRepository.save(userProfile);
             
             // 기본 레벨 조회
             UserLevel defaultLevel = userLevelRepository.findByMinPointsRequired(0)
                     .orElseThrow(() -> new IllegalStateException("기본 레벨을 찾을 수 없습니다."));
             
-            // 관리자 통계 정보 생성
-            UserStats adminStats = UserStats.builder()
-                    .user(savedAdmin)
+            // 사용자 통계 정보 생성
+            UserStats userStats = UserStats.builder()
+                    .user(savedUser)
                     .currentLevel(defaultLevel)
                     .build();
             
-            userStatsRepository.save(adminStats);
+            userStatsRepository.save(userStats);
             
-            log.info("테스트 관리자 계정 생성 완료: {} (비밀번호: password)", adminEmail);
+            log.info("테스트 {} 계정 생성 완료: {} (비밀번호: password, 닉네임: {})", role.name(), email, displayName);
             
         } catch (Exception e) {
-            log.error("테스트 관리자 계정 생성 실패: {}", e.getMessage());
+            log.error("테스트 {} 계정 생성 실패: {}", role.name(), e.getMessage());
         }
+    }
+    
+    /**
+     * 역할에 따른 표시 이름 반환
+     */
+    private String getDisplayNameByRole(UserRole role) {
+        return switch (role) {
+            case USER -> "테스트 사용자";
+            case ADMIN -> "테스트 관리자";
+            case SELLER -> "테스트 판매자";
+        };
     }
 
     /**

@@ -3,10 +3,12 @@ package com.cMall.feedShop.config;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.model.UserLevel;
 import com.cMall.feedShop.user.domain.model.UserStats;
+import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.domain.repository.UserStatsRepository;
 import com.cMall.feedShop.user.domain.repository.UserLevelRepository;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,9 @@ class DataInitializerTest {
 
     @Mock
     private UserLevelRepository userLevelRepository;
+
+    @Mock
+    private UserProfileRepository userProfileRepository;
 
     @InjectMocks
     private DataInitializer dataInitializer;
@@ -169,10 +174,12 @@ class DataInitializerTest {
     }
 
     @Test
-    @DisplayName("테스트 관리자 계정이 이미 존재하면 생성하지 않는다")
+    @DisplayName("테스트 계정들이 이미 존재하면 생성하지 않는다")
     void createTestAdminUser_AlreadyExists_ShouldNotCreate() throws Exception {
         // given
+        given(userRepository.existsByEmail("user@feedshop.dev")).willReturn(true);
         given(userRepository.existsByEmail("admin@feedshop.dev")).willReturn(true);
+        given(userRepository.existsByEmail("seller@feedshop.dev")).willReturn(true);
         given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(Arrays.asList(defaultLevel));
 
         // when
@@ -180,18 +187,21 @@ class DataInitializerTest {
         runner.run();
 
         // then
-        verify(userRepository).existsByEmail("admin@feedshop.dev");
+        verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("테스트 관리자 계정이 없으면 생성한다")
+    @DisplayName("테스트 계정들이 없으면 생성한다")
     void createTestAdminUser_NotExists_ShouldCreate() throws Exception {
         // given
+        given(userRepository.existsByEmail("user@feedshop.dev")).willReturn(false);
         given(userRepository.existsByEmail("admin@feedshop.dev")).willReturn(false);
+        given(userRepository.existsByEmail("seller@feedshop.dev")).willReturn(false);
         given(userRepository.save(any())).willReturn(testUser);
         given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.of(defaultLevel));
         given(userStatsRepository.save(any())).willReturn(testUserStats);
+        given(userProfileRepository.save(any())).willReturn(null); // UserProfile 저장
         given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(Arrays.asList(defaultLevel));
 
         // when
@@ -199,9 +209,10 @@ class DataInitializerTest {
         runner.run();
 
         // then
-        verify(userRepository).existsByEmail("admin@feedshop.dev");
-        verify(userRepository).save(any());
-        verify(userStatsRepository).save(any());
+        verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
+        verify(userRepository, times(3)).save(any()); // user, admin, seller
+        verify(userProfileRepository, times(3)).save(any()); // user, admin, seller
+        verify(userStatsRepository, times(3)).save(any()); // user, admin, seller
     }
 
     @Test
@@ -237,10 +248,13 @@ class DataInitializerTest {
         given(userLevelRepository.findAllOrderByMinPointsRequired()).willReturn(Collections.emptyList());
         given(userLevelRepository.saveAll(any())).willReturn(Arrays.asList(defaultLevel));
         given(userRepository.findUsersWithoutStats()).willReturn(Collections.emptyList());
+        given(userRepository.existsByEmail("user@feedshop.dev")).willReturn(false);
         given(userRepository.existsByEmail("admin@feedshop.dev")).willReturn(false);
+        given(userRepository.existsByEmail("seller@feedshop.dev")).willReturn(false);
         given(userRepository.save(any())).willReturn(testUser);
         given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.of(defaultLevel));
         given(userStatsRepository.save(any())).willReturn(testUserStats);
+        given(userProfileRepository.save(any())).willReturn(null); // UserProfile 저장
 
         // when
         CommandLineRunner runner = dataInitializer.initializeData();
@@ -250,9 +264,10 @@ class DataInitializerTest {
         verify(userLevelRepository).findAllOrderByMinPointsRequired();
         verify(userLevelRepository).saveAll(any());
         verify(userRepository).findUsersWithoutStats();
-        verify(userRepository).existsByEmail("admin@feedshop.dev");
-        verify(userRepository).save(any());
-        verify(userStatsRepository).save(any());
+        verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
+        verify(userRepository, times(3)).save(any()); // user, admin, seller
+        verify(userProfileRepository, times(3)).save(any()); // user, admin, seller
+        verify(userStatsRepository, times(3)).save(any()); // user, admin, seller
     }
 
     @Test
@@ -263,7 +278,9 @@ class DataInitializerTest {
         given(userLevelRepository.saveAll(any())).willReturn(Arrays.asList(defaultLevel));
         given(userRepository.findUsersWithoutStats()).willReturn(Arrays.asList(testUser));
         given(userLevelRepository.findByMinPointsRequired(0)).willReturn(Optional.empty()); // 실패 케이스
+        given(userRepository.existsByEmail("user@feedshop.dev")).willReturn(false);
         given(userRepository.existsByEmail("admin@feedshop.dev")).willReturn(false);
+        given(userRepository.existsByEmail("seller@feedshop.dev")).willReturn(false);
         // 불필요한 stubbing 제거
         // given(userRepository.save(any())).willReturn(testUser);
         // given(userStatsRepository.save(any())).willReturn(testUserStats);
@@ -277,7 +294,8 @@ class DataInitializerTest {
         verify(userLevelRepository).saveAll(any());
         // 사용자 통계 초기화는 실패하지만 예외가 던져지지 않음
         verify(userRepository).findUsersWithoutStats();
-        // 테스트 관리자 계정 생성은 실패하지만 예외가 던져지지 않음
+        // 테스트 계정 생성은 실패하지만 예외가 던져지지 않음
+        verify(userRepository, times(3)).existsByEmail(anyString()); // user, admin, seller
         // verify(userRepository).save(any()); // 이 부분은 제거 - 실제로는 실패하므로 호출되지 않음
     }
 }
