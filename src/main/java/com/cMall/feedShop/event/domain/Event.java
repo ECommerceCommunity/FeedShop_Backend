@@ -58,6 +58,9 @@ private LocalDateTime deletedAt;
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EventReward> rewards;
 
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EventImage> images;
+
     // 연관관계 설정 메서드
     public void setEventDetail(EventDetail eventDetail) {
         this.eventDetail = eventDetail;
@@ -70,6 +73,13 @@ private LocalDateTime deletedAt;
         this.rewards = rewards;
         if (rewards != null) {
             rewards.forEach(reward -> reward.setEvent(this));
+        }
+    }
+
+    public void setImages(List<EventImage> images) {
+        this.images = images;
+        if (images != null) {
+            images.forEach(image -> image.setEvent(this));
         }
     }
 
