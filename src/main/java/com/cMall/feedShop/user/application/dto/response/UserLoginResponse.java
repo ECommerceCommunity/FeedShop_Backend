@@ -22,6 +22,9 @@ public class UserLoginResponse {
     
     @Schema(description = "닉네임", example = "길동이")
     private String nickname;
+    
+    @Schema(description = "사용자 이름", example = "홍길동")
+    private String name;
 
     @Schema(description = "MFA 2단계 인증 필요 여부", example = "false")
     private boolean requiresMfa; // MFA 2단계 인증 필요 여부

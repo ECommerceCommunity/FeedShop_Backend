@@ -11,6 +11,7 @@ import com.cMall.feedShop.user.domain.model.PasswordResetToken;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +43,9 @@ class UserAuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserProfileRepository userProfileRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -90,34 +94,36 @@ class UserAuthServiceTest {
     @Test
     @DisplayName("성공적인 로그인 - JWT 토큰 발급 확인")
     void login_success_returnsToken() {
-
-        Authentication mockAuthentication = mock(Authentication.class);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(mockAuthentication);
-
+        // Given
         when(userRepository.findByEmail(loginRequest.getEmail()))
                 .thenReturn(Optional.of(testUser));
-
+        when(userProfileRepository.findByUser(testUser))
+                .thenReturn(Optional.empty());
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(mock(Authentication.class));
         when(jwtTokenProvider.generateAccessToken(testUser.getEmail(), testUser.getRole().name()))
                 .thenReturn(dummyToken);
 
+        // When
         UserLoginResponse response = userAuthService.login(loginRequest);
 
+        // Then
         assertNotNull(response);
         assertEquals(testUser.getLoginId(), response.getLoginId());
         assertEquals(testUser.getRole(), response.getRole());
         assertEquals(dummyToken, response.getToken());
 
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(userRepository, times(1)).findByEmail(loginRequest.getEmail());
+        verify(userRepository, times(2)).findByEmail(loginRequest.getEmail()); // DELETED 확인 + 인증 후 조회
+        verify(userProfileRepository, times(1)).findByUser(testUser);
         verify(jwtTokenProvider, times(1)).generateAccessToken(testUser.getEmail(), testUser.getRole().name());
     }
 
     @Test
     @DisplayName("로그인 실패 - 존재하지 않는 회원 (이메일 없음)")
     void login_fail_userNotFound() {
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new UsernameNotFoundException("User not found with email: " + loginRequest.getEmail()));
+        when(userRepository.findByEmail(loginRequest.getEmail()))
+                .thenReturn(Optional.empty()); // DELETED 확인에서 null 반환
 
         BusinessException thrown = assertThrows(BusinessException.class, () -> {
             userAuthService.login(loginRequest);
@@ -126,14 +132,16 @@ class UserAuthServiceTest {
         assertEquals(ErrorCode.USER_NOT_FOUND, thrown.getErrorCode());
         assertEquals("존재하지 않는 회원입니다.", thrown.getMessage());
 
+        verify(userRepository, times(2)).findByEmail(loginRequest.getEmail()); // DELETED 확인 + CustomUserDetailsService에서 호출
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(userRepository, never()).findByEmail(anyString());
         verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyString());
     }
 
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
     void login_fail_passwordMismatch() {
+        when(userRepository.findByEmail(loginRequest.getEmail()))
+                .thenReturn(Optional.of(testUser)); // DELETED 확인에서 유효한 사용자 반환
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
@@ -141,12 +149,35 @@ class UserAuthServiceTest {
             userAuthService.login(loginRequest);
         });
 
-        assertEquals(ErrorCode.UNAUTHORIZED, thrown.getErrorCode());
+        assertEquals(ErrorCode.INVALID_PASSWORD, thrown.getErrorCode());
         assertEquals("이메일 또는 비밀번호가 올바르지 않습니다.", thrown.getMessage());
 
+        verify(userRepository, times(1)).findByEmail(loginRequest.getEmail()); // DELETED 확인만 (비밀번호 불일치로 두 번째 호출 없음)
         verify(authenticationManager, times(1)).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(userRepository, never()).findByEmail(anyString());
         verify(jwtTokenProvider, never()).generateAccessToken(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - DELETED 상태 사용자")
+    void login_fail_deletedUser() {
+        // Given
+        User deletedUser = new User("login1", "password123", "deleted@example.com", UserRole.USER);
+        deletedUser.setId(1L);
+        deletedUser.setStatus(UserStatus.DELETED);
+        
+        when(userRepository.findByEmail(loginRequest.getEmail()))
+                .thenReturn(Optional.of(deletedUser));
+
+        // When & Then
+        BusinessException thrown = assertThrows(BusinessException.class, () ->
+                userAuthService.login(loginRequest)
+        );
+        
+        assertEquals(ErrorCode.USER_ALREADY_DELETED, thrown.getErrorCode());
+        assertEquals("탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.", thrown.getMessage());
+        
+        // AuthenticationManager가 호출되지 않아야 함
+        verify(authenticationManager, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 
     @Test

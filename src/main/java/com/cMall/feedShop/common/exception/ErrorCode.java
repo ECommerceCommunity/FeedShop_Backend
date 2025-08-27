@@ -100,6 +100,8 @@ public enum ErrorCode {
     REVIEW_ALREADY_DELETED(409, "R005", "이미 삭제된 리뷰입니다."),
     REVIEW_DELETE_FORBIDDEN(403, "R006", "해당 리뷰를 삭제할 권한이 없습니다."),
     REVIEW_DELETION_FAILED(500, "R007", "리뷰 삭제 중 오류가 발생했습니다."),
+    DUPLICATE_REPORT(409, "R008", "이미 신고한 리뷰입니다."),
+    SELF_REPORT_NOT_ALLOWED(400, "R009", "자신이 작성한 리뷰는 신고할 수 없습니다."),
 
   
     // 이벤트 (현재 구현된 읽기 전용 API에서만 사용)
@@ -107,7 +109,7 @@ public enum ErrorCode {
     INVALID_EVENT_STATUS(400, "E002", "유효하지 않은 이벤트 상태입니다."),
     INVALID_EVENT_TYPE(400, "E003", "유효하지 않은 이벤트 타입입니다."),
     EVENT_NOT_AVAILABLE(400, "E004", "참여할 수 없는 이벤트입니다."),
-    
+    ALREADY_PARTICIPATED_IN_EVENT(409, "E005", "이미 해당 이벤트에 참여하셨습니다."),
     // 피드
     FEED_NOT_FOUND(404, "F001", "피드를 찾을 수 없습니다."),
     INVALID_REQUEST(400, "F002", "잘못된 요청입니다."),
