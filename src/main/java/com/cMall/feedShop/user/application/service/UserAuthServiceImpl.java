@@ -11,6 +11,7 @@ import com.cMall.feedShop.user.domain.model.PasswordResetToken;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 public class UserAuthServiceImpl implements UserAuthService {
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
@@ -39,11 +41,13 @@ public class UserAuthServiceImpl implements UserAuthService {
     @Value("${app.password-reset-url}")
     private String passwordResetBaseUrl;
 
-    public UserAuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
+    public UserAuthServiceImpl(UserRepository userRepository, UserProfileRepository userProfileRepository,
+                               PasswordEncoder passwordEncoder,
                                PasswordResetTokenRepository passwordResetTokenRepository,
                                @Qualifier("emailServiceImpl") EmailService emailService, // 빈 이름 확인 필요
                                JwtTokenProvider jwtProvider, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailService = emailService;
@@ -79,9 +83,22 @@ public class UserAuthServiceImpl implements UserAuthService {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }
 
+            // UserProfile 정보 명시적으로 조회
             String nickname = null;
-            if (user.getUserProfile() != null) {
-                nickname = user.getUserProfile().getNickname();
+            String name = null;
+            var userProfileOpt = userProfileRepository.findByUser(user);
+            if (userProfileOpt.isPresent()) {
+                var userProfile = userProfileOpt.get();
+                nickname = userProfile.getNickname();
+                name = userProfile.getName();
+            }
+            
+            // UserProfile이 없으면 기본값 사용
+            if (nickname == null || nickname.trim().isEmpty()) {
+                nickname = user.getLoginId();
+            }
+            if (name == null || name.trim().isEmpty()) {
+                name = user.getLoginId();
             }
 
             String token = jwtProvider.generateAccessToken(user.getEmail(), user.getRole().name());
@@ -91,6 +108,7 @@ public class UserAuthServiceImpl implements UserAuthService {
                     .role(user.getRole())
                     .token(token)
                     .nickname(nickname)
+                    .name(name)
                     .requiresMfa(false)
                     .tempToken(null)
                     .email(user.getEmail())
@@ -177,10 +195,22 @@ public class UserAuthServiceImpl implements UserAuthService {
         // MFA 인증이 완료된 상태에서 최종 로그인 토큰 발급
         String finalToken = jwtProvider.generateAccessToken(user.getEmail(), user.getRole().name());
 
-        // 닉네임 정보 가져오기
+        // UserProfile 정보 명시적으로 조회
         String nickname = null;
-        if (user.getUserProfile() != null) {
-            nickname = user.getUserProfile().getNickname();
+        String name = null;
+        var userProfileOpt = userProfileRepository.findByUser(user);
+        if (userProfileOpt.isPresent()) {
+            var userProfile = userProfileOpt.get();
+            nickname = userProfile.getNickname();
+            name = userProfile.getName();
+        }
+        
+        // UserProfile이 없으면 기본값 사용
+        if (nickname == null || nickname.trim().isEmpty()) {
+            nickname = user.getLoginId();
+        }
+        if (name == null || name.trim().isEmpty()) {
+            name = user.getLoginId();
         }
 
         return UserLoginResponse.builder()
@@ -188,6 +218,7 @@ public class UserAuthServiceImpl implements UserAuthService {
                 .role(user.getRole())
                 .token(finalToken) // 최종 로그인 토큰
                 .nickname(nickname)
+                .name(name)
                 .requiresMfa(false) // MFA 인증 완료
                 .tempToken(null) // 임시 토큰 제거
                 .email(user.getEmail())

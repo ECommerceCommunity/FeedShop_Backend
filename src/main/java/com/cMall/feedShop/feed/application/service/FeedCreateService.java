@@ -17,7 +17,10 @@ import java.util.List;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.event.domain.EventParticipant;
+import com.cMall.feedShop.event.domain.repository.EventParticipantRepository;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
+import com.cMall.feedShop.event.domain.enums.EventType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class FeedCreateService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
+    private final EventParticipantRepository eventParticipantRepository;
     private final FeedMapper feedMapper;
     private final FeedRewardEventHandler feedRewardEventHandler;
     
@@ -75,6 +79,11 @@ public class FeedCreateService {
             
             // 이벤트 참여 가능 여부 검증
             validateEventAvailability(event);
+            
+            // 이미 해당 이벤트에 참여했는지 확인
+            if (eventParticipantRepository.existsByEventIdAndUserId(event.getId(), user.getId())) {
+                throw new BusinessException(ErrorCode.ALREADY_PARTICIPATED_IN_EVENT);
+            }
         }
         
         // 7. 피드 생성
@@ -111,8 +120,46 @@ public class FeedCreateService {
             // 리워드 이벤트 생성 실패가 피드 생성에 영향을 주지 않도록 예외를 던지지 않음
         }
         
-        // 12. 응답 DTO 변환 및 반환
+        // 12. 이벤트 참여 피드인 경우 EventParticipant 자동 생성
+        if (event != null) {
+            createEventParticipant(event, user, savedFeed);
+        }
+        
+        // 13. 응답 DTO 변환 및 반환
         return feedMapper.toFeedCreateResponseDto(savedFeed);
+    }
+    
+    /**
+     * 이벤트 참여자 생성
+     */
+    private void createEventParticipant(Event event, User user, Feed feed) {
+        EventParticipant eventParticipant = EventParticipant.builder()
+                .event(event)
+                .user(user)
+                .feed(feed)
+                .metadata(generateEventParticipantMetadata(event, feed))
+                .build();
+        
+        eventParticipantRepository.save(eventParticipant);
+    }
+    
+    /**
+     * 이벤트 참여자 메타데이터 생성
+     */
+    private String generateEventParticipantMetadata(Event event, Feed feed) {
+        // 이벤트 타입에 따라 다른 메타데이터 생성
+        switch (event.getType()) {
+            case BATTLE:
+                // 배틀 이벤트는 나중에 매칭 시 메타데이터 업데이트
+                return EventParticipant.createBattleMetadata(null, null);
+            case RANKING:
+                // 랭킹 이벤트는 초기 랭킹 0으로 설정
+                return EventParticipant.createRankingMetadata(0, 0L);
+            default:
+                // 기본 메타데이터
+                return String.format("{\"eventType\": \"%s\", \"feedId\": %d}", 
+                        event.getType(), feed.getId());
+        }
     }
     
     /**

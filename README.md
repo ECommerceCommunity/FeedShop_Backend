@@ -7,7 +7,8 @@
 신발 전문 쇼핑몰 FeedShop의 백엔드 API 서버입니다. Spring Boot 3.3 기반으로 클린 아키텍처 패턴을 적용하여 구현된 현대적인 이커머스 플랫폼입니다.
 
 - **Frontend Repository**: [FeedShop Frontend (React)](https://github.com/ECommerceCommunity/FeedShop_Frontend)
-- **API Documentation**: [Swagger UI](http://localhost:8080/swagger-ui/index.html)
+- **Live Demo**: [www.feedshop.store](https://www.feedshop.store)
+- **API Documentation**: [Swagger UI](https://feedshop-springboot-561086069695.asia-northeast3.run.app/swagger-ui/index.html)
 
 ---
 
@@ -41,7 +42,8 @@
 - **JWT 기반 인증**: 토큰 기반 보안 인증
 - **회원 관리**: 회원가입, 로그인, 정보 수정, 탈퇴
 - **권한 관리**: 사용자/판매자/관리자 역할 기반 접근 제어
-- **소셜 로그인**: OAuth2 기반 소셜 로그인 (구현 예정)
+- **소셜 로그인**: OAuth2 기반 Google, Kakao 로그인
+- **2FA 인증**: Google Authenticator 기반 2단계 인증
 
 ### 💬 커뮤니티 기능
 
@@ -51,15 +53,22 @@
 
 ### 🎁 마케팅 기능
 
-- **포인트 시스템**: 활동 기반 포인트 적립/사용
+- **포인트 시스템**: 활동 기반 포인트 적립/사용, 만료 관리
 - **쿠폰 관리**: 할인 쿠폰 발급, 사용, 관리
 - **위시리스트**: 관심 상품 저장 및 관리
+- **뱃지 시스템**: 활동 기반 뱃지 획득, 레벨 시스템 연동
 
 ### 🏪 스토어 관리
 
 - **스토어 정보**: 판매자 스토어 정보 관리
 - **상품 관리**: 판매자별 상품 등록 및 관리
 - **주문 관리**: 판매자 주문 처리 및 배송 관리
+
+### 🤖 AI 기능
+
+- **상품 추천**: OpenAI 기반 개인화 상품 추천
+- **AI 챗봇**: 상품 문의 및 고객 지원 (구현 예정)
+- **스마트 검색**: AI 기반 상품 검색 및 필터링 (구현 예정)
 
 ---
 
@@ -87,7 +96,7 @@ graph TB
         end
 
         subgraph "Production Environment"
-            PROD_APP["Production API<br/>🚀 Spring Boot<br/>Cloud Run<br/>feedshop-springboot-*.run.app"]
+            PROD_APP["Production API<br/>🚀 Spring Boot<br/>Cloud Run<br/>feedshop-springboot-561086069695.asia-northeast3.run.app"]
             PROD_DB[(Production DB<br/>☁️ Cloud SQL MySQL<br/>feedshop-db)]
         end
     end
@@ -97,6 +106,8 @@ graph TB
         MAILGUN["Mailgun<br/>📧 Email Service"]
         RECAPTCHA["Google reCAPTCHA<br/>🛡️ Bot Protection"]
         SONAR["SonarCloud<br/>📊 Code Quality"]
+        OPENAI["OpenAI<br/>🤖 AI Services"]
+        OAUTH["OAuth2 Providers<br/>🔐 Google, Kakao"]
     end
 
     %% CI/CD Pipeline
@@ -123,6 +134,8 @@ graph TB
     PROD_APP --> CDN
     PROD_APP --> MAILGUN
     PROD_APP --> RECAPTCHA
+    PROD_APP --> OPENAI
+    PROD_APP --> OAUTH
 
     %% CI/CD Flow
     GITHUB --> GH_ACTIONS
@@ -141,7 +154,7 @@ graph TB
     class FE frontend
     class DEV_APP,PROD_APP backend
     class DEV_DB,PROD_DB database
-    class MAILGUN,RECAPTCHA,SONAR external
+    class MAILGUN,RECAPTCHA,SONAR,OPENAI,OAUTH external
     class GITHUB,GH_ACTIONS cicd
     class USER,DEV user
 ```
@@ -156,13 +169,16 @@ graph TB
 | **File Storage**  | Local Storage                   | Google Cloud Storage        |
 | **CDN**           | -                               | cdn-feedshop.store          |
 | **Email Service** | Mailgun (Dev API Key)           | Mailgun (Prod API Key)      |
+| **AI Service**    | OpenAI API                      | OpenAI API                  |
+| **OAuth2**        | Google, Kakao                   | Google, Kakao               |
 | **Monitoring**    | -                               | GCP Logging & Monitoring    |
 
 ### 클린 아키텍처 패턴 적용
 
 ```
 src/main/java/com/cMall/feedShop/
-├── 📁 annotation/     # 커스텀 어노테이션
+├── 📁 ai/            # AI 도메인 (상품 추천, 챗봇)
+├── 📁 annotation/    # 커스텀 어노테이션
 ├── 📁 cart/          # 장바구니 도메인
 ├── 📁 common/        # 공통 컴포넌트 (설정, 유틸리티, 예외 처리)
 ├── 📁 config/        # 설정 클래스들
@@ -177,7 +193,7 @@ src/main/java/com/cMall/feedShop/
 
 ### 도메인별 모듈화
 
-- **User**: 사용자 관리, 인증, 권한, 포인트/쿠폰
+- **User**: 사용자 관리, 인증, 권한, 포인트/쿠폰, 뱃지/레벨
 - **Product**: 상품 관리, 카테고리, 옵션, 이미지
 - **Cart**: 장바구니 관리, 선택 상품 처리
 - **Order**: 주문 처리, 결제, 재고 관리
@@ -185,21 +201,23 @@ src/main/java/com/cMall/feedShop/
 - **Feed**: 소셜 피드, 좋아요, 댓글
 - **Event**: 이벤트 관리, 검색, 필터링
 - **Store**: 스토어 정보 관리
+- **AI**: 상품 추천, AI 챗봇
 
 ---
 
 ## 📊 도메인별 구현 현황
 
-| 도메인      | 구현 상태 | 주요 기능                           | 테스트 커버리지 |
-| ----------- | --------- | ----------------------------------- | --------------- |
-| **User**    | ✅ 완료   | JWT 인증, 회원 관리, 포인트/쿠폰    | 높음            |
-| **Product** | ✅ 완료   | 상품 CRUD, 옵션 관리, 이미지 업로드 | 높음            |
-| **Cart**    | ✅ 완료   | 장바구니 관리, 선택 상품 처리       | 높음            |
-| **Order**   | ✅ 완료   | 주문 생성, 재고 관리, 포인트 사용   | 높음            |
-| **Review**  | ✅ 완료   | 리뷰 CRUD, 평점 시스템, 통계        | 높음            |
-| **Feed**    | ✅ 완료   | 피드 작성, 조회, 좋아요, 댓글       | 높음            |
-| **Event**   | ✅ 완료   | 이벤트 관리, 검색, 필터링           | 높음            |
-| **Store**   | 🔄 진행중 | 스토어 정보 관리                    | 낮음            |
+| 도메인      | 구현 상태 | 주요 기능                                                 | 테스트 커버리지 |
+| ----------- | --------- | --------------------------------------------------------- | --------------- |
+| **User**    | ✅ 완료   | JWT 인증, OAuth2 소셜 로그인, 포인트/쿠폰, 뱃지/레벨, 2FA | 높음            |
+| **Product** | ✅ 완료   | 상품 CRUD, 옵션 관리, 이미지 업로드                       | 높음            |
+| **Cart**    | ✅ 완료   | 장바구니 관리, 선택 상품 처리                             | 높음            |
+| **Order**   | ✅ 완료   | 주문 생성, 재고 관리, 포인트 사용                         | 높음            |
+| **Review**  | ✅ 완료   | 리뷰 CRUD, 평점 시스템, 통계                              | 높음            |
+| **Feed**    | ✅ 완료   | 피드 작성, 조회, 좋아요, 댓글                             | 높음            |
+| **Event**   | ✅ 완료   | 이벤트 관리, 검색, 필터링                                 | 높음            |
+| **Store**   | ✅ 완료   | 스토어 정보 관리                                          | 높음            |
+| **AI**      | 🔄 진행중 | OpenAI 기반 상품 추천                                     | 중간            |
 
 ---
 
@@ -207,14 +225,15 @@ src/main/java/com/cMall/feedShop/
 
 ### Backend
 
-| 기술                | 버전   | 용도                       |
-| ------------------- | ------ | -------------------------- |
-| **Java**            | 17     | 메인 프로그래밍 언어       |
-| **Spring Boot**     | 3.3.12 | 웹 애플리케이션 프레임워크 |
-| **Spring Security** | 3.3.12 | 보안 및 인증               |
-| **Spring Data JPA** | 3.3.12 | 데이터 접근 계층           |
-| **QueryDSL**        | 5.1.0  | 동적 쿼리 생성             |
-| **JWT**             | 0.11.5 | 토큰 기반 인증             |
+| 기술                | 버전     | 용도                       |
+| ------------------- | -------- | -------------------------- |
+| **Java**            | 17       | 메인 프로그래밍 언어       |
+| **Spring Boot**     | 3.3.12   | 웹 애플리케이션 프레임워크 |
+| **Spring Security** | 3.3.12   | 보안 및 인증               |
+| **Spring Data JPA** | 3.3.12   | 데이터 접근 계층           |
+| **QueryDSL**        | 5.1.0    | 동적 쿼리 생성             |
+| **JWT**             | 0.11.5   | 토큰 기반 인증             |
+| **Spring AI**       | 1.0.0-M4 | AI 서비스 통합             |
 
 ### Database & Storage
 
@@ -241,6 +260,9 @@ src/main/java/com/cMall/feedShop/
 | **Mailgun**          | 이메일 발송           |
 | **Google reCAPTCHA** | 봇 방지               |
 | **Google Cloud SQL** | 클라우드 데이터베이스 |
+| **OpenAI API**       | AI 상품 추천          |
+| **Google OAuth2**    | 소셜 로그인           |
+| **Kakao OAuth2**     | 소셜 로그인           |
 
 ---
 
@@ -271,6 +293,12 @@ src/main/java/com/cMall/feedShop/
    # 환경 변수 설정 (필수)
    export DB_PASSWORD=your_database_password
    export JWT_SECRET=your_jwt_secret_key
+   export OPENAI_API_KEY=your_openai_api_key
+   export MAILGUN_API_KEY=your_mailgun_api_key
+   export GOOGLE_CLIENT_ID=your_google_client_id
+   export GOOGLE_CLIENT_SECRET=your_google_client_secret
+   export KAKAO_CLIENT_ID=your_kakao_client_id
+   export KAKAO_CLIENT_SECRET=your_kakao_client_secret
    ```
 
 3. **데이터베이스 설정**
@@ -309,6 +337,7 @@ docker run -p 8080:8080 feedshop-backend
 
 - **Swagger UI**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - **OpenAPI JSON**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **Production API**: [https://feedshop-springboot-561086069695.asia-northeast3.run.app/swagger-ui/index.html](https://feedshop-springboot-561086069695.asia-northeast3.run.app/swagger-ui/index.html)
 
 ### 주요 API 엔드포인트
 
@@ -322,6 +351,9 @@ docker run -p 8080:8080 feedshop-backend
 | **리뷰**     | `GET/POST/PUT/DELETE /api/reviews/*` | 리뷰 관리                   |
 | **피드**     | `GET/POST /api/feeds/*`              | 소셜 피드                   |
 | **이벤트**   | `GET /api/events/*`                  | 이벤트 조회                 |
+| **AI**       | `POST /api/ai/recommendations/*`     | AI 상품 추천                |
+| **포인트**   | `GET /api/users/points/*`            | 포인트 관리                 |
+| **뱃지**     | `GET /api/users/badges/*`            | 뱃지 시스템                 |
 
 ---
 
@@ -402,7 +434,7 @@ logging:
 
 - **개발 환경**: 로컬 개발용 설정
 - **스테이징 환경**: 테스트용 클라우드 환경
-- **프로덕션 환경**: Google Cloud Platform
+- **프로덕션 환경**: Google Cloud Platform (Cloud Run)
 
 ### 모니터링
 

@@ -11,6 +11,7 @@ import com.cMall.feedShop.user.domain.model.PasswordResetToken;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
 import com.cMall.feedShop.user.infrastructure.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +43,9 @@ class UserAuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserProfileRepository userProfileRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -97,6 +101,9 @@ class UserAuthServiceTest {
 
         when(userRepository.findByEmail(loginRequest.getEmail()))
                 .thenReturn(Optional.of(testUser));
+
+        when(userProfileRepository.findByUser(testUser))
+                .thenReturn(Optional.empty());
 
         when(jwtTokenProvider.generateAccessToken(testUser.getEmail(), testUser.getRole().name()))
                 .thenReturn(dummyToken);
