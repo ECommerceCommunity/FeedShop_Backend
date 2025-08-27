@@ -6,6 +6,7 @@ import com.cMall.feedShop.event.application.exception.EventNotFoundException;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.common.util.TimeUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class EventUpdateService {
     private final EventRepository eventRepository;
     private final ObjectMapper objectMapper;
     private final EventImageService eventImageService;
+    private final EventStatusService eventStatusService;
 
     /**
      * 이벤트 수정 비즈니스 로직
@@ -85,7 +87,7 @@ public class EventUpdateService {
         }
 
         // 상태 자동 업데이트
-        event.updateStatusAutomatically();
+        eventStatusService.updateEventStatusIfNeeded(event, TimeUtil.nowDate());
         
         // JPA Dirty Checking으로 자동 변경사항 감지 및 DB 반영
         // @Transactional에 의해 트랜잭션 종료 시 자동 커밋됨

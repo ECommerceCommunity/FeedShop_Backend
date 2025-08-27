@@ -36,6 +36,7 @@ public class EventImage extends BaseTimeEntity {
     private String contentType;
 
     @Column(name = "image_order", nullable = false)
+    @Builder.Default
     private Integer imageOrder = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -30,11 +30,11 @@ public class Event extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EventType type;
+    private EventStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EventStatus status;
+    private EventType type;
 
     @Column(name = "max_participants")
     private Integer maxParticipants;
@@ -46,7 +46,7 @@ public class Event extends BaseTimeEntity {
     private LocalDateTime updatedBy;
 
     @Column(name = "deleted_at")
-private LocalDateTime deletedAt;
+    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -84,73 +84,16 @@ private LocalDateTime deletedAt;
     }
 
     /**
-     * 팩토리 메서드: EventDetail과 함께 이벤트 생성 (빌더 패턴 활용)
+     * 정적 팩토리 메서드: 기본 이벤트 생성
      */
-    public static Event createWithDetail(EventType type, Integer maxParticipants, EventDetail eventDetail) {
-        Event event = Event.builder()
+    public static Event createWithDetail(EventType type, Integer maxParticipants, User createdUser) {
+        return Event.builder()
                 .type(type)
+                .status(EventStatus.UPCOMING) // 기본값: 예정
                 .maxParticipants(maxParticipants)
-                .status(EventStatus.UPCOMING)
+                .createdUser(createdUser)
+                .createdBy(LocalDateTime.now())
                 .build();
-        event.setEventDetail(eventDetail);
-        return event;
-    }
-
-    /**
-     * 팩토리 메서드: EventReward들과 함께 이벤트 생성 (빌더 패턴 활용)
-     */
-    public static Event createWithRewards(EventType type, Integer maxParticipants, List<EventReward> rewards) {
-        Event event = Event.builder()
-                .type(type)
-                .maxParticipants(maxParticipants)
-                .status(EventStatus.UPCOMING)
-                .build();
-        event.setRewards(rewards);
-        return event;
-    }
-
-    /**
-     * 이벤트 상태를 자동으로 계산하여 업데이트
-     */
-    public void updateStatusAutomatically() {
-        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
-            return;
-        }
-        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
-        if (today.isBefore(eventDetail.getEventStartDate())) {
-            this.status = EventStatus.UPCOMING;
-        } else if (today.isAfter(eventDetail.getEventEndDate())) {
-            this.status = EventStatus.ENDED;
-        } else {
-            this.status = EventStatus.ONGOING;
-        }
-    }
-
-    /**
-     * 현재 상태가 자동 계산된 상태와 일치하는지 확인
-     */
-    public boolean isStatusUpToDate() {
-        EventStatus calculatedStatus = calculateStatus();
-        return this.status == calculatedStatus;
-    }
-
-    /**
-     * 현재 날짜 기준으로 이벤트 상태 계산
-     * 종료일은 다음날 자정까지 유효하도록 처리
-     * 
-     * 예시:
-     * - eventEndDate = 2025-08-06인 경우
-     * - 2025-08-06 23:59:59까지 이벤트 참여 가능
-     * - 2025-08-07 00:00:00부터 ENDED 상태
-     */
-    public EventStatus calculateStatus() {
-        if (eventDetail == null || eventDetail.getEventStartDate() == null || eventDetail.getEventEndDate() == null) {
-            return this.status;
-        }
-        LocalDate today = TimeUtil.nowDate(); // 한국 시간대 기준 현재 날짜
-        if (today.isBefore(eventDetail.getEventStartDate())) return EventStatus.UPCOMING;
-        if (today.isAfter(eventDetail.getEventEndDate())) return EventStatus.ENDED;
-        return EventStatus.ONGOING;
     }
 
     /**

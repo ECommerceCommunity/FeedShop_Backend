@@ -26,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.cMall.feedShop.common.util.TimeUtil;
+import com.cMall.feedShop.event.application.service.EventStatusService;
 
 @Slf4j
 @Service
@@ -41,6 +43,7 @@ public class FeedCreateService {
     private final FeedMapper feedMapper;
     private final FeedRewardEventHandler feedRewardEventHandler;
     private final FeedImageService feedImageService;
+    private final EventStatusService eventStatusService;
     
     /**
      * 피드 생성
@@ -80,7 +83,10 @@ public class FeedCreateService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
             
             // 이벤트 참여 가능 여부 검증
-            validateEventAvailability(event);
+            if (!validateEventAvailability(event)) {
+                throw new EventNotAvailableException(event.getId(), 
+                    String.format("진행중이지 않은 이벤트입니다. 현재 상태: %s", eventStatusService.calculateEventStatus(event, TimeUtil.nowDate())));
+            }
             
             // 이미 해당 이벤트에 참여했는지 확인
             if (eventParticipantRepository.existsByEventIdAndUserId(event.getId(), user.getId())) {
@@ -163,7 +169,10 @@ public class FeedCreateService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
             
             // 이벤트 참여 가능 여부 검증
-            validateEventAvailability(event);
+            if (!validateEventAvailability(event)) {
+                throw new EventNotAvailableException(event.getId(), 
+                    String.format("진행중이지 않은 이벤트입니다. 현재 상태: %s", eventStatusService.calculateEventStatus(event, TimeUtil.nowDate())));
+            }
         }
         
         // 6. 피드 생성
@@ -242,26 +251,13 @@ public class FeedCreateService {
     /**
      * 이벤트 참여 가능 여부 검증
      */
-    private void validateEventAvailability(Event event) {
+    private boolean validateEventAvailability(Event event) {
         // 실시간으로 계산된 이벤트 상태 확인
-        EventStatus calculatedStatus = event.calculateStatus();
-        if (calculatedStatus != EventStatus.ONGOING) {
-            throw new EventNotAvailableException(event.getId(), 
-                String.format("진행중이지 않은 이벤트입니다. 현재 상태: %s", calculatedStatus));
+        EventStatus calculatedStatus = eventStatusService.calculateEventStatus(event, TimeUtil.nowDate());
+        boolean isOngoing = calculatedStatus == EventStatus.ONGOING;
+        if (!isOngoing) {
+            log.debug("이벤트 {} 제외됨 - 상태: {}", event.getId(), calculatedStatus);
         }
-        
-        // 이벤트 상세 정보가 있는지 확인
-        if (event.getEventDetail() == null) {
-            throw new EventNotAvailableException(event.getId(), "이벤트 상세 정보가 없습니다.");
-        }
-        
-        // 이벤트 기간 확인 (추가 검증)
-        if (event.getEventDetail().getEventEndDate() == null) {
-            throw new EventNotAvailableException(event.getId(), "이벤트 종료일이 설정되지 않았습니다.");
-        }
-        
-        if (event.getEventDetail().getEventEndDate().isBefore(java.time.LocalDate.now())) {
-            throw new EventNotAvailableException(event.getId(), "이미 종료된 이벤트입니다.");
-        }
+        return isOngoing;
     }
 } 

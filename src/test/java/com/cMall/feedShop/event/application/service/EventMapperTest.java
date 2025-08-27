@@ -6,16 +6,37 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
+import com.cMall.feedShop.common.util.TimeUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class EventMapperTest {
-    private final EventMapper mapper = new EventMapper();
+    
+    @Mock
+    private EventStatusService eventStatusService;
+    
+    @InjectMocks
+    private EventMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        // EventStatusService Mock 설정
+        when(eventStatusService.calculateEventStatus(any(Event.class), any(LocalDate.class)))
+                .thenReturn(EventStatus.ENDED);
+    }
 
     @Test
     void toSummaryDto_모든필드_정상매핑() {

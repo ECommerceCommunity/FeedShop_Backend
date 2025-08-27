@@ -5,14 +5,22 @@ import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.EventReward;
+import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
+import com.cMall.feedShop.common.util.TimeUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class EventMapper {
+
+    private final EventStatusService eventStatusService;
 
     /**
      * Entity → DTO 변환 (간단 버전)
@@ -138,8 +146,8 @@ public class EventMapper {
             return null;
         }
         
-        // 실시간으로 상태 계산
-        var calculatedStatus = event.calculateStatus();
+        // EventStatusService를 사용하여 실시간 상태 계산
+        var calculatedStatus = eventStatusService.calculateEventStatus(event, TimeUtil.nowDate());
         return calculatedStatus != null ? calculatedStatus.name().toLowerCase() : null;
     }
 } 

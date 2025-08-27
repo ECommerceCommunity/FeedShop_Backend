@@ -62,7 +62,7 @@ public class EventCreateService {
         Event event = Event.createWithDetail(
                 requestDto.getType(),
                 requestDto.getMaxParticipants(),
-                null  // EventDetail은 나중에 설정
+                null  // createdUser는 나중에 설정
         );
 
         // EventDetail 엔티티 생성 (팩토리 메서드 활용)
@@ -101,10 +101,9 @@ public class EventCreateService {
         return EventCreateResponseDto.builder()
                 .eventId(savedEvent.getId())
                 .title(requestDto.getTitle())
-                .type(savedEvent.getType().name().toLowerCase())
-                .status(savedEvent.getStatus().name().toLowerCase())
+                .type(savedEvent.getType().name())
+                .status(savedEvent.getStatus().name())
                 .maxParticipants(savedEvent.getMaxParticipants())
-                .createdAt(savedEvent.getCreatedAt())
                 .build();
     }
 
