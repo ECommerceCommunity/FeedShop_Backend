@@ -484,4 +484,48 @@ class ReviewQueryRepositoryImplTest {
         assertThat(result.getTotalElements()).isEqualTo(0L);
     }
 
+    @Test
+    @DisplayName("리뷰 조회 시 fetch join이 정상 작동한다")
+    void findActiveReviewsByProductId_WithFetchJoin() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        // Mock fetch join 체인
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductId(1L, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+        
+        // 쿼리가 실행되었는지 확인
+        verify(reviewQuery).fetch();
+    }
+
+    @Test
+    @DisplayName("인기순 정렬 시에도 fetch join이 정상 작동한다")
+    void findActiveReviewsByProductIdOrderByPoints_WithFetchJoin() {
+        // given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Review> reviews = List.of(testReview);
+        
+        // Mock fetch join 체인
+        given(reviewQuery.fetch()).willReturn(reviews);
+        given(countQuery.fetchOne()).willReturn(1L);
+
+        // when
+        Page<Review> result = reviewQueryRepository.findActiveReviewsByProductIdOrderByPoints(1L, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1L);
+        
+        // 쿼리가 실행되었는지 확인
+        verify(reviewQuery).fetch();
+    }
+
 }

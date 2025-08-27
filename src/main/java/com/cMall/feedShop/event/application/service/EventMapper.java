@@ -5,14 +5,22 @@ import com.cMall.feedShop.event.application.dto.response.EventDetailResponseDto;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.EventReward;
+import com.cMall.feedShop.event.application.dto.response.EventListResponseDto;
+import com.cMall.feedShop.common.util.TimeUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class EventMapper {
+
+    private final EventStatusService eventStatusService;
 
     /**
      * Entity → DTO 변환 (간단 버전)
@@ -39,33 +47,16 @@ public class EventMapper {
                 .purchasePeriod(createPurchasePeriod(detail))
                 .votePeriod(createVotePeriod(detail))
                 .announcementDate(getSafeLocalDateString(detail, EventDetail::getAnnouncement))
-                .isParticipatable(event.isParticipatable()) // 참여 가능 여부 추가
+                .isParticipatable(eventStatusService.isEventParticipatable(event)) // 참여 가능 여부 추가
                 .build();
     }
 
+    /**
+     * Event를 EventDetailResponseDto로 변환
+     */
     public EventDetailResponseDto toDetailDto(Event event) {
-        EventDetail detail = event.getEventDetail();
-        return EventDetailResponseDto.builder()
-                .eventId(event.getId())
-                .title(getSafeString(detail, EventDetail::getTitle))
-                .description(getSafeString(detail, EventDetail::getDescription))
-                .type(getEventType(event))
-                .status(getRealTimeEventStatus(event))
-                .eventStartDate(getSafeLocalDateString(detail, EventDetail::getEventStartDate))
-                .eventEndDate(getSafeLocalDateString(detail, EventDetail::getEventEndDate))
-                .purchaseStartDate(getSafeLocalDateString(detail, EventDetail::getPurchaseStartDate))
-                .purchaseEndDate(getSafeLocalDateString(detail, EventDetail::getPurchaseEndDate))
-                .announcementDate(getSafeLocalDateString(detail, EventDetail::getAnnouncement))
-                .participationMethod(getSafeString(detail, EventDetail::getParticipationMethod))
-                .selectionCriteria(getSafeString(detail, EventDetail::getSelectionCriteria))
-                .imageUrl(getSafeString(detail, EventDetail::getImageUrl))
-                .precautions(getSafeString(detail, EventDetail::getPrecautions))
-                .maxParticipants(event.getMaxParticipants())
-                .createdBy(event.getCreatedUser() != null ? event.getCreatedUser().getUsername() : null)
-                .createdAt(event.getCreatedBy() != null ? event.getCreatedBy().toString() : null)
-                .rewards(mapDetailRewards(event))
-                .isParticipatable(event.isParticipatable()) // 참여 가능 여부 추가
-                .build();
+        Boolean isParticipatable = eventStatusService.isEventParticipatable(event);
+        return EventDetailResponseDto.from(event, isParticipatable);
     }
 
     private List<EventSummaryDto.Reward> mapRewards(Event event) {
@@ -138,8 +129,8 @@ public class EventMapper {
             return null;
         }
         
-        // 실시간으로 상태 계산
-        var calculatedStatus = event.calculateStatus();
+        // EventStatusService를 사용하여 실시간 상태 계산
+        var calculatedStatus = eventStatusService.calculateEventStatus(event, TimeUtil.nowDate());
         return calculatedStatus != null ? calculatedStatus.name().toLowerCase() : null;
     }
 } 

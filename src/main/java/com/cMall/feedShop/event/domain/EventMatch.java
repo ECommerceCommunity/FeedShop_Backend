@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 이벤트 매치 엔터티
@@ -166,5 +167,52 @@ public class EventMatch extends BaseTimeEntity {
         return String.format("{\"round\": %d, \"description\": \"%s\"}", 
                 round != null ? round : 1, 
                 description != null ? description : "");
+    }
+    
+    /**
+     * 피드 목록으로부터 자동 매치 생성
+     * 
+     * @param event 이벤트
+     * @param feeds 피드 목록
+     * @param startMatchGroup 시작 매치 그룹 번호
+     * @return 생성된 매치 목록
+     */
+    public static List<EventMatch> createMatchesFromFeeds(Event event, List<Feed> feeds, Integer startMatchGroup) {
+        List<EventMatch> matches = new java.util.ArrayList<>();
+        
+        // 2명씩 매칭
+        for (int i = 0; i < feeds.size() - 1; i += 2) {
+            Feed participant1 = feeds.get(i);
+            Feed participant2 = feeds.get(i + 1);
+            
+            EventMatch match = EventMatch.builder()
+                    .event(event)
+                    .matchGroup(startMatchGroup + (i / 2))
+                    .participant1(participant1)
+                    .participant2(participant2)
+                    .metadata(createBattleMetadata(1, "1라운드"))
+                    .build();
+            
+            matches.add(match);
+        }
+        
+        // 홀수 명일 경우 마지막 참여자는 자동 우승
+        if (feeds.size() % 2 == 1) {
+            Feed lastParticipant = feeds.get(feeds.size() - 1);
+            
+            EventMatch match = EventMatch.builder()
+                    .event(event)
+                    .matchGroup(startMatchGroup + (feeds.size() / 2))
+                    .participant1(lastParticipant)
+                    .participant2(null)
+                    .metadata(createBattleMetadata(1, "자동 우승"))
+                    .build();
+            
+            // 자동 우승 처리
+            match.complete(lastParticipant);
+            matches.add(match);
+        }
+        
+        return matches;
     }
 }

@@ -28,13 +28,17 @@ public class UserBadge {
     @Column(name="awarded_at", nullable=false)
     private LocalDateTime awardedAt;
 
+    @Column(name="badge_name", nullable=false, length=50)
+    private String badgeName;
+
     @Column(name="is_displayed", nullable=false)
     private Boolean isDisplayed = true;
 
     @Builder
-    public UserBadge(User user, BadgeType badgeType, LocalDateTime awardedAt, Boolean isDisplayed) {
+    public UserBadge(User user, BadgeType badgeType, String badgeName, LocalDateTime awardedAt, Boolean isDisplayed) {
         this.user = user;
         this.badgeType = badgeType;
+        this.badgeName = badgeName != null ? badgeName : (badgeType != null ? badgeType.getName() : "");
         this.awardedAt = awardedAt != null ? awardedAt : LocalDateTime.now();
         this.isDisplayed = isDisplayed != null ? isDisplayed : true;
     }
@@ -44,7 +48,7 @@ public class UserBadge {
     }
 
     public String getBadgeName() {
-        return badgeType.getName();
+        return badgeName != null ? badgeName : (badgeType != null ? badgeType.getName() : "");
     }
 
     public String getBadgeDescription() {

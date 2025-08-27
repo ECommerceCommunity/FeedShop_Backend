@@ -226,6 +226,4 @@ public class FeedReadController {
         
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-
-
 } 
