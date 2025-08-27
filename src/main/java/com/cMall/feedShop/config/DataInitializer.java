@@ -16,6 +16,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +34,7 @@ public class DataInitializer {
     private final UserStatsRepository userStatsRepository;
     private final UserLevelRepository userLevelRepository;
     private final UserProfileRepository userProfileRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Bean
     @Profile("dev")
@@ -215,10 +217,10 @@ public class DataInitializer {
         }
 
         try {
-            // 테스트 사용자 생성
+            // 테스트 사용자 생성 - PasswordEncoder를 사용하여 비밀번호 암호화
             User testUser = new User(
                     loginId,
-                    "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.", // "password123!" 암호화
+                    passwordEncoder.encode("password123!"), // 실제 암호화
                     email,
                     role
             );

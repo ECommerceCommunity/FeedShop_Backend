@@ -77,7 +77,7 @@ public class UserAuthServiceImpl implements UserAuthService {
             
             // 사용자가 존재하고 DELETED 상태인 경우
             if (user != null && user.getStatus() == UserStatus.DELETED) {
-                throw new BusinessException(ErrorCode.UNAUTHORIZED, "탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.");
+                throw new BusinessException(ErrorCode.USER_ALREADY_DELETED, "탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.");
             }
 
             // AuthenticationManager가 CustomUserDetailsService를 통해 사용자를 로드하고 비밀번호를 검증합니다.
@@ -127,7 +127,7 @@ public class UserAuthServiceImpl implements UserAuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다.");
         } catch (org.springframework.security.core.AuthenticationException e) {
             // 비밀번호 불일치 등 인증 실패 (AuthenticationManager에서 발생)
-            throw new BusinessException(ErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD, "이메일 또는 비밀번호가 올바르지 않습니다.");
         }
     }
 
@@ -160,34 +160,50 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     @Transactional(readOnly = true)
     public void validatePasswordResetToken(String tokenValue) {
-        PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
+        try {
+            PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "유효하지 않은 비밀번호 재설정 토큰입니다."));
 
-        if (token.isExpired()) {
-            // 만료된 토큰은 여기서 삭제하지 않습니다.
-            // 실제 비밀번호 재설정 (POST /reset-password) 시에 삭제하는 것이 좋습니다.
-            // GET 요청에서는 단순히 만료되었다는 정보만 제공합니다.
-            throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
+            if (token.isExpired()) {
+                // 만료된 토큰은 여기서 삭제하지 않습니다.
+                // 실제 비밀번호 재설정 (POST /reset-password) 시에 삭제하는 것이 좋습니다.
+                // GET 요청에서는 단순히 만료되었다는 정보만 제공합니다.
+                throw new BusinessException(ErrorCode.TOKEN_EXPIRED, "비밀번호 재설정 토큰이 만료되었습니다. 새로운 재설정 링크를 요청해주세요.");
+            }
+            // 토큰이 유효하면 아무것도 반환하지 않고 메서드 종료 (컨트롤러로 제어권 반환)
+        } catch (BusinessException e) {
+            // BusinessException은 그대로 재抛出
+            throw e;
+        } catch (Exception e) {
+            // 예상치 못한 예외는 로그를 남기고 일반적인 에러 메시지 제공
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "비밀번호 재설정 토큰 검증 중 오류가 발생했습니다.");
         }
-        // 토큰이 유효하면 아무것도 반환하지 않고 메서드 종료 (컨트롤러로 제어권 반환)
     }
 
     public void resetPassword(String tokenValue, String newPassword) {
-        PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
+        try {
+            PasswordResetToken token = passwordResetTokenRepository.findByToken(tokenValue)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "유효하지 않은 비밀번호 재설정 토큰입니다."));
 
-        if (token.isExpired()) {
+            if (token.isExpired()) {
+                passwordResetTokenRepository.delete(token);
+                throw new BusinessException(ErrorCode.TOKEN_EXPIRED, "비밀번호 재설정 토큰이 만료되었습니다. 새로운 재설정 링크를 요청해주세요.");
+            }
+
+            User user = token.getUser();
+
+            user.setPassword(passwordEncoder.encode(newPassword));
+            user.setPasswordChangedAt(LocalDateTime.now());
+            userRepository.save(user);
+
             passwordResetTokenRepository.delete(token);
-            throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
+        } catch (BusinessException e) {
+            // BusinessException은 그대로 재抛出
+            throw e;
+        } catch (Exception e) {
+            // 예상치 못한 예외는 로그를 남기고 일반적인 에러 메시지 제공
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "비밀번호 재설정 중 오류가 발생했습니다.");
         }
-
-        User user = token.getUser();
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        user.setPasswordChangedAt(LocalDateTime.now());
-        userRepository.save(user);
-
-        passwordResetTokenRepository.delete(token);
     }
 
     @Override

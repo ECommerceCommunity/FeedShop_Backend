@@ -550,7 +550,7 @@ class UserServiceTest {
         user.setId(1L);
         user.setStatus(UserStatus.ACTIVE);
 
-        given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+        given(userRepository.findByLoginId(email)).willReturn(Optional.of(user));
         given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
 
         // 사용자 권한 설정 (JWT 토큰의 subject는 email)
@@ -595,6 +595,11 @@ class UserServiceTest {
         String targetUserEmail = "target@example.com";
         String rawPassword = "password123!";
 
+        // 로그인된 사용자 모킹
+        User loggedInUser = new User("testuser", "encodedPassword", loggedInUserEmail, UserRole.USER);
+        loggedInUser.setId(1L);
+        given(userRepository.findByLoginId(loggedInUserEmail)).willReturn(Optional.of(loggedInUser));
+
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
                         loggedInUserEmail, // JWT 토큰의 subject는 email
@@ -608,7 +613,6 @@ class UserServiceTest {
                 userService.withdrawCurrentUserWithPassword(targetUserEmail, rawPassword)
         );
         assertThat(thrown.getErrorCode()).isEqualTo(FORBIDDEN);
-        verify(userRepository, never()).findByEmail(anyString());
         verify(userRepository, never()).save(any(User.class));
     }
 

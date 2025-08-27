@@ -73,40 +73,47 @@ public class UserServiceImpl implements UserService{
                 // 재인증 메일 발송 후 예외 처리 (DUPLICATE_EMAIL과 함께 메시지 전달)
                 throw new UserException(DUPLICATE_EMAIL, "재인증 메일이 발송되었습니다. 메일을 확인하여 인증을 완료해주세요.");
             } else if (existingUser.getStatus() == UserStatus.DELETED) {
-                // DELETED 상태의 사용자는 재가입을 허용하되, 기존 데이터를 정리하고 새로운 사용자로 처리
+                // DELETED 상태의 사용자는 재가입을 허용하되, 기존 사용자 정보를 업데이트
                 log.info("DELETED 상태의 사용자 재가입 시도: {}", request.getEmail());
                 
-                // 기존 사용자 데이터 정리 (필요한 경우)
-                // userRepository.delete(existingUser); // 하드 삭제 시
-                
-                // 새로운 사용자 생성 (기존 데이터는 그대로 두고 새로 생성)
-                String generatedLoginId = UUID.randomUUID().toString();
+                // 기존 사용자 정보 업데이트
                 String finalPasswordToSave = passwordEncoder.encode(request.getPassword());
-                
-                User newUser = new User(
-                        generatedLoginId,
-                        finalPasswordToSave,
-                        request.getEmail(),
-                        UserRole.USER
-                );
-                newUser.setStatus(UserStatus.PENDING);
-                newUser.setPasswordChangedAt(LocalDateTime.now());
+                existingUser.setPassword(finalPasswordToSave);
+                existingUser.setStatus(UserStatus.PENDING);
+                existingUser.setPasswordChangedAt(LocalDateTime.now());
+                existingUser.setRole(UserRole.USER); // 역할을 USER로 재설정
 
-                updateVerificationToken(newUser);
+                updateVerificationToken(existingUser);
 
-                UserProfile userProfile = UserProfile.builder()
-                        .user(newUser)
-                        .name(request.getName())
-                        .nickname(request.getNickname())
-                        .phone(request.getPhone())
-                        .build();
+                // UserProfile 업데이트
+                UserProfile userProfile = existingUser.getUserProfile();
+                if (userProfile == null) {
+                    userProfile = UserProfile.builder()
+                            .user(existingUser)
+                            .name(request.getName())
+                            .nickname(request.getNickname())
+                            .phone(request.getPhone())
+                            .build();
+                    existingUser.setUserProfile(userProfile);
+                } else {
+                    userProfile.updateProfile(
+                            request.getName(),
+                            request.getNickname(),
+                            request.getPhone(),
+                            null, // height
+                            null, // weight
+                            null, // footSize
+                            null, // footWidth
+                            null, // footArchType
+                            null, // gender
+                            null  // birthDate
+                    );
+                }
 
-                newUser.setUserProfile(userProfile);
+                userRepository.save(existingUser);
+                sendVerificationEmail(existingUser, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
 
-                userRepository.save(newUser);
-                sendVerificationEmail(newUser, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
-
-                return UserResponse.from(newUser);
+                return UserResponse.from(existingUser);
             }
             // 기타 다른 상태 (INACTIVE, BLOCKED 등)에 대한 처리도 추가할 수 있습니다.
         }
