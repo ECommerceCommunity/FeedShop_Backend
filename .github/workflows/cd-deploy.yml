@@ -55,18 +55,18 @@ jobs:
 
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
-        
+
       - name: Build Docker Image
         run: |
           docker build -t $IMAGE_NAME:$GITHUB_SHA \
                        -t $IMAGE_NAME:latest \
                        .
-                       
+
       - name: Push Docker Image to GCR
         run: |
           docker push $IMAGE_NAME:$GITHUB_SHA
           docker push $IMAGE_NAME:latest
-          
+
       - name: Clear existing environment variables and secrets
         run: |
           echo "Clearing existing environment variables and secrets..."
@@ -74,36 +74,27 @@ jobs:
             --region $REGION \
             --clear-env-vars \
             --clear-secrets || echo "Service might not exist yet, continuing..."
-            
+
       - name: Deploy to Cloud Run
         run: |
+          # Cloud Run 서비스 배포
           gcloud run deploy $SERVICE_NAME \
-            --image $IMAGE_NAME:$GITHUB_SHA \
-            --platform managed \
-            --region $REGION \
-            --allow-unauthenticated \
-            --memory 4Gi \
-            --cpu 4 \
-            --concurrency 1000 \
-            --max-instances 10 \
-            --min-instances 0 \
-            --port 8080 \
-            --timeout 900s \
-            --cpu-throttling \
-            --execution-environment gen2 \
-            --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
-            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
-            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-            --set-env-vars="DB_PASSWORD=${{ secrets.DB_PASSWORD }}" \
-            --set-env-vars="JWT_SECRET=${{ secrets.JWT_SECRET }}" \
-            --set-env-vars="MAILGUN_API_KEY=${{ secrets.MAILGUN_API_KEY }}" \
-            --set-env-vars="MAILGUN_DOMAIN=${{ secrets.MAILGUN_DOMAIN }}" \
-            --set-env-vars="MAILGUN_EMAIL=${{ secrets.MAILGUN_EMAIL }}" \
-            --set-env-vars="GCS_ID=${{ secrets.GCS_ID }}" \
-            --set-env-vars="GCS_BUCKET=${{ secrets.GCS_BUCKET }}" \
-            --set-env-vars="CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" \
-            --set-env-vars="RECAPTCHA_SECRET_KEY=${{ secrets.RECAPTCHA_SECRET_KEY }}"
-    
+          --image $IMAGE_NAME:$GITHUB_SHA \
+          --platform managed \
+          --region $REGION \
+          --allow-unauthenticated \
+          --add-cloudsql-instances onyx-oxygen-462722-c0:asia-northeast3:feedshop-db \
+          --memory 4Gi \
+          --cpu 4 \
+          --concurrency 1000 \
+          --max-instances 10 \
+          --min-instances 0 \
+          --timeout=300 \
+          --cpu-throttling \
+          --execution-environment gen2 \
+          --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},SPRING_APPLICATION_NAME=feedshop" \
+          --update-secrets="DB_PASSWORD=shopchat-db-password:latest,MAILGUN_API_KEY=mailgun_api_key:latest,MAILGUN_DOMAIN=mailgun_domain:latest,MAILGUN_EMAIL=mailgun_email:latest,GCS_ID=gcs_id:latest,GCS_BUCKET=gcs_prod_bucket:latest,JWT_SECRET=feedshop-jwt-secret-key:latest,RECAPTCHA_SECRET_KEY=recaptcha_secret_key:latest,GOOGLE_CLIENT_ID=google_client_id:latest,GOOGLE_CLIENT_SECRET=google_client_secret:latest,KAKAO_CLIENT_ID=kakao_client_id:latest,KAKAO_CLIENT_SECRET=kakao_client_secret:latest,OPENAI_API_KEY=openAI_api_key:latest"
+
       - name: Check deployment status
         if: failure()
         run: |
@@ -115,13 +106,13 @@ jobs:
           if [ "$LATEST_REVISION" != "none" ]; then
             gcloud run revisions describe $LATEST_REVISION --region=$REGION --format="export"
           fi
-          
+
       - name: Get Service URL
         run: |
           SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)")
           echo "Service deployed at: $SERVICE_URL"
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
-          
+
       - name: Health Check
         run: |
           echo "Waiting for service to be ready..."

@@ -8,18 +8,19 @@ import com.cMall.feedShop.common.ai.BaseAIService;
 import com.cMall.feedShop.common.storage.StorageService;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.product.domain.model.Product;
-import com.cMall.feedShop.product.domain.repository.ProductRepository;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.model.User;
-import com.cMall.feedShop.user.domain.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -30,34 +31,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @ActiveProfiles("test")
-@Transactional
 class ProductRecommendationServiceTest {
 
-    @Autowired
+    @InjectMocks
     private ProductRecommendationService service;
 
-    @Autowired
-    private ProductRepository productRepo;
-
-    @Autowired
-    private UserRepository userRepo;
-
-    @MockBean
+    @Mock
     private BaseAIService baseAIService;
 
-    @MockBean
+    @Mock
     private StorageService storageService;
 
-    @MockBean
+    @Mock
     private ProductRecommendationRepository productRecommendationRepository;
 
-    @MockBean
+    @Mock
     private ProductRecommendationTemplate template;
 
-    @MockBean
+    @Mock
     private ProductRecommendationFallback fallback;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     private User user;
     private Product p1, p2, p3, p4;
@@ -71,17 +69,21 @@ class ProductRecommendationServiceTest {
                 .role(UserRole.USER)
                 .build();
         user.setStatus(UserStatus.ACTIVE);
-        user = userRepo.save(user);
 
-        p1 = createAndSaveProduct("Product 1", 10000);
-        p2 = createAndSaveProduct("Product 2", 20000);
-        p3 = createAndSaveProduct("Product 3", 30000);
-        p4 = createAndSaveProduct("Product 4", 40000);
+        p1 = createProduct("Product 1", 10000);
+        p2 = createProduct("Product 2", 20000);
+        p3 = createProduct("Product 3", 30000);
+        p4 = createProduct("Product 4", 40000);
 
-        reset(template, baseAIService, productRecommendationRepository, fallback);
+        // 공통 mock 설정
+        try {
+            when(objectMapper.writeValueAsString(any())).thenReturn("[]");
+        } catch (Exception e) {
+            // 예외 무시
+        }
     }
 
-    private Product createAndSaveProduct(String name, int price) {
+    private Product createProduct(String name, int price) {
         Product product = Product.builder()
                 .name(name)
                 .price(BigDecimal.valueOf(price))
@@ -90,7 +92,46 @@ class ProductRecommendationServiceTest {
                 .store(null)
                 .category(null)
                 .build();
-        return productRepo.save(product);
+
+        // productId 설정 (테스트용) - 고정된 값 사용
+        try {
+            java.lang.reflect.Field productIdField = Product.class.getDeclaredField("productId");
+            productIdField.setAccessible(true);
+            // 고정된 productId 설정
+            if (name.equals("Product 1")) {
+                productIdField.set(product, 1L);
+            } else if (name.equals("Product 2")) {
+                productIdField.set(product, 2L);
+            } else if (name.equals("Product 3")) {
+                productIdField.set(product, 3L);
+            } else if (name.equals("Product 4")) {
+                productIdField.set(product, 4L);
+            }
+        } catch (Exception e) {
+            // Reflection 실패시 기본값 사용
+        }
+
+        return product;
+    }
+
+    private ProductRecommendationAIResponse createMockResponse(List<Long> productIds, boolean success) {
+        ProductRecommendationAIResponse response = new ProductRecommendationAIResponse();
+        // Reflection을 사용하여 private 필드 설정
+        try {
+            java.lang.reflect.Field productIdsField = ProductRecommendationAIResponse.class.getDeclaredField("productIds");
+            productIdsField.setAccessible(true);
+            productIdsField.set(response, productIds);
+
+            java.lang.reflect.Field statusField = response.getClass().getSuperclass().getDeclaredField("status");
+            statusField.setAccessible(true);
+            statusField.set(response, success ? "OK" : "ERROR");
+        } catch (Exception e) {
+            // Reflection 실패시 Mock 객체 사용
+            response = mock(ProductRecommendationAIResponse.class);
+            when(response.getProductIds()).thenReturn(productIds);
+            when(response.isSuccess()).thenReturn(success);
+        }
+        return response;
     }
 
     @Test
@@ -103,13 +144,11 @@ class ProductRecommendationServiceTest {
         when(template.buildPrompt(eq(user), eq(prompt), eq(4))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
-        // ProductRecommendationAIResponse Mock을 직접 생성하지 말고 실제 반환값 사용
+        ProductRecommendationAIResponse mockResponse = createMockResponse(
+                Arrays.asList(p2.getProductId(), p1.getProductId(), p3.getProductId()), true);
+
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
-                .thenAnswer(invocation -> {
-                    ProductRecommendationAIResponse response = new ProductRecommendationAIResponse();
-                    // Reflection 또는 setter를 사용하여 값 설정
-                    return response;
-                });
+                .thenReturn(mockResponse);
 
         when(productRecommendationRepository.findProductsByIds(anyList()))
                 .thenReturn(Arrays.asList(p2, p1, p3));
@@ -136,8 +175,10 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
+
+        ProductRecommendationAIResponse mockResponse = createMockResponse(Collections.emptyList(), false);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
-                .thenAnswer(invocation -> new ProductRecommendationAIResponse());
+                .thenReturn(mockResponse);
 
         when(productRecommendationRepository.findProductsByIds(any()))
                 .thenReturn(Collections.emptyList());
@@ -166,8 +207,11 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
+
+        ProductRecommendationAIResponse mockResponse = createMockResponse(
+                Arrays.asList(p2.getProductId(), 99999L, p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
-                .thenAnswer(invocation -> new ProductRecommendationAIResponse());
+                .thenReturn(mockResponse);
 
         when(productRecommendationRepository.findProductsByIds(anyList()))
                 .thenReturn(Arrays.asList(p2, p1)); // 99999는 존재하지 않음
@@ -192,8 +236,10 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(2))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
+
+        ProductRecommendationAIResponse mockResponse = createMockResponse(Collections.emptyList(), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
-                .thenAnswer(invocation -> new ProductRecommendationAIResponse());
+                .thenReturn(mockResponse);
 
         when(productRecommendationRepository.findProductsByIds(Collections.emptyList()))
                 .thenReturn(Collections.emptyList());
@@ -219,10 +265,8 @@ class ProductRecommendationServiceTest {
         when(template.buildPrompt(eq(user), eq(prompt), eq(2))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
-        // AI 응답이 성공적으로 상품 ID를 포함하도록 Mock 설정
-        ProductRecommendationAIResponse mockResponse = mock(ProductRecommendationAIResponse.class);
-        when(mockResponse.getProductIds()).thenReturn(Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()));
-        when(mockResponse.isSuccess()).thenReturn(true); // 이 줄 추가 - 성공 응답으로 설정
+        ProductRecommendationAIResponse mockResponse = createMockResponse(
+                Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()), true);
 
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -311,8 +355,11 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
+
+        ProductRecommendationAIResponse mockResponse = createMockResponse(
+                Arrays.asList(p2.getProductId(), p2.getProductId(), p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
-                .thenAnswer(invocation -> new ProductRecommendationAIResponse());
+                .thenReturn(mockResponse);
 
         when(productRecommendationRepository.findProductsByIds(anyList()))
                 .thenReturn(Arrays.asList(p2, p1)); // 중복 제거됨
