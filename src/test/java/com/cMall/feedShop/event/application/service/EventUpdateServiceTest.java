@@ -7,6 +7,7 @@ import com.cMall.feedShop.event.domain.EventDetail;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.event.application.service.EventImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,13 @@ import static org.mockito.Mockito.*;
 class EventUpdateServiceTest {
     @Mock
     private EventRepository eventRepository;
+    
+    @Mock
+    private EventStatusService eventStatusService;
+    
+    @Mock
+    private EventImageService eventImageService;
+    
     @InjectMocks
     private EventUpdateService eventUpdateService;
 
@@ -62,6 +70,7 @@ class EventUpdateServiceTest {
                 .description("수정된 설명")
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);
@@ -97,6 +106,7 @@ class EventUpdateServiceTest {
                 .type(EventType.RANKING)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);
@@ -115,6 +125,7 @@ class EventUpdateServiceTest {
                 .maxParticipants(200)
                 .build();
         when(eventRepository.findDetailById(1L)).thenReturn(Optional.of(event));
+        when(eventStatusService.updateEventStatusIfNeeded(any(Event.class), any(LocalDate.class))).thenReturn(false);
 
         // When
         eventUpdateService.updateEvent(dto);

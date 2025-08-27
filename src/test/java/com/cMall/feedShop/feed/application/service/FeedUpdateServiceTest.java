@@ -25,6 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,6 +39,7 @@ class FeedUpdateServiceTest {
     @Mock private FeedRepository feedRepository;
     @Mock private UserRepository userRepository;
     @Mock private FeedMapper feedMapper;
+    @Mock private FeedImageService feedImageService;
     @Mock private UserDetails userDetails;
 
     @InjectMocks private FeedUpdateService feedUpdateService;
@@ -199,13 +202,67 @@ class FeedUpdateServiceTest {
         FeedUpdateRequestDto dto = FeedUpdateRequestDto.builder().title("t").build();
         assertThatThrownBy(() -> feedUpdateService.updateFeed(feedId, dto, null))
                 .isInstanceOf(BusinessException.class)
-                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+                .hasMessageContaining("인증 정보가 없습니다");
+    }
+
+    @Test
+    @DisplayName("피드 수정 (이미지 포함) - 성공")
+    void updateFeedWithImages_Success() {
+        // given
+        Long feedId = 107L;
+        List<MultipartFile> newImages = Arrays.asList(
+                mock(MultipartFile.class),
+                mock(MultipartFile.class)
+        );
+
+        FeedUpdateRequestDto dto = FeedUpdateRequestDto.builder()
+                .title("new title")
+                .content("new content")
+                .instagramId("new.insta")
+                .hashtags(Arrays.asList("new1", "new2"))
+                .deleteImageIds(Arrays.asList(1L, 2L))
+                .build();
+
+        when(userDetails.getUsername()).thenReturn("owner_login");
+        when(userRepository.findByLoginId("owner_login")).thenReturn(Optional.of(owner));
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(feed));
+        when(feedMapper.toFeedDetailResponseDto(any(Feed.class))).thenReturn(responseDto);
+
+        // when
+        FeedDetailResponseDto result = feedUpdateService.updateFeedWithImages(feedId, dto, newImages, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        verify(feedImageService, times(1)).uploadImages(any(Feed.class), eq(newImages));
+    }
+
+    @Test
+    @DisplayName("피드 수정 (이미지 없음) - 성공")
+    void updateFeedWithImages_Success_NoImages() {
+        // given
+        Long feedId = 108L;
+        FeedUpdateRequestDto dto = FeedUpdateRequestDto.builder()
+                .title("new title")
+                .content("new content")
+                .build();
+
+        when(userDetails.getUsername()).thenReturn("owner_login");
+        when(userRepository.findByLoginId("owner_login")).thenReturn(Optional.of(owner));
+        when(feedRepository.findDetailById(feedId)).thenReturn(Optional.of(feed));
+        when(feedMapper.toFeedDetailResponseDto(any(Feed.class))).thenReturn(responseDto);
+
+        // when
+        FeedDetailResponseDto result = feedUpdateService.updateFeedWithImages(feedId, dto, null, userDetails);
+
+        // then
+        assertThat(result).isNotNull();
+        verify(feedImageService, never()).uploadImages(any(Feed.class), any());
     }
 
     @Test
     @DisplayName("사용자 조회 실패 USER_NOT_FOUND")
     void updateFeed_UserNotFound() {
-        Long feedId = 107L;
+        Long feedId = 109L;
         when(userDetails.getUsername()).thenReturn("unknown");
         when(userRepository.findByLoginId("unknown")).thenReturn(Optional.empty());
 

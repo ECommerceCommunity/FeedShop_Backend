@@ -6,12 +6,14 @@ import com.cMall.feedShop.event.application.exception.EventNotFoundException;
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
+import com.cMall.feedShop.common.util.TimeUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,17 +23,27 @@ import java.util.List;
 public class EventUpdateService {
     private final EventRepository eventRepository;
     private final ObjectMapper objectMapper;
+    private final EventImageService eventImageService;
+    private final EventStatusService eventStatusService;
 
     /**
      * 이벤트 수정 비즈니스 로직
      */
     @Transactional
     public void updateEvent(EventUpdateRequestDto dto) {
+        updateEventWithImages(dto, null);
+    }
+
+    /**
+     * 이미지와 함께 이벤트 수정
+     */
+    @Transactional
+    public void updateEventWithImages(EventUpdateRequestDto dto, List<MultipartFile> images) {
         Event event = eventRepository.findDetailById(dto.getEventId())
                 .orElseThrow(() -> new EventNotFoundException(dto.getEventId()));
         
         // 이벤트 기본 정보 업데이트 (영속성 유지)
-        event.update(dto.getType(), dto.getMaxParticipants());
+        event.updateFromDto(dto);
         
         // EventDetail 업데이트는 별도로 처리
         if (event.getEventDetail() != null) {
@@ -67,8 +79,15 @@ public class EventUpdateService {
             }
         }
         
+        // 이미지 업데이트 처리
+        if (images != null && !images.isEmpty()) {
+            log.info("이벤트 이미지 업데이트 시작 - 이미지 개수: {}", images.size());
+            eventImageService.replaceImages(event, images);
+            log.info("이벤트 이미지 업데이트 완료");
+        }
+
         // 상태 자동 업데이트
-        event.updateStatusAutomatically();
+        eventStatusService.updateEventStatusIfNeeded(event, TimeUtil.nowDate());
         
         // JPA Dirty Checking으로 자동 변경사항 감지 및 DB 반영
         // @Transactional에 의해 트랜잭션 종료 시 자동 커밋됨

@@ -33,6 +33,11 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     }
 
     @Override
+    public Optional<Review> findByIdWithUserProfile(Long reviewId) {
+        return reviewJpaRepository.findByIdWithUserProfile(reviewId);
+    }
+
+    @Override
     public void delete(Review review) {
         reviewJpaRepository.delete(review);
     }

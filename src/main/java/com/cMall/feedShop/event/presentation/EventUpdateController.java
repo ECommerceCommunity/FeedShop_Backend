@@ -9,12 +9,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
+@Tag(name = "Event", description = "이벤트 관리 API")
 public class EventUpdateController {
     private final EventUpdateService eventUpdateService;
 
@@ -23,6 +29,13 @@ public class EventUpdateController {
      */
     @PutMapping("/{eventId}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "이벤트 수정", description = "JSON 형태로 이벤트를 수정합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "이벤트 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "이벤트를 찾을 수 없음")
+    })
     public ResponseEntity<ApiResponse<Void>> updateEvent(
             @PathVariable Long eventId,
             @RequestBody EventUpdateRequestDto requestDto
@@ -37,11 +50,18 @@ public class EventUpdateController {
     }
 
     /**
-     * 이벤트 수정 (Multipart)
+     * 이벤트 수정 (Multipart - 이미지 포함)
      */
     @PutMapping("/{eventId}/multipart")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> updateEventWithImage(
+    @Operation(summary = "이벤트 수정 (이미지 포함)", description = "이미지와 함께 이벤트를 수정합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "이벤트 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "권한 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "이벤트를 찾을 수 없음")
+    })
+    public ResponseEntity<ApiResponse<Void>> updateEventWithImages(
             @PathVariable Long eventId,
             @RequestParam("type") String type,
             @RequestParam("title") String title,
@@ -56,7 +76,7 @@ public class EventUpdateController {
             @RequestParam("announcement") String announcement,
             @RequestParam("maxParticipants") String maxParticipants,
             @RequestParam("rewards") String rewardsJson,
-            @RequestParam(value = "image", required = false) MultipartFile image
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
         EventUpdateRequestDto requestDto = EventUpdateRequestDto.builder()
                 .type(EventType.valueOf(type.toUpperCase()))
@@ -75,7 +95,7 @@ public class EventUpdateController {
                 .build();
         
         requestDto.setEventId(eventId);
-        eventUpdateService.updateEvent(requestDto);
+        eventUpdateService.updateEventWithImages(requestDto, images);
         
         ApiResponse<Void> response = ApiResponse.<Void>builder()
                 .success(true)
