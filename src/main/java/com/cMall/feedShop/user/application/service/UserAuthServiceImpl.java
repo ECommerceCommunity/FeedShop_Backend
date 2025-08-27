@@ -77,7 +77,7 @@ public class UserAuthServiceImpl implements UserAuthService {
             
             // 사용자가 존재하고 DELETED 상태인 경우
             if (user != null && user.getStatus() == UserStatus.DELETED) {
-                throw new BusinessException(ErrorCode.USER_ALREADY_DELETED, "탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.");
+                throw new BusinessException(ErrorCode.UNAUTHORIZED, "탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.");
             }
 
             // AuthenticationManager가 CustomUserDetailsService를 통해 사용자를 로드하고 비밀번호를 검증합니다.

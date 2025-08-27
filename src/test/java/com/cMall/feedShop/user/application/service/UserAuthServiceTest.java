@@ -172,7 +172,7 @@ class UserAuthServiceTest {
                 userAuthService.login(loginRequest)
         );
         
-        assertEquals(ErrorCode.USER_ALREADY_DELETED, thrown.getErrorCode());
+        assertEquals(ErrorCode.UNAUTHORIZED, thrown.getErrorCode());
         assertEquals("탈퇴된 계정입니다. 새로운 계정으로 가입해주세요.", thrown.getMessage());
         
         // AuthenticationManager가 호출되지 않아야 함
