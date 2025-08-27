@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class EventCreateService {
 
     private final EventRepository eventRepository;
     private final EventValidator eventValidator;
+    private final EventImageService eventImageService;
 
     /**
      * 이벤트를 생성합니다.
@@ -39,6 +41,17 @@ public class EventCreateService {
      * @return 생성된 이벤트 응답 DTO
      */
     public EventCreateResponseDto createEvent(EventCreateRequestDto requestDto) {
+        return createEventWithImages(requestDto, null);
+    }
+
+    /**
+     * 이미지와 함께 이벤트를 생성합니다.
+     * 
+     * @param requestDto 이벤트 생성 요청 DTO
+     * @param images 업로드할 이미지 파일 리스트
+     * @return 생성된 이벤트 응답 DTO
+     */
+    public EventCreateResponseDto createEventWithImages(EventCreateRequestDto requestDto, List<MultipartFile> images) {
         log.info("이벤트 생성 시작 - 제목: {}", requestDto.getTitle());
         
         // 검증 수행
@@ -72,6 +85,13 @@ public class EventCreateService {
         // 연관관계 설정
         event.setEventDetail(eventDetail);
         event.setRewards(eventRewards);
+
+        // 이미지 업로드
+        if (images != null && !images.isEmpty()) {
+            log.info("이벤트 이미지 업로드 시작 - 이미지 개수: {}", images.size());
+            eventImageService.uploadImages(event, images);
+            log.info("이벤트 이미지 업로드 완료");
+        }
 
         // 저장
         Event savedEvent = eventRepository.save(event);
