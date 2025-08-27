@@ -237,6 +237,9 @@ public class DataInitializer {
                     .phone("010-1234-5678")
                     .build();
             
+            // 양방향 관계 설정
+            userProfile.setUser(savedUser);
+            
             userProfileRepository.save(userProfile);
             
             // 기본 레벨 조회
