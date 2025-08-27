@@ -34,13 +34,6 @@ class EventMapperTest {
     @InjectMocks
     private EventMapper mapper;
 
-    @BeforeEach
-    void setUp() {
-        // EventStatusService Mock 설정
-        when(eventStatusService.calculateEventStatus(any(Event.class), any(LocalDate.class)))
-                .thenReturn(EventStatus.ENDED);
-    }
-
     @Test
     void toSummaryDto_모든필드_정상매핑() {
         // Given
