@@ -27,15 +27,41 @@ public class EventCreateController {
     private final ObjectMapper objectMapper;
 
     /**
-     * 이벤트 생성
+     * 이벤트 생성 (이미지 없음)
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEvent(@RequestBody EventCreateRequestDto requestDto) {
+        log.info("이벤트 생성 요청 받음: title={}, type={}", requestDto.getTitle(), requestDto.getType());
+        
+        try {
+            EventCreateResponseDto responseDto = eventCreateService.createEvent(requestDto);
+            ApiResponse<EventCreateResponseDto> response = ApiResponse.<EventCreateResponseDto>builder()
+                    .success(true)
+                    .message("이벤트가 성공적으로 생성되었습니다.")
+                    .data(responseDto)
+                    .build();
+            log.info("이벤트 생성 성공: eventId={}", responseDto.getEventId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            log.error("이벤트 생성 실패: {}", e.getMessage(), e);
+            ApiResponse<EventCreateResponseDto> errorResponse = ApiResponse.<EventCreateResponseDto>builder()
+                    .success(false)
+                    .message("이벤트 생성에 실패했습니다: " + e.getMessage())
+                    .build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+
+    /**
+     * 이벤트 생성 (이미지 포함)
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEvent(
+    public ResponseEntity<ApiResponse<EventCreateResponseDto>> createEventWithImages(
         @RequestParam("type") String type,
         @RequestParam("title") String title,
         @RequestParam("description") String description,
-        @RequestParam(value = "imageUrl", required = false) String imageUrl,
         @RequestParam(value = "participationMethod", required = false) String participationMethod,
         @RequestParam(value = "selectionCriteria", required = false) String selectionCriteria,
         @RequestParam(value = "precautions", required = false) String precautions,
@@ -46,7 +72,7 @@ public class EventCreateController {
         @RequestParam(value = "announcement", required = false) String announcement,
         @RequestParam("maxParticipants") Integer maxParticipants,
         @RequestParam("rewards") String rewardsJson,
-        @RequestPart(value = "image", required = false) MultipartFile image
+        @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
         log.info("이벤트 생성 요청 받음: title={}, type={}", title, type);
         log.info("보상 JSON: {}", rewardsJson);
@@ -60,12 +86,8 @@ public class EventCreateController {
             log.info("보상 정보 파싱 완료: {}", rewards);
             
             // 이미지 파일 처리
-            String finalImageUrl = imageUrl;
-            if (image != null && !image.isEmpty()) {
-                // TODO: 실제 이미지 업로드 로직 구현
-                String fileName = StringUtils.cleanPath(image.getOriginalFilename());
-                finalImageUrl = "/uploads/events/" + fileName;
-                log.info("이미지 파일 업로드: {}", fileName);
+            if (images != null && !images.isEmpty()) {
+                log.info("이미지 파일 업로드: {} 개의 파일", images.size());
             } else {
                 log.info("이미지 파일 없음 (선택사항)");
             }
@@ -75,7 +97,6 @@ public class EventCreateController {
                 .type(com.cMall.feedShop.event.domain.enums.EventType.valueOf(type))
                 .title(title)
                 .description(description)
-                .imageUrl(finalImageUrl)
                 .participationMethod(participationMethod)
                 .selectionCriteria(selectionCriteria)
                 .precautions(precautions)
@@ -88,7 +109,7 @@ public class EventCreateController {
                 .rewards(rewards)
                 .build();
 
-            EventCreateResponseDto responseDto = eventCreateService.createEvent(requestDto);
+            EventCreateResponseDto responseDto = eventCreateService.createEventWithImages(requestDto, images);
             ApiResponse<EventCreateResponseDto> response = ApiResponse.<EventCreateResponseDto>builder()
                     .success(true)
                     .message("이벤트가 성공적으로 생성되었습니다.")
