@@ -29,6 +29,7 @@ import java.util.function.Function;
 @Transactional(readOnly = true)
 public class EventReadService {
     private final EventRepository eventRepository;
+    private final EventStatusService eventStatusService;
     private final EventMapper eventMapper;
 
     /**
@@ -73,8 +74,15 @@ public class EventReadService {
      * 이벤트 상세 조회
      */
     public EventDetailResponseDto getEventDetail(Long eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND));
+        Event event = eventRepository.findDetailById(eventId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "이벤트를 찾을 수 없습니다: " + eventId));
+
+        // 이벤트 상태가 최신인지 확인하고 필요시 업데이트
+        if (!eventStatusService.isEventStatusUpToDate(event)) {
+            log.debug("이벤트 상태가 최신이 아니므로 업데이트 - ID: {}", eventId);
+            eventStatusService.updateEventStatus(eventId);
+        }
+
         return eventMapper.toDetailDto(event);
     }
 
@@ -95,7 +103,7 @@ public class EventReadService {
         // 실시간 상태 계산으로 진행중인 이벤트만 필터링
         List<EventSummaryDto> result = availableEvents.stream()
                 .filter(event -> {
-                    EventStatus calculatedStatus = event.calculateStatus();
+                    EventStatus calculatedStatus = eventStatusService.calculateEventStatus(event, currentDate);
                     boolean isOngoing = calculatedStatus == EventStatus.ONGOING;
                     if (!isOngoing) {
                         log.debug("이벤트 {} 제외됨 - 상태: {}", event.getId(), calculatedStatus);

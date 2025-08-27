@@ -18,6 +18,7 @@ public interface ReviewRepository {
     // 기본 CRUD
     Review save(Review review);
     Optional<Review> findById(Long reviewId);
+    Optional<Review> findByIdWithUserProfile(Long reviewId);
     void delete(Review review);
 
     // 상품별 활성 리뷰 조회 (최신순)

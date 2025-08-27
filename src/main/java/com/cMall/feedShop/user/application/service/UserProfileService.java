@@ -32,12 +32,10 @@ public class UserProfileService {
 
     @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithProfile(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        Optional<UserProfile> userProfileOptional = userProfileRepository.findByUser(user);
-
-        return UserProfileResponse.from(user, userProfileOptional.orElse(null));
+        return UserProfileResponse.from(user, user.getUserProfile());
     }
 
     @Transactional
@@ -62,6 +60,9 @@ public class UserProfileService {
                     .birthDate(request.getBirthDate())
                     .profileImageUrl(null)
                     .build();
+            
+            user.setUserProfile(userProfile);
+            userProfileRepository.save(userProfile);
         } else {
             userProfile.updateProfile(
                     request.getName(),
@@ -75,6 +76,8 @@ public class UserProfileService {
                     request.getGender(),
                     request.getBirthDate()
             );
+            
+            userProfileRepository.save(userProfile);
         }
 
     }

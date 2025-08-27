@@ -248,4 +248,37 @@ class ReviewRepositoryImplTest {
         assertThat(result).isEqualTo(expectedDistribution);
         verify(reviewQueryRepository, times(1)).getStabilityDistributionByProductId(1L);
     }
+
+    @Test
+    @DisplayName("User와 UserProfile을 함께 조회하는 findByIdWithUserProfile이 정상 작동한다")
+    void findByIdWithUserProfile() {
+        // given
+        Long reviewId = 1L;
+        given(reviewJpaRepository.findByIdWithUserProfile(reviewId))
+                .willReturn(Optional.of(testReview));
+
+        // when
+        Optional<Review> result = reviewRepository.findByIdWithUserProfile(reviewId);
+
+        // then
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testReview);
+        verify(reviewJpaRepository, times(1)).findByIdWithUserProfile(reviewId);
+    }
+
+    @Test
+    @DisplayName("User와 UserProfile을 함께 조회할 때 리뷰가 존재하지 않으면 빈 Optional을 반환한다")
+    void findByIdWithUserProfile_NotFound() {
+        // given
+        Long reviewId = 999L;
+        given(reviewJpaRepository.findByIdWithUserProfile(reviewId))
+                .willReturn(Optional.empty());
+
+        // when
+        Optional<Review> result = reviewRepository.findByIdWithUserProfile(reviewId);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(reviewJpaRepository, times(1)).findByIdWithUserProfile(reviewId);
+    }
 }

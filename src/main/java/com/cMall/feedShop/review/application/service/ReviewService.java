@@ -27,6 +27,7 @@ import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.application.service.BadgeService;
 import com.cMall.feedShop.user.application.service.UserLevelService;
+import com.cMall.feedShop.user.application.service.PointService;
 import com.cMall.feedShop.user.domain.model.ActivityType;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -68,6 +69,7 @@ public class ReviewService {
     private final ReviewImageRepository reviewImageRepository;
     private final BadgeService badgeService;
     private final UserLevelService userLevelService;
+    private final PointService pointService;
 
     // 선택적 의존성 주입으로 변경 (GCP만)
     @Autowired(required = false)
@@ -83,7 +85,8 @@ public class ReviewService {
             ReviewImageService reviewImageService,
             ReviewImageRepository reviewImageRepository,
             BadgeService badgeService,
-            UserLevelService userLevelService) {
+            UserLevelService userLevelService,
+            PointService pointService) {
 
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
@@ -94,6 +97,7 @@ public class ReviewService {
         this.reviewImageRepository = reviewImageRepository;
         this.badgeService = badgeService;
         this.userLevelService = userLevelService;
+        this.pointService = pointService;
 
     }
 
@@ -173,13 +177,19 @@ public class ReviewService {
                     savedReview.getReviewId(), images.size());
         }
 
+        // 리뷰 작성 포인트 적립
+        int pointsEarned = awardPointsForReview(user, savedReview.getReviewId());
+
         // 뱃지 자동 수여 체크
         checkAndAwardBadgesAfterReview(user.getId());
 
+        // 기본 응답 반환 (currentPoints는 Controller에서 별도 처리)
         return ReviewCreateResponse.builder()
                 .reviewId(savedReview.getReviewId())
                 .message("리뷰가 성공적으로 등록되었습니다.")
                 .imageUrls(imageUrls)
+                .pointsEarned(pointsEarned)
+                .currentPoints(null) // Controller에서 설정될 예정
                 .build();
     }
 
@@ -617,7 +627,7 @@ public class ReviewService {
     public ReviewResponse getReview(Long reviewId) {
         log.info("리뷰 상세 조회: ID={}", reviewId);
 
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdWithUserProfile(reviewId)
                 .orElseThrow(() -> new ReviewNotFoundException("ID " + reviewId + "에 해당하는 리뷰를 찾을 수 없습니다."));
 
         if (!review.isActive()) {
@@ -1064,6 +1074,47 @@ public class ReviewService {
             private LocalDateTime deletedAt;
         }
     }
+
+    /**
+     * 리뷰 작성 포인트 적립
+     * @return 적립된 포인트 수 (실패시 0 반환)
+     */
+    private int awardPointsForReview(User user, Long reviewId) {
+        try {
+            if (user == null) {
+                log.error("User가 null입니다 - reviewId: {}", reviewId);
+                return 0;
+            }
+            
+            if (reviewId == null) {
+                log.error("reviewId가 null입니다 - userId: {}", user.getId());
+                return 0;
+            }
+            
+            // 리뷰 작성 시 적립할 포인트 (설정값)
+            final int REVIEW_POINTS = 100;
+            
+            // 포인트 적립 실행
+            pointService.earnPoints(
+                user, 
+                REVIEW_POINTS, 
+                "리뷰 작성 포인트 적립", 
+                null  // 주문 ID는 없음
+            );
+            
+            log.info("리뷰 작성 포인트 적립 완료: userId={}, reviewId={}, points={}", 
+                    user.getId(), reviewId, REVIEW_POINTS);
+            
+            return REVIEW_POINTS;
+            
+        } catch (Exception e) {
+            // 포인트 적립 실패가 리뷰 작성 프로세스에 영향을 주지 않도록 예외 처리
+            log.error("리뷰 작성 포인트 적립 중 오류 발생 - userId: {}, reviewId: {}, error: {}", 
+                    user != null ? user.getId() : "null", reviewId, e.getMessage(), e);
+            return 0; // 실패시 0 반환
+        }
+    }
+
 
     /**
      * 리뷰 작성 후 뱃지 자동 수여 체크

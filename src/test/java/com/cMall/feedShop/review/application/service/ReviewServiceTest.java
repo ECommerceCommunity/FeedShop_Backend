@@ -19,7 +19,6 @@ import com.cMall.feedShop.review.domain.repository.ReviewRepository;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.review.domain.service.ReviewDuplicationValidator;
-import com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService;
 import com.cMall.feedShop.store.domain.model.Store;
 import com.cMall.feedShop.product.domain.enums.DiscountType;
 import com.cMall.feedShop.user.domain.enums.UserRole;
@@ -58,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
 
 @ActiveProfiles("test")
 @ExtendWith(MockitoExtension.class)
@@ -84,13 +82,22 @@ class ReviewServiceTest {
     private ReviewDuplicationValidator duplicationValidator;
 
     @Mock
-    private ReviewPurchaseVerificationService purchaseVerificationService;
+    private com.cMall.feedShop.review.domain.service.ReviewPurchaseVerificationService purchaseVerificationService;
 
     @Mock
     private ReviewImageService reviewImageService;
     
     @Mock
     private com.cMall.feedShop.review.domain.repository.ReviewImageRepository reviewImageRepository;
+
+    @Mock
+    private com.cMall.feedShop.user.application.service.UserLevelService userLevelService;
+
+    @Mock
+    private com.cMall.feedShop.user.application.service.PointService pointService;
+
+    @Mock
+    private com.cMall.feedShop.user.application.service.BadgeService badgeService;
 
     @Mock
     private GcpStorageService gcpStorageService;
@@ -119,7 +126,9 @@ class ReviewServiceTest {
                 // 다른 필드들 (birthDate, height, footSize, profileImageUrl)도 필요에 따라 추가
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .height(175)
+                .weight(70)
                 .footSize(270)
+                .footWidth(com.cMall.feedShop.user.domain.enums.FootWidth.NORMAL)
                 .profileImageUrl("https://test-image.com/profile.jpg")
                 .build();
         testUser.setUserProfile(testUserProfile);
@@ -166,9 +175,6 @@ class ReviewServiceTest {
                 .build();
 
         ReflectionTestUtils.setField(reviewService, "gcpStorageService", gcpStorageService);
-        
-        // 구매이력검증 기본 Mock 설정 (모든 테스트에서 검증 통과하도록)
-        lenient().doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
     }
 
     @AfterEach
@@ -186,6 +192,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, null);
@@ -238,7 +246,7 @@ class ReviewServiceTest {
     @DisplayName("리뷰 상세 정보를 성공적으로 조회할 수 있다")
     void getReviewSuccessfully() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
 
         // when
         ReviewResponse response = reviewService.getReview(1L);
@@ -254,7 +262,7 @@ class ReviewServiceTest {
     @DisplayName("존재하지 않는 리뷰를 조회하면 예외가 발생한다")
     void getReviewNotFound() {
         // given
-        given(reviewRepository.findById(999L)).willReturn(Optional.empty());
+        given(reviewRepository.findByIdWithUserProfile(999L)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> reviewService.getReview(999L))
@@ -346,6 +354,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // 중복 검증 통과하도록 설정 (예외 발생 안함)
             doNothing().when(duplicationValidator).validateNoDuplicateActiveReview(1L, 1L);
@@ -381,8 +391,15 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
             given(gcpStorageService.uploadFilesWithDetails(any(List.class), eq(UploadDirectory.REVIEWS)))
                     .willReturn(List.of(mockResult));
+            
+            // ReviewImage Mock 설정
+            com.cMall.feedShop.review.domain.ReviewImage mockReviewImage = mock(com.cMall.feedShop.review.domain.ReviewImage.class);
+            given(mockReviewImage.getReviewImageId()).willReturn(1L);
+            given(reviewImageRepository.save(any(com.cMall.feedShop.review.domain.ReviewImage.class))).willReturn(mockReviewImage);
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, imageFiles);
@@ -405,6 +422,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, null);
@@ -420,7 +439,7 @@ class ReviewServiceTest {
     @DisplayName("리뷰 상세 조회 시 이미지 정보가 포함된다")
     void getReviewWithImages() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
 
         ReviewImageResponse imageResponse = ReviewImageResponse.builder()
                 .reviewImageId(1L)
@@ -488,6 +507,8 @@ class ReviewServiceTest {
             given(userRepository.findByEmail("test@test.com")).willReturn(Optional.of(testUser));
             given(productRepository.findById(1L)).willReturn(Optional.of(testProduct));
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             ReviewCreateResponse response = reviewService.createReview(createRequest, emptyImageList);
@@ -503,7 +524,7 @@ class ReviewServiceTest {
     @DisplayName("이미지가 없는 리뷰 상세 조회")
     void getReviewWithoutImages() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
         given(reviewImageService.getReviewImages(1L)).willReturn(List.of()); // 빈 이미지 리스트
 
         // when
@@ -536,6 +557,8 @@ class ReviewServiceTest {
                 assertThat(savedReview.getContent()).isEqualTo(createRequest.getContent());
                 return testReview;
             });
+            doNothing().when(purchaseVerificationService).validateUserPurchasedProduct(any(User.class), any(Long.class));
+            doNothing().when(userLevelService).recordActivity(anyLong(), any(), anyString(), any(), anyString());
 
             // when
             reviewService.createReview(createRequest, null);
@@ -552,161 +575,98 @@ class ReviewServiceTest {
         given(authentication.getPrincipal()).willReturn("test@test.com"); // String으로 설정하면 getName()이 호출됨
     }
 
-    // ========== 필터링 메서드 테스트들 ==========
+    @Test
+    @DisplayName("리뷰 조회 시 사용자 신체 정보가 포함된다")
+    void getReviewWithUserBodyInfo() {
+        // given
+        Long reviewId = 1L;
+        given(reviewRepository.findByIdWithUserProfile(reviewId))
+                .willReturn(Optional.of(testReview));
+        given(reviewImageService.getReviewImages(reviewId))
+                .willReturn(List.of());
+
+        // when
+        ReviewResponse response = reviewService.getReview(reviewId);
+
+        // then
+        assertThat(response.getReviewId()).isEqualTo(1L);
+        assertThat(response.getUserId()).isEqualTo(1L);
+        assertThat(response.getUserName()).isEqualTo("테스트사용자");
+        assertThat(response.getUserHeight()).isEqualTo(175);
+        assertThat(response.getUserWeight()).isEqualTo(70);
+        assertThat(response.getUserFootSize()).isEqualTo(270);
+        assertThat(response.getUserFootWidth()).isEqualTo("NORMAL");
+        
+        verify(reviewRepository, times(1)).findByIdWithUserProfile(reviewId);
+        verify(reviewImageService, times(1)).getReviewImages(reviewId);
+    }
 
     @Test
-    @DisplayName("필터링된 리뷰 목록을 조회할 수 있다 - 평점 필터")
-    void getProductReviewsWithFilters_RatingFilter() {
+    @DisplayName("리뷰 목록 조회 시 모든 리뷰에 사용자 신체 정보가 포함된다")
+    void getProductReviewsWithUserBodyInfo() {
         // given
         List<Review> reviews = List.of(testReview);
         Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), eq(5), isNull(), isNull(), isNull(), any()))
+
+        given(reviewRepository.findActiveReviewsByProductId(1L, PageRequest.of(0, 20)))
                 .willReturn(reviewPage);
         given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
+        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(1L);
         given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
 
         // when
-        ReviewListResponse response = reviewService.getProductReviewsWithFilters(
-                1L, 0, 20, "latest", 5, null, null, null);
+        ReviewListResponse response = reviewService.getProductReviews(1L, 0, 20, "latest");
 
         // then
         assertThat(response.getReviews()).hasSize(1);
-        assertThat(response.getAverageRating()).isEqualTo(4.5);
-        assertThat(response.getTotalReviews()).isEqualTo(10L);
-        verify(reviewRepository).findActiveReviewsByProductIdWithFilters(
-                eq(1L), eq(5), isNull(), isNull(), isNull(), any());
+        ReviewResponse reviewResponse = response.getReviews().get(0);
+        
+        // 기본 리뷰 정보 검증
+        assertThat(reviewResponse.getReviewId()).isEqualTo(1L);
+        assertThat(reviewResponse.getUserId()).isEqualTo(1L);
+        assertThat(reviewResponse.getUserName()).isEqualTo("테스트사용자");
+        
+        // 사용자 신체 정보 검증
+        assertThat(reviewResponse.getUserHeight()).isEqualTo(175);
+        assertThat(reviewResponse.getUserWeight()).isEqualTo(70);
+        assertThat(reviewResponse.getUserFootSize()).isEqualTo(270);
+        assertThat(reviewResponse.getUserFootWidth()).isEqualTo("NORMAL");
+
+        verify(reviewRepository, times(1)).findActiveReviewsByProductId(1L, PageRequest.of(0, 20));
     }
 
     @Test
-    @DisplayName("필터링된 리뷰 목록을 조회할 수 있다 - 3Element 필터")
-    void getProductReviewsWithFilters_3ElementFilter() {
+    @DisplayName("사용자 프로필이 없는 경우에도 리뷰 조회가 정상 작동한다")
+    void getReviewWithoutUserProfile() {
         // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), eq(SizeFit.NORMAL), eq(Cushion.SOFT), eq(Stability.STABLE), any()))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
+        User userWithoutProfile = new User(2L, "noProfile@test.com", "password", "noProfile@test.com", UserRole.USER);
+        Review reviewWithoutProfile = Review.builder()
+                .title("프로필 없는 사용자 리뷰")
+                .rating(4)
+                .sizeFit(SizeFit.NORMAL)
+                .cushion(Cushion.SOFT)
+                .stability(Stability.STABLE)
+                .content("좋네요")
+                .user(userWithoutProfile)
+                .product(testProduct)
+                .build();
+
+        Long reviewId = 2L;
+        given(reviewRepository.findByIdWithUserProfile(reviewId))
+                .willReturn(Optional.of(reviewWithoutProfile));
+        given(reviewImageService.getReviewImages(reviewId))
+                .willReturn(List.of());
 
         // when
-        ReviewListResponse response = reviewService.getProductReviewsWithFilters(
-                1L, 0, 20, "latest", null, "NORMAL", "SOFT", "STABLE");
+        ReviewResponse response = reviewService.getReview(reviewId);
 
         // then
-        assertThat(response.getReviews()).hasSize(1);
-        verify(reviewRepository).findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), eq(SizeFit.NORMAL), eq(Cushion.SOFT), eq(Stability.STABLE), any());
-    }
+        assertThat(response.getUserName()).isEqualTo("익명");
+        assertThat(response.getUserHeight()).isNull();
+        assertThat(response.getUserWeight()).isNull();
+        assertThat(response.getUserFootSize()).isNull();
+        assertThat(response.getUserFootWidth()).isNull();
 
-    @Test
-    @DisplayName("필터링된 리뷰 목록을 조회할 수 있다 - 복합 필터")
-    void getProductReviewsWithFilters_CombinedFilters() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), eq(5), eq(SizeFit.NORMAL), eq(Cushion.SOFT), isNull(), any()))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
-
-        // when
-        ReviewListResponse response = reviewService.getProductReviewsWithFilters(
-                1L, 0, 20, "latest", 5, "NORMAL", "SOFT", null);
-
-        // then
-        assertThat(response.getReviews()).hasSize(1);
-        verify(reviewRepository).findActiveReviewsByProductIdWithFilters(
-                eq(1L), eq(5), eq(SizeFit.NORMAL), eq(Cushion.SOFT), isNull(), any());
-    }
-
-    @Test
-    @DisplayName("필터링된 리뷰 목록을 조회할 수 있다 - 모든 필터가 null")
-    void getProductReviewsWithFilters_NoFilters() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), isNull(), isNull(), isNull(), any()))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
-
-        // when
-        ReviewListResponse response = reviewService.getProductReviewsWithFilters(
-                1L, 0, 20, "latest", null, null, null, null);
-
-        // then
-        assertThat(response.getReviews()).hasSize(1);
-        verify(reviewRepository).findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), isNull(), isNull(), isNull(), any());
-    }
-
-    @Test
-    @DisplayName("잘못된 enum 값으로 필터링 시 예외가 발생한다")
-    void getProductReviewsWithFilters_InvalidEnumValue() {
-        // when & then
-        assertThatThrownBy(() -> 
-                reviewService.getProductReviewsWithFilters(
-                        1L, 0, 20, "latest", null, "INVALID_SIZE", null, null))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("잘못된 필터 값입니다");
-    }
-
-    @Test
-    @DisplayName("페이지 크기가 범위를 벗어나면 기본값으로 설정된다")
-    void getProductReviewsWithFilters_InvalidPageSize() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), isNull(), isNull(), isNull(), any()))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
-
-        // when - 잘못된 페이지 크기 (0, 200)
-        ReviewListResponse response1 = reviewService.getProductReviewsWithFilters(
-                1L, 0, 0, "latest", null, null, null, null);
-        ReviewListResponse response2 = reviewService.getProductReviewsWithFilters(
-                1L, 0, 200, "latest", null, null, null, null);
-
-        // then - 기본값 20으로 설정됨
-        assertThat(response1.getSize()).isEqualTo(20);
-        assertThat(response2.getSize()).isEqualTo(20);
-    }
-
-    @Test
-    @DisplayName("음수 페이지 번호는 0으로 설정된다")
-    void getProductReviewsWithFilters_NegativePageNumber() {
-        // given
-        List<Review> reviews = List.of(testReview);
-        Page<Review> reviewPage = new PageImpl<>(reviews, PageRequest.of(0, 20), 1);
-        
-        given(reviewRepository.findActiveReviewsByProductIdWithFilters(
-                eq(1L), isNull(), isNull(), isNull(), isNull(), any()))
-                .willReturn(reviewPage);
-        given(reviewRepository.findAverageRatingByProductId(1L)).willReturn(4.5);
-        given(reviewRepository.countActiveReviewsByProductId(1L)).willReturn(10L);
-        given(reviewImageService.getReviewImages(1L)).willReturn(List.of());
-
-        // when
-        ReviewListResponse response = reviewService.getProductReviewsWithFilters(
-                1L, -5, 20, "latest", null, null, null, null);
-
-        // then
-        assertThat(response.getNumber()).isEqualTo(0);
+        verify(reviewRepository, times(1)).findByIdWithUserProfile(reviewId);
     }
 }
