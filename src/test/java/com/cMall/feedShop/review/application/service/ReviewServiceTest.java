@@ -94,6 +94,12 @@ class ReviewServiceTest {
     private com.cMall.feedShop.user.application.service.UserLevelService userLevelService;
 
     @Mock
+    private com.cMall.feedShop.user.application.service.PointService pointService;
+
+    @Mock
+    private com.cMall.feedShop.user.application.service.BadgeService badgeService;
+
+    @Mock
     private GcpStorageService gcpStorageService;
 
     @InjectMocks
@@ -240,7 +246,7 @@ class ReviewServiceTest {
     @DisplayName("리뷰 상세 정보를 성공적으로 조회할 수 있다")
     void getReviewSuccessfully() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
 
         // when
         ReviewResponse response = reviewService.getReview(1L);
@@ -256,7 +262,7 @@ class ReviewServiceTest {
     @DisplayName("존재하지 않는 리뷰를 조회하면 예외가 발생한다")
     void getReviewNotFound() {
         // given
-        given(reviewRepository.findById(999L)).willReturn(Optional.empty());
+        given(reviewRepository.findByIdWithUserProfile(999L)).willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() -> reviewService.getReview(999L))
@@ -433,7 +439,7 @@ class ReviewServiceTest {
     @DisplayName("리뷰 상세 조회 시 이미지 정보가 포함된다")
     void getReviewWithImages() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
 
         ReviewImageResponse imageResponse = ReviewImageResponse.builder()
                 .reviewImageId(1L)
@@ -518,7 +524,7 @@ class ReviewServiceTest {
     @DisplayName("이미지가 없는 리뷰 상세 조회")
     void getReviewWithoutImages() {
         // given
-        given(reviewRepository.findById(1L)).willReturn(Optional.of(testReview));
+        given(reviewRepository.findByIdWithUserProfile(1L)).willReturn(Optional.of(testReview));
         given(reviewImageService.getReviewImages(1L)).willReturn(List.of()); // 빈 이미지 리스트
 
         // when
