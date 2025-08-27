@@ -226,21 +226,19 @@ public class DataInitializer {
             // 테스트 계정은 ACTIVE 상태로 설정
             testUser.setStatus(UserStatus.ACTIVE);
             
-            User savedUser = userRepository.save(testUser);
-            
             // 사용자 프로필 생성
             String displayName = getDisplayNameByRole(role);
             UserProfile userProfile = UserProfile.builder()
-                    .user(savedUser)
+                    .user(testUser)
                     .name(displayName)
                     .nickname(displayName)
                     .phone("010-1234-5678")
                     .build();
             
-            // 양방향 관계 설정
-            userProfile.setUser(savedUser);
+            // 양방향 관계 설정 (User 엔티티의 setUserProfile 메서드 사용)
+            testUser.setUserProfile(userProfile);
             
-            userProfileRepository.save(userProfile);
+            User savedUser = userRepository.save(testUser);
             
             // 기본 레벨 조회
             UserLevel defaultLevel = userLevelRepository.findByMinPointsRequired(0)
