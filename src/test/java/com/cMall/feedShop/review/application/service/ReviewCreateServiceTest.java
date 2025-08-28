@@ -111,6 +111,14 @@ class ReviewCreateServiceTest {
     @BeforeEach
     void setUp() {
         testUser = new User(1L, "testuser", "password", "test@example.com", UserRole.USER);
+        // testUser의 loginId 설정 (UUID 형식)
+        try {
+            java.lang.reflect.Field loginIdField = User.class.getDeclaredField("loginId");
+            loginIdField.setAccessible(true);
+            loginIdField.set(testUser, "befb3068-0fdc-4cb1-9096-6fbd2e2ec8c8");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set loginId", e);
+        }
         Store testStore = Store.builder()
                 .storeName("테스트 스토어")
                 .sellerId(1L)
@@ -306,11 +314,12 @@ class ReviewCreateServiceTest {
     @DisplayName("인증되지 않은 사용자가 리뷰 생성 시 예외가 발생한다")
     void createReview_UnauthenticatedUser_ThrowsException() {
         // given
-        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.empty());
+        given(userRepository.findByLoginId("befb3068-0fdc-4cb1-9096-6fbd2e2ec8c8")).willReturn(Optional.empty());
         SecurityContextHolder.setContext(securityContext);
         given(securityContext.getAuthentication()).willReturn(authentication);
+        given(authentication.isAuthenticated()).willReturn(true);
         given(authentication.getPrincipal()).willReturn(userDetails);
-        given(userDetails.getUsername()).willReturn("test@example.com");
+        given(userDetails.getUsername()).willReturn("befb3068-0fdc-4cb1-9096-6fbd2e2ec8c8");
         
         // when & then
         assertThatThrownBy(() -> reviewCreateService.createReview(createRequest, null))
@@ -411,8 +420,9 @@ class ReviewCreateServiceTest {
     private void mockSecurityContext() {
         SecurityContextHolder.setContext(securityContext);
         given(securityContext.getAuthentication()).willReturn(authentication);
+        given(authentication.isAuthenticated()).willReturn(true);
         given(authentication.getPrincipal()).willReturn(userDetails);
-        given(userDetails.getUsername()).willReturn("test@example.com");
-        given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(testUser));
+        given(userDetails.getUsername()).willReturn("befb3068-0fdc-4cb1-9096-6fbd2e2ec8c8");
+        given(userRepository.findByLoginId("befb3068-0fdc-4cb1-9096-6fbd2e2ec8c8")).willReturn(Optional.of(testUser));
     }
 }
