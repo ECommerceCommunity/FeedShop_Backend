@@ -35,8 +35,29 @@ public class EventReadService {
     /**
      * 전체 이벤트 목록 조회 (페이징)
      */
-    public EventListResponseDto getAllEvents(Integer page, Integer size) {
-        Pageable pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20);
+    public EventListResponseDto getAllEvents(Integer page, Integer size, String sort) {
+        // 정렬 처리
+        Pageable pageable;
+        if (sort != null && !sort.trim().isEmpty()) {
+            // sort 파라미터 파싱 (예: "createdAt,desc" -> Sort.by("createdAt").descending())
+            String[] sortParts = sort.split(",");
+            if (sortParts.length == 2) {
+                String field = sortParts[0].trim();
+                String direction = sortParts[1].trim().toLowerCase();
+                if ("desc".equals(direction)) {
+                    pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20, 
+                        org.springframework.data.domain.Sort.by(field).descending());
+                } else {
+                    pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20, 
+                        org.springframework.data.domain.Sort.by(field).ascending());
+                }
+            } else {
+                pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20);
+            }
+        } else {
+            pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20);
+        }
+        
         Page<Event> eventPage = eventRepository.findAll(pageable);
         List<EventSummaryDto> content = eventPage.getContent().stream()
                 .map(eventMapper::toSummaryDto)

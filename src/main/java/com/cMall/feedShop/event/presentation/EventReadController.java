@@ -33,8 +33,10 @@ public class EventReadController {
             @Parameter(description = "페이지 번호 (0부터 시작)", required = false)
             @RequestParam(required = false) Integer page,
             @Parameter(description = "페이지 크기", required = false)
-            @RequestParam(required = false) Integer size) {
-        return eventReadService.getAllEvents(page, size);
+            @RequestParam(required = false) Integer size,
+            @Parameter(description = "정렬 기준", required = false)
+            @RequestParam(required = false) String sort) {
+        return eventReadService.getAllEvents(page, size, sort);
     }
 
     /**
