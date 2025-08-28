@@ -141,9 +141,9 @@ public class ReviewUserController {
             @Parameter(description = "리뷰 제목", required = true) @Valid @NotBlank(message = "리뷰 제목은 필수입니다.") @RequestParam String title,
             @Parameter(description = "평점 (1-5점)", required = true) @Valid @NotNull(message = "평점은 필수입니다.") @Min(1) @Max(5) @RequestParam Integer rating,
             @Parameter(description = "리뷰 내용", required = true) @Valid @NotBlank(message = "리뷰 내용은 필수입니다.") @RequestParam String content,
-            @Parameter(description = "사이즈 착용감 (1: 작음, 2: 적당, 3: 큼)", required = true) @Valid @NotNull(message = "사이즈 착용감은 필수입니다.") @RequestParam Integer sizeFit,
-            @Parameter(description = "쿠션감 (1: 딱딱, 2: 보통, 3: 부드러움)", required = true) @Valid @NotNull(message = "쿠션감은 필수입니다.") @RequestParam Integer cushion,
-            @Parameter(description = "안정성 (1: 불안정, 2: 보통, 3: 안정적)", required = true) @Valid @NotNull(message = "안정성은 필수입니다.") @RequestParam Integer stability,
+            @Parameter(description = "사이즈 착용감 (SMALL: 작음, NORMAL: 적당, LARGE: 큼)", required = true) @Valid @NotBlank(message = "사이즈 착용감은 필수입니다.") @RequestParam String sizeFit,
+            @Parameter(description = "쿠션감 (HARD: 딱딱, MODERATE: 보통, SOFT: 부드러움, VERY_SOFT: 매우 부드러움)", required = true) @Valid @NotBlank(message = "쿠션감은 필수입니다.") @RequestParam String cushion,
+            @Parameter(description = "안정성 (UNSTABLE: 불안정, MODERATE: 보통, STABLE: 안정적)", required = true) @Valid @NotBlank(message = "안정성은 필수입니다.") @RequestParam String stability,
             @Parameter(description = "리뷰 이미지 파일들 (선택사항, 최대 5개)") @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @Parameter(hidden = true) @AuthenticationPrincipal User user) {
 
@@ -155,9 +155,9 @@ public class ReviewUserController {
                 .title(title)
                 .rating(rating)
                 .content(content)
-                .sizeFit(com.cMall.feedShop.review.domain.enums.SizeFit.fromValue(sizeFit))
-                .cushion(com.cMall.feedShop.review.domain.enums.Cushion.fromValue(cushion))
-                .stability(com.cMall.feedShop.review.domain.enums.Stability.fromValue(stability))
+                .sizeFit(com.cMall.feedShop.review.domain.enums.SizeFit.valueOf(sizeFit))
+                .cushion(com.cMall.feedShop.review.domain.enums.Cushion.valueOf(cushion))
+                .stability(com.cMall.feedShop.review.domain.enums.Stability.valueOf(stability))
                 .build();
         
         // 1. 리뷰 작성 (트랜잭션 포함)

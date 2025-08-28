@@ -173,8 +173,34 @@ public class ReviewCreateService {
      */
     private User getCurrentUserFromSecurity() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = ((UserDetails) authentication.getPrincipal()).getUsername();
-        return userRepository.findByEmail(username)
+        
+        log.info("현재 인증 정보: {}", authentication);
+        log.info("인증됨: {}", authentication != null ? authentication.isAuthenticated() : false);
+        log.info("인증 타입: {}", authentication != null ? authentication.getClass().getName() : "null");
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("인증 정보가 없거나 인증되지 않음: {}", authentication);
+            throw new RuntimeException("인증이 필요합니다");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        log.info("Principal: {}", principal);
+        log.info("Principal 타입: {}", principal.getClass().getName());
+        
+        String username;
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+            log.info("UserDetails에서 username 추출: {}", username);
+        } else if (principal instanceof User) {
+            username = ((User) principal).getEmail();
+            log.info("User에서 email 추출: {}", username);
+        } else {
+            username = principal.toString();
+            log.info("toString()에서 username 추출: {}", username);
+        }
+        
+        log.info("사용자 loginId로 조회 시도: {}", username);
+        return userRepository.findByLoginId(username)
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다: " + username));
     }
 
