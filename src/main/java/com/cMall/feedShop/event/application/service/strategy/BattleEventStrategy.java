@@ -45,8 +45,37 @@ public class BattleEventStrategy implements EventStrategy {
     public EventResult calculateResult(Event event, List<Feed> participants) {
         log.info("배틀 이벤트 결과 계산 시작 - eventId: {}, 참여자 수: {}", event.getId(), participants.size());
         
+        if (participants.isEmpty()) {
+            log.warn("배틀 이벤트에 참여자가 없습니다. 빈 결과를 생성합니다. - eventId: {}", event.getId());
+            
+            // 빈 결과 생성
+            EventResult eventResult = EventResult.createForEvent(
+                    event,
+                    EventResult.ResultType.BATTLE_WINNER,
+                    0,
+                    0L
+            );
+            
+            log.info("빈 배틀 이벤트 결과 생성 완료 - eventId: {}", event.getId());
+            return eventResult;
+        }
+        
         if (participants.size() < 2) {
-            throw new IllegalStateException("배틀 이벤트는 최소 2명의 참여자가 필요합니다.");
+            log.warn("배틀 이벤트에 참여자가 1명뿐입니다. 단독 우승으로 처리합니다. - eventId: {}", event.getId());
+            
+            // 1명만 있는 경우 단독 우승으로 처리
+            Feed singleParticipant = participants.get(0);
+            EventResult eventResult = EventResult.createForEvent(
+                    event,
+                    EventResult.ResultType.BATTLE_WINNER,
+                    1,
+                    getVoteCount(singleParticipant.getId())
+            );
+            
+            eventResult.addResultDetail(createBattleWinnerDetail(singleParticipant, event));
+            
+            log.info("단독 우승 배틀 이벤트 결과 생성 완료 - eventId: {}", event.getId());
+            return eventResult;
         }
         
         // 참여자들을 랜덤으로 2명씩 매칭

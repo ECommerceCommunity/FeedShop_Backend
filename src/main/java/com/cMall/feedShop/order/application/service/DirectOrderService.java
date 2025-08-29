@@ -26,7 +26,7 @@ import static com.cMall.feedShop.order.application.constants.OrderConstants.MAX_
 @Transactional(readOnly = true)
 public class DirectOrderService {
 
-    private final OrderCommonService orderCommonService;
+    private final OrderHelper orderHelper;
 
     /**
      * 직접 주문 생성 (장바구니 없이 상품을 직접 선택하여 주문)
@@ -37,7 +37,7 @@ public class DirectOrderService {
     @Transactional
     public OrderCreateResponse createDirectOrder(DirectOrderCreateRequest request, String loginId) {
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(loginId);
+        User currentUser = orderHelper.validateUser(loginId);
 
         // 2. 주문 아이템 목록을 조회
         List<OrderItemRequest> orderItemRequests = request.getItems();
@@ -45,23 +45,23 @@ public class DirectOrderService {
 
         // 3. 어댑터로 변환해서 OrderCommonService 사용
         List<OrderItemData> adapters = OrderItemData.fromOrderItemRequests(orderItemRequests);
-        Map<Long, ProductOption> optionMap = orderCommonService.getValidProductOptions(adapters);
-        Map<Long, ProductImage> imageMap = orderCommonService.getProductImages(adapters);
+        Map<Long, ProductOption> optionMap = orderHelper.getValidProductOptions(adapters);
+        Map<Long, ProductImage> imageMap = orderHelper.getProductImages(adapters);
 
         // 4. 주문 금액 계산
-        OrderCalculation calculation = orderCommonService.calculateOrderAmount(adapters, optionMap, request.getUsedPoints());
+        OrderCalculation calculation = orderHelper.calculateOrderAmount(adapters, optionMap, request.getUsedPoints());
 
         // 5. 포인트 사용 가능 여부 확인
-        orderCommonService.validatePointUsage(currentUser, calculation.getActualUsedPoints());
+        orderHelper.validatePointUsage(currentUser, calculation.getActualUsedPoints());
 
         // 6. 주문 및 주문 아이템 생성
-        Order order = orderCommonService.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
+        Order order = orderHelper.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
 
         // 7. 재고 차감
-        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
+        orderHelper.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
 
         // 8. 뱃지 자동 수여 체크
-        orderCommonService.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
+        orderHelper.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
 
         // 9. 주문 생성 응답 반환
         return OrderCreateResponse.from(order);

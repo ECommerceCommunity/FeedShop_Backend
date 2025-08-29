@@ -3,12 +3,12 @@ package com.cMall.feedShop.store.presentation;
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.store.application.dto.response.StoreListResponse;
-import com.cMall.feedShop.store.application.service.StoreService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.cMall.feedShop.store.application.service.StoreReadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequestMapping("/api/stores")
 @RequiredArgsConstructor
 public class StoreController {
-    private final StoreService storeService;
+    private final StoreReadService storeReadService;
 
     @Operation(
             summary = "가게 목록 조회",
@@ -37,7 +37,7 @@ public class StoreController {
     @GetMapping
     @ApiResponseFormat(message = "가게 목록 조회 성공")
     public ApiResponse<List<StoreListResponse>> getAllStores() {
-        List<StoreListResponse> storeList = storeService.getAllStores();
+        List<StoreListResponse> storeList = storeReadService.getAllStores();
         return ApiResponse.success(storeList);
     }
 }

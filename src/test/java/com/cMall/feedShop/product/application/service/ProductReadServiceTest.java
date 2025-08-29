@@ -49,9 +49,6 @@ class ProductReadServiceTest {
     private ProductMapper productMapper;
 
     @InjectMocks
-    private ProductService productService;
-
-    @InjectMocks
     private ProductReadService productReadService;
 
     private Product testProduct1;

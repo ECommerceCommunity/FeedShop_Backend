@@ -156,7 +156,7 @@ class FeedRepositoryImplTest {
         // given
         Pageable pageable = PageRequest.of(0, 20);
         Page<Feed> feedPage = new PageImpl<>(Arrays.asList(testFeed), pageable, 1);
-        given(feedJpaRepository.findAllActive(pageable)).willReturn(feedPage);
+        given(feedJpaRepository.findAll(pageable)).willReturn(feedPage);
 
         // when
         Page<Feed> result = feedRepository.findAll(pageable);
@@ -164,7 +164,7 @@ class FeedRepositoryImplTest {
         // then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0)).isEqualTo(testFeed);
-        verify(feedJpaRepository, times(1)).findAllActive(pageable);
+        verify(feedJpaRepository, times(1)).findAll(pageable);
     }
 
     @Test

@@ -40,7 +40,7 @@ class StoreListServiceTest {
     private StoreRepository storeRepository;
 
     @InjectMocks
-    private StoreService storeService;
+    private StoreReadService storeReadService;
 
     // 테스트 데이터
     private Store storeA;
@@ -77,7 +77,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(orderedStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(3);
@@ -106,7 +106,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(koreanStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(3);
@@ -127,7 +127,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(mixedStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(3);
@@ -144,7 +144,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(specialStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(1);
@@ -166,7 +166,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Collections.emptyList());
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).isEmpty();
@@ -181,7 +181,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Arrays.asList(storeA));
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(1);
@@ -201,7 +201,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(duplicateStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(3);
@@ -224,7 +224,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Arrays.asList(longNameStore));
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(1);
@@ -247,7 +247,7 @@ class StoreListServiceTest {
                     .willThrow(new RuntimeException("Database connection failed"));
 
             // When & Then
-            assertThatThrownBy(() -> storeService.getAllStores())
+            assertThatThrownBy(() -> storeReadService.getAllStores())
                     .isInstanceOf(RuntimeException.class)
                     .hasMessage("Database connection failed");
 
@@ -262,7 +262,7 @@ class StoreListServiceTest {
                     .willThrow(new org.springframework.dao.DataAccessException("DB Error") {});
 
             // When & Then
-            assertThatThrownBy(() -> storeService.getAllStores())
+            assertThatThrownBy(() -> storeReadService.getAllStores())
                     .isInstanceOf(org.springframework.dao.DataAccessException.class)
                     .hasMessage("DB Error");
         }
@@ -274,7 +274,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(null);
 
             // When & Then
-            assertThatThrownBy(() -> storeService.getAllStores())
+            assertThatThrownBy(() -> storeReadService.getAllStores())
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -291,7 +291,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Arrays.asList(storeWithNullName));
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(1);
@@ -322,7 +322,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Arrays.asList(originalStore));
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(1);
@@ -344,7 +344,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(originalStores);
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).hasSize(originalStores.size());
@@ -365,7 +365,7 @@ class StoreListServiceTest {
             given(storeRepository.findAllStoresOrderByName()).willReturn(Collections.emptyList());
 
             // When
-            List<StoreListResponse> result = storeService.getAllStores();
+            List<StoreListResponse> result = storeReadService.getAllStores();
 
             // Then
             assertThat(result).isNotNull();
