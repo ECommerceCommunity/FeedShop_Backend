@@ -282,8 +282,7 @@ public class MfaServiceImpl implements MfaService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean verifyBackupCodeInNewTransaction(String email, String backupCode) {
+    private boolean verifyBackupCodeInNewTransaction(String email, String backupCode) {
         String maskedEmail = LogMaskingUtil.maskEmail(email);
         String maskedBackupCode = LogMaskingUtil.maskBackupCode(backupCode);
         
