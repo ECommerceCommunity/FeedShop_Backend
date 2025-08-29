@@ -145,7 +145,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-                Arrays.asList(p2.getProductId(), p1.getProductId(), p3.getProductId()), true);
+            Arrays.asList(p2.getProductId(), p1.getProductId(), p3.getProductId()), true);
 
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -209,7 +209,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-                Arrays.asList(p2.getProductId(), 99999L, p1.getProductId()), true);
+            Arrays.asList(p2.getProductId(), 99999L, p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
 
@@ -266,7 +266,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-                Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()), true);
+            Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()), true);
 
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -357,7 +357,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-                Arrays.asList(p2.getProductId(), p2.getProductId(), p1.getProductId()), true);
+            Arrays.asList(p2.getProductId(), p2.getProductId(), p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
 
