@@ -13,6 +13,7 @@ import com.cMall.feedShop.event.domain.repository.EventRepository;
 import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.feed.application.service.FeedClassificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class EventResultManagementServiceTest {
 
     @Mock
     private FeedRepository feedRepository;
+
+    @Mock
+    private FeedClassificationService feedClassificationService;
 
     @Mock
     private BattleEventStrategy battleEventStrategy;
@@ -169,6 +173,7 @@ class EventResultManagementServiceTest {
         when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
         when(eventResultRepository.save(any())).thenReturn(testEventResult);
         when(eventResultRepository.findByEventId(1L)).thenReturn(Optional.of(testEventResult));
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
         // when
         EventResultResponseDto result = eventResultManagementService.createEventResult(requestDto);
@@ -211,6 +216,7 @@ class EventResultManagementServiceTest {
         when(strategyFactory.getStrategy(EventType.BATTLE)).thenReturn(battleEventStrategy);
         when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
         when(eventResultRepository.save(any())).thenReturn(testEventResult);
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
         // when
         EventResultResponseDto result = eventResultManagementService.createEventResult(requestDto);
@@ -296,6 +302,7 @@ class EventResultManagementServiceTest {
         when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
         when(eventResultRepository.save(any())).thenReturn(testEventResult);
         when(eventResultRepository.findByEventId(1L)).thenReturn(Optional.of(testEventResult));
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
         // when
         EventResultResponseDto result = eventResultManagementService.recalculateEventResult(1L);

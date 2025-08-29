@@ -10,6 +10,7 @@ import com.cMall.feedShop.event.domain.repository.EventRepository;
 import com.cMall.feedShop.event.domain.repository.EventResultRepository;
 import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.feed.application.service.FeedClassificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class EventResultManagementService {
     private final EventRepository eventRepository;
     private final EventResultRepository eventResultRepository;
     private final FeedRepository feedRepository;
+    private final FeedClassificationService feedClassificationService;
 
     /**
      * 이벤트 결과 생성
@@ -74,6 +76,15 @@ public class EventResultManagementService {
         
         // 6. 결과 저장
         EventResult savedResult = eventResultRepository.save(eventResult);
+        
+        // 7. 이벤트 결과에 따른 피드 분류 처리
+        try {
+            feedClassificationService.classifyFeedsAfterEventResult(event.getId());
+            log.info("이벤트 결과에 따른 피드 분류 완료 - eventId: {}", event.getId());
+        } catch (Exception e) {
+            log.error("피드 분류 처리 중 오류 발생 - eventId: {}, error: {}", event.getId(), e.getMessage());
+            // 피드 분류 실패가 결과 생성에 영향을 주지 않도록 예외를 던지지 않음
+        }
         
         log.info("이벤트 결과 생성 완료 - eventId: {}, resultId: {}", event.getId(), savedResult.getId());
         
