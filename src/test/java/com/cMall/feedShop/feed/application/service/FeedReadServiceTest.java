@@ -71,7 +71,7 @@ class FeedReadServiceTest {
         List<Feed> feeds = List.of(testFeed);
         Page<Feed> feedPage = new PageImpl<>(feeds, testPageable, 1);
         
-        when(feedRepository.findAll(any(Pageable.class))).thenReturn(feedPage);
+        when(feedRepository.findAllActive(any(Pageable.class))).thenReturn(feedPage);
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
@@ -84,7 +84,7 @@ class FeedReadServiceTest {
         assertThat(result.getContent().get(0).getFeedId()).isEqualTo(1L);
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("테스트 피드");
 
-        verify(feedRepository, times(1)).findAll(testPageable);
+        verify(feedRepository, times(1)).findAllActive(testPageable);
         verify(feedMapper, times(1)).toFeedListResponseDto(testFeed);
     }
 
@@ -139,7 +139,7 @@ class FeedReadServiceTest {
         // given
         Page<Feed> emptyPage = new PageImpl<>(List.of(), testPageable, 0);
         
-        when(feedRepository.findAll(any(Pageable.class))).thenReturn(emptyPage);
+        when(feedRepository.findAllActive(any(Pageable.class))).thenReturn(emptyPage);
 
         // when
         Page<FeedListResponseDto> result = feedReadService.getFeeds(null, testPageable, null);
@@ -149,7 +149,7 @@ class FeedReadServiceTest {
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isEqualTo(0);
 
-        verify(feedRepository, times(1)).findAll(testPageable);
+        verify(feedRepository, times(1)).findAllActive(testPageable);
         verify(feedMapper, never()).toFeedListResponseDto(any(Feed.class));
     }
 
@@ -165,7 +165,7 @@ class FeedReadServiceTest {
         FeedListResponseDto dto1 = FeedListResponseDto.builder().feedId(1L).title("피드1").build();
         FeedListResponseDto dto2 = FeedListResponseDto.builder().feedId(2L).title("피드2").build();
         
-        when(feedRepository.findAll(any(Pageable.class))).thenReturn(feedPage);
+        when(feedRepository.findAllActive(any(Pageable.class))).thenReturn(feedPage);
         when(feedMapper.toFeedListResponseDto(feed1)).thenReturn(dto1);
         when(feedMapper.toFeedListResponseDto(feed2)).thenReturn(dto2);
 
@@ -179,7 +179,7 @@ class FeedReadServiceTest {
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("피드1");
         assertThat(result.getContent().get(1).getTitle()).isEqualTo("피드2");
 
-        verify(feedRepository, times(1)).findAll(testPageable);
+        verify(feedRepository, times(1)).findAllActive(testPageable);
         verify(feedMapper, times(2)).toFeedListResponseDto(any(Feed.class));
     }
 
@@ -221,7 +221,7 @@ class FeedReadServiceTest {
         List<Feed> feeds = List.of(testFeed);
         Page<Feed> feedPage = new PageImpl<>(feeds, customPageable, 1);
         
-        when(feedRepository.findAll(customPageable)).thenReturn(feedPage);
+        when(feedRepository.findAllActive(customPageable)).thenReturn(feedPage);
         when(feedMapper.toFeedListResponseDto(any(Feed.class))).thenReturn(testFeedDto);
 
         // when
@@ -233,7 +233,7 @@ class FeedReadServiceTest {
         assertThat(result.getSize()).isEqualTo(5);
         assertThat(result.getTotalElements()).isEqualTo(6);
 
-        verify(feedRepository, times(1)).findAll(customPageable);
+        verify(feedRepository, times(1)).findAllActive(customPageable);
     }
 
     // ===== 새로운 사용자 피드 API 테스트 =====

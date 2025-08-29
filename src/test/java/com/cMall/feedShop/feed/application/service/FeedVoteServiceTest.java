@@ -334,10 +334,10 @@ class FeedVoteServiceTest {
         Feed feed1 = mock(Feed.class);
         Feed feed2 = mock(Feed.class);
 
-        // feedRepository.findAll() Mock 설정
+        // feedRepository.findAllActive() Mock 설정
         Pageable pageable = PageRequest.of(0, 1000);
         Page<Feed> feedPage = new PageImpl<>(List.of(feed1, feed2), pageable, 2);
-        when(feedRepository.findAll(pageable)).thenReturn(feedPage);
+        when(feedRepository.findAllActive(pageable)).thenReturn(feedPage);
         
         when(feed1.getId()).thenReturn(1L);
         when(feed2.getId()).thenReturn(2L);
