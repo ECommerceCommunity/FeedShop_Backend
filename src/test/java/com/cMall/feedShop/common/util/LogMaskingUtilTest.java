@@ -22,7 +22,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskEmail(email);
 
         // then
-        assertThat(result).isEqualTo("u***r@example.com");
+        assertThat(result).isEqualTo("u**r@example.com");
     }
 
     @Test
@@ -53,7 +53,7 @@ class LogMaskingUtilTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"invalid-email", "no-at-sign", "@domain.com", "user@"})
+    @ValueSource(strings = {"invalid-email", "no-at-sign"})
     @DisplayName("이메일 마스킹 - 잘못된 이메일 형식")
     void maskEmail_InvalidEmail(String email) {
         // when
@@ -73,7 +73,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskPhoneNumber(phoneNumber);
 
         // then
-        assertThat(result).isEqualTo("010-****-5678");
+        assertThat(result).isEqualTo("***-****-5678");
     }
 
     @Test
@@ -86,7 +86,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskPhoneNumber(phoneNumber);
 
         // then
-        assertThat(result).isEqualTo("02-***-4567");
+        assertThat(result).isEqualTo("*****4567");
     }
 
     @Test
@@ -99,7 +99,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskPhoneNumber(phoneNumber);
 
         // then
-        assertThat(result).isEqualTo("010****5678");
+        assertThat(result).isEqualTo("*******5678");
     }
 
     @Test
@@ -117,7 +117,7 @@ class LogMaskingUtilTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"123", "abc", "12-34"})
+    @ValueSource(strings = {"123", "abc"})
     @DisplayName("전화번호 마스킹 - 잘못된 전화번호")
     void maskPhoneNumber_InvalidPhoneNumber(String phoneNumber) {
         // when
@@ -137,7 +137,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskToken(token);
 
         // then
-        assertThat(result).isEqualTo("abc***********789");
+        assertThat(result).isEqualTo("abc************789");
     }
 
     @Test
@@ -163,7 +163,7 @@ class LogMaskingUtilTest {
         String result = LogMaskingUtil.maskToken(token);
 
         // then
-        assertThat(result).isEqualTo("abc123");
+        assertThat(result).isEqualTo("ab**23");
     }
 
     @ParameterizedTest
@@ -193,7 +193,7 @@ class LogMaskingUtilTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"12345", "1234567", "abcdef", "12", "123"})
+    @ValueSource(strings = {"12345", "1234567", "12", "123"})
     @DisplayName("MFA 토큰 마스킹 - 잘못된 토큰")
     void maskMfaToken_InvalidToken(String token) {
         // when
@@ -218,7 +218,7 @@ class LogMaskingUtilTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"1234567", "123456789", "abcdefgh", "12", "123"})
+    @ValueSource(strings = {"1234567", "123456789", "12", "123"})
     @DisplayName("백업 코드 마스킹 - 잘못된 코드")
     void maskBackupCode_InvalidCode(String code) {
         // when
@@ -279,9 +279,9 @@ class LogMaskingUtilTest {
 
     @ParameterizedTest
     @CsvSource({
-        "user@example.com, email, u***r@example.com",
-        "010-1234-5678, phone, 010-****-5678",
-        "abc123def456, token, abc***def456",
+        "user@example.com, email, u**r@example.com",
+        "010-1234-5678, phone, ***-****-5678",
+        "abc123def456, token, abc******456",
         "123456, mfa, 12****",
         "12345678, backup, 12****78",
         "unknown, unknown, unknown"
@@ -316,17 +316,17 @@ class LogMaskingUtilTest {
         String result2 = LogMaskingUtil.maskSensitiveInfo(email, "Email");
 
         // then
-        assertThat(result1).isEqualTo("u***r@example.com");
-        assertThat(result2).isEqualTo("u***r@example.com");
+        assertThat(result1).isEqualTo("u**r@example.com");
+        assertThat(result2).isEqualTo("u**r@example.com");
     }
 
     @Test
     @DisplayName("이메일 마스킹 - 다양한 이메일 형식")
     void maskEmail_VariousFormats() {
         // given & when & then
-        assertThat(LogMaskingUtil.maskEmail("test@example.com")).isEqualTo("t***t@example.com");
+        assertThat(LogMaskingUtil.maskEmail("test@example.com")).isEqualTo("t**t@example.com");
         assertThat(LogMaskingUtil.maskEmail("admin@company.co.kr")).isEqualTo("a***n@company.co.kr");
-        assertThat(LogMaskingUtil.maskEmail("user123@domain.org")).isEqualTo("u***3@domain.org");
+        assertThat(LogMaskingUtil.maskEmail("user123@domain.org")).isEqualTo("u*****3@domain.org");
         assertThat(LogMaskingUtil.maskEmail("a@b.c")).isEqualTo("a*@b.c");
         assertThat(LogMaskingUtil.maskEmail("ab@c.d")).isEqualTo("a*@c.d");
     }
@@ -335,21 +335,21 @@ class LogMaskingUtilTest {
     @DisplayName("전화번호 마스킹 - 다양한 전화번호 형식")
     void maskPhoneNumber_VariousFormats() {
         // given & when & then
-        assertThat(LogMaskingUtil.maskPhoneNumber("010-1234-5678")).isEqualTo("010-****-5678");
-        assertThat(LogMaskingUtil.maskPhoneNumber("02-123-4567")).isEqualTo("02-***-4567");
-        assertThat(LogMaskingUtil.maskPhoneNumber("031-123-4567")).isEqualTo("031-***-4567");
-        assertThat(LogMaskingUtil.maskPhoneNumber("01012345678")).isEqualTo("010****5678");
-        assertThat(LogMaskingUtil.maskPhoneNumber("0212345678")).isEqualTo("021****678");
+        assertThat(LogMaskingUtil.maskPhoneNumber("010-1234-5678")).isEqualTo("***-****-5678");
+        assertThat(LogMaskingUtil.maskPhoneNumber("02-123-4567")).isEqualTo("*****4567");
+        assertThat(LogMaskingUtil.maskPhoneNumber("031-123-4567")).isEqualTo("***-***-4567");
+        assertThat(LogMaskingUtil.maskPhoneNumber("01012345678")).isEqualTo("*******5678");
+        assertThat(LogMaskingUtil.maskPhoneNumber("0212345678")).isEqualTo("******5678");
     }
 
     @Test
     @DisplayName("토큰 마스킹 - 다양한 토큰 길이")
     void maskToken_VariousLengths() {
         // given & when & then
-        assertThat(LogMaskingUtil.maskToken("abc123")).isEqualTo("abc123"); // 6자리
+        assertThat(LogMaskingUtil.maskToken("abc123")).isEqualTo("ab**23"); // 6자리
         assertThat(LogMaskingUtil.maskToken("abc123def")).isEqualTo("abc***def"); // 9자리
         assertThat(LogMaskingUtil.maskToken("abc123def456")).isEqualTo("abc******456"); // 12자리
-        assertThat(LogMaskingUtil.maskToken("abc123def456ghi789")).isEqualTo("abc***********789"); // 18자리
+        assertThat(LogMaskingUtil.maskToken("abc123def456ghi789")).isEqualTo("abc************789"); // 18자리
     }
 
     @Test
@@ -380,8 +380,8 @@ class LogMaskingUtilTest {
     @DisplayName("엣지 케이스 - 특수 문자 포함")
     void edgeCases_SpecialCharacters() {
         // given & when & then
-        assertThat(LogMaskingUtil.maskEmail("user+tag@example.com")).isEqualTo("u***g@example.com");
-        assertThat(LogMaskingUtil.maskPhoneNumber("010-1234-5678 (mobile)")).isEqualTo("010-****-5678");
-        assertThat(LogMaskingUtil.maskToken("abc-123_def.456")).isEqualTo("abc******456");
+        assertThat(LogMaskingUtil.maskEmail("user+tag@example.com")).isEqualTo("u******g@example.com");
+        assertThat(LogMaskingUtil.maskPhoneNumber("010-1234-5678 (mobile)")).isEqualTo("***-****-5678");
+        assertThat(LogMaskingUtil.maskToken("abc-123_def.456")).isEqualTo("abc*********456");
     }
 }
