@@ -97,7 +97,7 @@ class EventReadServiceTest {
     @DisplayName("전체 이벤트 목록 조회 성공")
     void getAllEvents_Success() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
@@ -141,7 +141,7 @@ class EventReadServiceTest {
     @DisplayName("기본 페이징 파라미터로 조회")
     void getAllEvents_WithDefaultPaging() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
@@ -213,9 +213,9 @@ class EventReadServiceTest {
                 .deletedAt(LocalDateTime.now()) // 소프트 딜리트됨
                 .build();
         
-        // findAll은 소프트 딜리트되지 않은 이벤트만 반환해야 함
+        // findAllByDeletedAtIsNull은 소프트 딜리트되지 않은 이벤트만 반환해야 함
         Page<Event> eventPageWithoutSoftDeleted = new PageImpl<>(List.of(testEvent), PageRequest.of(0, 20), 1);
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPageWithoutSoftDeleted);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPageWithoutSoftDeleted);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
@@ -232,7 +232,7 @@ class EventReadServiceTest {
     @DisplayName("정렬 파라미터와 함께 이벤트 목록 조회 성공")
     void getAllEvents_WithSorting_Success() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
@@ -251,7 +251,7 @@ class EventReadServiceTest {
     @DisplayName("오름차순 정렬 파라미터와 함께 이벤트 목록 조회 성공")
     void getAllEvents_WithAscendingSort_Success() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
@@ -270,7 +270,7 @@ class EventReadServiceTest {
     @DisplayName("잘못된 정렬 파라미터로 이벤트 목록 조회 성공")
     void getAllEvents_WithInvalidSort_Success() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When

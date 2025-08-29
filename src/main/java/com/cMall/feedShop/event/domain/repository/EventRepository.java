@@ -18,6 +18,8 @@ public interface EventRepository {
     List<Event> findAll();
     // 전체 조회(페이징)
     Page<Event> findAll(Pageable pageable);
+    // 삭제되지 않은 이벤트만 조회(페이징)
+    Page<Event> findAllByDeletedAtIsNull(Pageable pageable);
     // 검색/동적 쿼리
     Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable);
     

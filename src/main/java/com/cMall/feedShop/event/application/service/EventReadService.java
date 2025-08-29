@@ -58,7 +58,7 @@ public class EventReadService {
             pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20);
         }
         
-        Page<Event> eventPage = eventRepository.findAll(pageable);
+        Page<Event> eventPage = eventRepository.findAllByDeletedAtIsNull(pageable);
         List<EventSummaryDto> content = eventPage.getContent().stream()
                 .map(eventMapper::toSummaryDto)
                 .toList();
