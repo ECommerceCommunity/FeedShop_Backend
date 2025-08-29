@@ -51,6 +51,11 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
+    public Page<Event> findAllByDeletedAtIsNull(Pageable pageable) {
+        return eventJpaRepository.findAllByDeletedAtIsNull(pageable);
+    }
+
+    @Override
     public Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable) {
         return eventQueryRepository.searchEvents(requestDto, pageable);
     }

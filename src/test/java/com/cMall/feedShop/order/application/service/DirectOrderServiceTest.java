@@ -9,11 +9,9 @@ import com.cMall.feedShop.order.domain.enums.OrderStatus;
 import com.cMall.feedShop.order.domain.exception.OrderException;
 import com.cMall.feedShop.order.domain.model.Order;
 import com.cMall.feedShop.product.domain.enums.*;
-import com.cMall.feedShop.product.domain.model.Category;
 import com.cMall.feedShop.product.domain.model.Product;
 import com.cMall.feedShop.product.domain.model.ProductImage;
 import com.cMall.feedShop.product.domain.model.ProductOption;
-import com.cMall.feedShop.store.domain.model.Store;
 import com.cMall.feedShop.user.domain.enums.UserRole;
 import com.cMall.feedShop.user.domain.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +46,7 @@ class DirectOrderServiceTest {
 
     // Mock 객체들 (실제 서비스 대신 가짜 객체 사용)
     @Mock
-    private OrderCommonService orderCommonService; // 공통 주문 서비스
+    private OrderHelper orderHelper; // 공통 주문 서비스
 
     // 테스트에서 공통으로 사용할 데이터들
     private User testUser; // 테스트용 사용자
@@ -96,29 +94,29 @@ class DirectOrderServiceTest {
         // Given: 테스트 준비 단계 (모든 Mock 동작을 정의)
 
         // 사용자 검증이 성공한다고 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // 상품 옵션 조회가 성공한다고 설정
         Map<Long, ProductOption> optionMap = new HashMap<>();
         optionMap.put(1L, testProductOption);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(optionMap);
+        given(orderHelper.getValidProductOptions(any())).willReturn(optionMap);
 
         // 상품 이미지 조회가 성공한다고 설정
         Map<Long, ProductImage> imageMap = new HashMap<>();
         imageMap.put(1L, testProductImage);
-        given(orderCommonService.getProductImages(any())).willReturn(imageMap);
+        given(orderHelper.getProductImages(any())).willReturn(imageMap);
 
         // 주문 금액 계산이 성공한다고 설정
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
 
         // 포인트 검증이 통과한다고 설정 (문제없음)
-        willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
+        willDoNothing().given(orderHelper).validatePointUsage(any(), anyInt());
 
         // 주문 생성 및 저장이 성공한다고 설정
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 주문 후 처리가 성공한다고 설정 (재고 차감, 포인트 처리)
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+        willDoNothing().given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // When: 실제 테스트 실행 단계
         OrderCreateResponse response = directOrderService.createDirectOrder(testRequest, "testUser");
@@ -135,13 +133,13 @@ class DirectOrderServiceTest {
         assertThat(response.getStatus()).isEqualTo(OrderStatus.ORDERED);
 
         // Mock 메서드들이 올바른 순서로 호출되었는지 검증
-        verify(orderCommonService).validateUser("testUser"); // 1. 사용자 검증
-        verify(orderCommonService).getValidProductOptions(any()); // 2. 상품 옵션 조회
-        verify(orderCommonService).getProductImages(any()); // 3. 상품 이미지 조회
-        verify(orderCommonService).calculateOrderAmount(any(), any(), anyInt()); // 4. 금액 계산
-        verify(orderCommonService).validatePointUsage(any(), anyInt()); // 5. 포인트 검증
-        verify(orderCommonService).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 6. 주문 생성
-        verify(orderCommonService).processPostOrder(any(), any(), any(), any(), any()); // 7. 후처리
+        verify(orderHelper).validateUser("testUser"); // 1. 사용자 검증
+        verify(orderHelper).getValidProductOptions(any()); // 2. 상품 옵션 조회
+        verify(orderHelper).getProductImages(any()); // 3. 상품 이미지 조회
+        verify(orderHelper).calculateOrderAmount(any(), any(), anyInt()); // 4. 금액 계산
+        verify(orderHelper).validatePointUsage(any(), anyInt()); // 5. 포인트 검증
+        verify(orderHelper).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 6. 주문 생성
+        verify(orderHelper).processPostOrder(any(), any(), any(), any(), any()); // 7. 후처리
     }
 
     /**
@@ -152,7 +150,7 @@ class DirectOrderServiceTest {
     void createDirectOrder_EmptyItems_ThrowsException() {
         // Given: 빈 주문 아이템을 가진 요청 생성
         DirectOrderCreateRequest emptyRequest = createEmptyDirectOrderRequest();
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // When & Then: 예외가 발생하는지 확인
         assertThatThrownBy(() -> directOrderService.createDirectOrder(emptyRequest, "testUser"))
@@ -160,8 +158,8 @@ class DirectOrderServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_ITEM_NOT_FOUND); // 에러 코드 확인
 
         // 사용자 검증만 호출되고 나머지는 호출되지 않았는지 확인
-        verify(orderCommonService).validateUser("testUser");
-        verify(orderCommonService, never()).getValidProductOptions(any());
+        verify(orderHelper).validateUser("testUser");
+        verify(orderHelper, never()).getValidProductOptions(any());
     }
 
     /**
@@ -182,13 +180,13 @@ class DirectOrderServiceTest {
                 .build();
 
         // Mock 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), eq(1000))).willReturn(calculationWithPoints);
-        willDoNothing().given(orderCommonService).validatePointUsage(testUser, 1000);
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), eq(1000))).willReturn(calculationWithPoints);
+        willDoNothing().given(orderHelper).validatePointUsage(testUser, 1000);
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        willDoNothing().given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // When: 테스트 실행
         OrderCreateResponse response = directOrderService.createDirectOrder(requestWithPoints, "testUser");
@@ -198,8 +196,8 @@ class DirectOrderServiceTest {
         assertThat(response.getOrderId()).isEqualTo(1L);
 
         // 포인트 관련 메서드가 올바르게 호출되었는지 확인
-        verify(orderCommonService).validatePointUsage(testUser, 1000); // 포인트 검증
-        verify(orderCommonService).calculateOrderAmount(any(), any(), eq(1000)); // 포인트 포함 계산
+        verify(orderHelper).validatePointUsage(testUser, 1000); // 포인트 검증
+        verify(orderHelper).calculateOrderAmount(any(), any(), eq(1000)); // 포인트 포함 계산
     }
 
     /**
@@ -212,7 +210,7 @@ class DirectOrderServiceTest {
         DirectOrderCreateRequest nullItemsRequest = new DirectOrderCreateRequest();
         ReflectionTestUtils.setField(nullItemsRequest, "items", new ArrayList<>());
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(nullItemsRequest, "testUser"))
@@ -234,7 +232,7 @@ class DirectOrderServiceTest {
         DirectOrderCreateRequest request = new DirectOrderCreateRequest();
         ReflectionTestUtils.setField(request, "items", List.of(zeroQuantityItem));
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(request, "testUser"))
@@ -265,7 +263,7 @@ class DirectOrderServiceTest {
                 .build();
 
         // Mock 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(request, "testUser"))
@@ -280,8 +278,8 @@ class DirectOrderServiceTest {
     @DisplayName("상품 옵션을 찾을 수 없을 때 예외 발생")
     void createDirectOrder_ProductOptionNotFound_ThrowsException() {
         // Given: 존재하지 않는 상품 옵션
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
-        given(orderCommonService.getValidProductOptions(any()))
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.getValidProductOptions(any()))
                 .willThrow(new OrderException(ErrorCode.PRODUCT_OPTION_NOT_FOUND));
 
         // When & Then
@@ -297,16 +295,16 @@ class DirectOrderServiceTest {
     @DisplayName("재고 부족 시 예외 발생")
     void createDirectOrder_InsufficientStock_ThrowsException() {
         // Given: 재고 부족 상황
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
-        willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        willDoNothing().given(orderHelper).validatePointUsage(any(), anyInt());
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 재고 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.OUT_OF_STOCK))
-                .given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+                .given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(testRequest, "testUser"))
@@ -321,14 +319,14 @@ class DirectOrderServiceTest {
     @DisplayName("포인트 부족 시 예외 발생")
     void createDirectOrder_InsufficientPoints_ThrowsException() {
         // Given: 포인트 부족 상황
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
 
         // 포인트 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.INVALID_POINT))
-                .given(orderCommonService).validatePointUsage(any(), anyInt());
+                .given(orderHelper).validatePointUsage(any(), anyInt());
 
         // When & Then
         assertThatThrownBy(() -> directOrderService.createDirectOrder(testRequest, "testUser"))
@@ -343,7 +341,7 @@ class DirectOrderServiceTest {
     @DisplayName("사용자 검증 실패 시 예외 발생")
     void createDirectOrder_InvalidUser_ThrowsException() {
         // Given: 유효하지 않은 사용자
-        given(orderCommonService.validateUser("testUser"))
+        given(orderHelper.validateUser("testUser"))
                 .willThrow(new OrderException(ErrorCode.USER_NOT_FOUND));
 
         // When & Then
@@ -351,7 +349,7 @@ class DirectOrderServiceTest {
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
     }
 
     /**
@@ -375,13 +373,13 @@ class DirectOrderServiceTest {
         ReflectionTestUtils.setField(request, "usedPoints", 0);
 
         // Mock 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
-        willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        willDoNothing().given(orderHelper).validatePointUsage(any(), anyInt());
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        willDoNothing().given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // When
         OrderCreateResponse response = directOrderService.createDirectOrder(request, "testUser");

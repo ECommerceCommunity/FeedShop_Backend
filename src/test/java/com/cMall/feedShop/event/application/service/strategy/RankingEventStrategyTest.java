@@ -192,10 +192,16 @@ class RankingEventStrategyTest {
         // given
         List<Feed> participants = Arrays.asList();
 
-        // when & then
-        assertThatThrownBy(() -> rankingEventStrategy.calculateResult(testEvent, participants))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("랭킹 이벤트에 참여자가 없습니다");
+        // when
+        EventResult result = rankingEventStrategy.calculateResult(testEvent, participants);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getEvent()).isEqualTo(testEvent);
+        assertThat(result.getResultType()).isEqualTo(EventResult.ResultType.RANKING_TOP3);
+        assertThat(result.getTotalParticipants()).isEqualTo(0);
+        assertThat(result.getTotalVotes()).isEqualTo(0L);
+        assertThat(result.getResultDetails()).isEmpty();
     }
 
     @Test

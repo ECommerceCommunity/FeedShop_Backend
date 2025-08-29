@@ -208,11 +208,18 @@ class EventResultManagementServiceTest {
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventResultRepository.existsByEventId(1L)).thenReturn(false);
         when(feedRepository.findByEventId(1L)).thenReturn(Arrays.asList());
+        when(strategyFactory.getStrategy(EventType.BATTLE)).thenReturn(battleEventStrategy);
+        when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
+        when(eventResultRepository.save(any())).thenReturn(testEventResult);
 
-        // when & then
-        assertThatThrownBy(() -> eventResultManagementService.createEventResult(requestDto))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("이벤트에 참여자가 없습니다");
+        // when
+        EventResultResponseDto result = eventResultManagementService.createEventResult(requestDto);
+
+        // then
+        assertThat(result).isNotNull();
+        verify(strategyFactory).getStrategy(EventType.BATTLE);
+        verify(battleEventStrategy).calculateResult(testEvent, Arrays.asList());
+        verify(eventResultRepository).save(any(EventResult.class));
     }
 
     @Test

@@ -25,50 +25,65 @@ public class ProductImageService {
     private final ImageValidator imageValidator;
 
     /**
-     * 상품 이미지 업로드
-     * @param product 상품 엔티티
+     * 이미지 파일만 업로드 (상품과 연관 없음)
      * @param files 업로드할 이미지 파일 리스트
      * @param type 이미지 타입 (MAIN, DETAIL)
+     * @return 업로드된 이미지 파일 경로 리스트
      */
-    public void uploadImages(Product product, List<MultipartFile> files, ImageType type) {
+    public List<String> uploadImagesOnly(List<MultipartFile> files, ImageType type) {
         if (files == null || files.isEmpty()) {
-            return;
+            return List.of();
         }
 
         // 이미지 파일 검증
-        imageValidator.validateAll(files, getProductImages(product, type).size());
-
-        // 새 이미지 생성 및 GCP 에 업로드
-        List<ProductImage> newImages = createProductImages(product, files, type);
-        product.getProductImages().addAll(newImages);
-    }
-
-    /**
-     * 상품 이미지 교체
-     * @param product 상품 엔티티
-     * @param files 새로 업로드할 이미지 파일 리스트
-     * @param type 이미지 타입 (MAIN, DETAIL)
-     */
-    public void replaceImages(Product product, List<MultipartFile> files, ImageType type) {
-        // 해당 타입 이미지들 가져오기
-        List<ProductImage> existingImages = getProductImages(product, type);
-
-        // 교체 시에는 새 이미지만 검증 (기존 이미지는 삭제될 예정)
         imageValidator.validateFiles(files);
 
         try {
             // 새 이미지 생성 및 GCP 에 업로드
-            List<ProductImage> newImages = createProductImages(product, files, type);
+            List<UploadResult> uploadResults = storageService.uploadFilesWithDetails(files, UploadDirectory.PRODUCTS);
 
-            // DB 업데이트
-            product.getProductImages().removeAll(existingImages);
-            product.getProductImages().addAll(newImages);
-
-            // 기존 파일 삭제
-            deleteImageFilesSafely(existingImages);
+            return uploadResults.stream()
+                    .map(UploadResult::getFilePath)
+                    .toList();
 
         } catch (Exception e) {
-            throw new ProductException(ErrorCode.FILE_UPLOAD_ERROR, "이미지 교체에 실패했습니다");
+            log.warn("이미지 업로드 실패: {}", e.getMessage());
+            throw new ProductException(ErrorCode.FILE_UPLOAD_ERROR, "이미지 업로드에 실패했습니다");
+        }
+    }
+
+    /**
+     * 이미지 파일만 교체 (상품과 연관 없음)
+     * @param imageUrls 기존 이미지 URL 리스트
+     * @param type 이미지 타입 (MAIN, DETAIL)
+     * @return 교체된 이미지 파일 경로 리스트
+     */
+    public void replaceImageRecords(Product product, List<String> imageUrls, ImageType type) {
+        // 기존 이미지 삭제
+        List<ProductImage> existingImages = getProductImages(product, type);
+        product.getProductImages().removeAll(existingImages);
+        deleteImageFilesSafely(existingImages);
+
+        // 새 이미지 DB 기록
+        for (String imageUrl : imageUrls) {
+            String objectName = storageService.extractObjectName(imageUrl);
+            ProductImage newImage = new ProductImage(objectName, type, product);
+            product.getProductImages().add(newImage);
+        }
+    }
+
+    /**
+     * 업로드된 이미지 파일 삭제 (상품과 연관 없음)
+     * @param imageUrls 삭제할 이미지 파일 경로 리스트
+     */
+    public void deleteUploadedImages(List<String> imageUrls) {
+        for (String imageUrl : imageUrls) {
+            try {
+                storageService.deleteFile(imageUrl);
+                log.debug("이미지 파일 삭제 성공: {}", imageUrl);
+            } catch (Exception e) {
+                log.warn("이미지 파일 삭제 실패: {} - {}", imageUrl, e.getMessage());
+            }
         }
     }
 

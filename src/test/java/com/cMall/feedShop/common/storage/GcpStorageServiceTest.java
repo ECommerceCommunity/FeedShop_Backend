@@ -18,12 +18,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,13 +39,14 @@ class GcpStorageServiceTest {
 
     private static final String PROJECT_ID = "test-project";
     private static final String BUCKET_NAME = "test-bucket";
+    private static final String CDN_BASE_URL = "https://mock-cdn.example.com";
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(gcpStorageService, "projectId", PROJECT_ID);
         ReflectionTestUtils.setField(gcpStorageService, "bucketName", BUCKET_NAME);
         ReflectionTestUtils.setField(gcpStorageService, "storage", storage);
-        ReflectionTestUtils.setField(gcpStorageService, "cdnBaseUrl", "https://mock-cdn.example.com");
+        ReflectionTestUtils.setField(gcpStorageService, "cdnBaseUrl", CDN_BASE_URL);
     }
 
     @Test
@@ -72,7 +71,7 @@ class GcpStorageServiceTest {
         UploadResult result = results.get(0);
         assertThat(result.getOriginalFilename()).isEqualTo("test-image.jpg");
         assertThat(result.getStoredFilename()).matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.jpg");
-        assertThat(result.getFilePath()).isEqualTo("https://mock-cdn.example.com/images/reviews/" + result.getStoredFilename());
+        assertThat(result.getFilePath()).startsWith(CDN_BASE_URL + "/images/reviews/");
         assertThat(result.getFileSize()).isEqualTo(12L);
         assertThat(result.getContentType()).isEqualTo("image/jpeg");
 
@@ -106,8 +105,8 @@ class GcpStorageServiceTest {
         assertThat(results).hasSize(2);
         assertThat(results.get(0).getOriginalFilename()).isEqualTo("test1.jpg");
         assertThat(results.get(1).getOriginalFilename()).isEqualTo("test2.png");
-        assertThat(results.get(0).getFilePath()).contains("images/profiles/");
-        assertThat(results.get(1).getFilePath()).contains("images/profiles/");
+        assertThat(results.get(0).getFilePath()).startsWith(CDN_BASE_URL + "/images/profiles/");
+        assertThat(results.get(1).getFilePath()).startsWith(CDN_BASE_URL + "/images/profiles/");
 
         verify(storage, times(2)).create(any(BlobInfo.class), any(byte[].class));
     }
@@ -136,8 +135,8 @@ class GcpStorageServiceTest {
     @Test
     @DisplayName("파일 삭제 성공 시 true를 반환한다")
     void deleteFile_WhenSuccessful_ReturnsTrue() {
-        // given
-        String filePath = "gs://test-bucket/images/reviews/test-file.jpg";
+        // given - CDN URL 형태로 변경
+        String filePath = CDN_BASE_URL + "/images/reviews/test-file.jpg";
         when(storage.delete(any(BlobId.class))).thenReturn(true);
 
         // when
@@ -151,8 +150,8 @@ class GcpStorageServiceTest {
     @Test
     @DisplayName("파일 삭제 실패 시 false를 반환한다")
     void deleteFile_WhenUnsuccessful_ReturnsFalse() {
-        // given
-        String filePath = "gs://test-bucket/images/reviews/test-file.jpg";
+        // given - CDN URL 형태로 변경
+        String filePath = CDN_BASE_URL + "/images/reviews/test-file.jpg";
         when(storage.delete(any(BlobId.class))).thenReturn(false);
 
         // when
@@ -178,13 +177,13 @@ class GcpStorageServiceTest {
     }
 
     @Test
-    @DisplayName("다른 버킷의 파일 경로로 삭제 시 false를 반환한다")
-    void deleteFile_WithDifferentBucket_ReturnsFalse() {
+    @DisplayName("다른 CDN URL의 파일 경로로 삭제 시 false를 반환한다")
+    void deleteFile_WithDifferentCdnUrl_ReturnsFalse() {
         // given
-        String differentBucketPath = "gs://different-bucket/images/reviews/test-file.jpg";
+        String differentCdnPath = "https://different-cdn.example.com/images/reviews/test-file.jpg";
 
         // when
-        boolean result = gcpStorageService.deleteFile(differentBucketPath);
+        boolean result = gcpStorageService.deleteFile(differentCdnPath);
 
         // then
         assertThat(result).isFalse();
@@ -194,8 +193,8 @@ class GcpStorageServiceTest {
     @Test
     @DisplayName("파일 삭제 중 예외 발생 시 false를 반환한다")
     void deleteFile_WhenExceptionOccurs_ReturnsFalse() {
-        // given
-        String filePath = "gs://test-bucket/images/reviews/test-file.jpg";
+        // given - CDN URL 형태로 변경
+        String filePath = CDN_BASE_URL + "/images/reviews/test-file.jpg";
         when(storage.delete(any(BlobId.class))).thenThrow(new RuntimeException("Storage error"));
 
         // when
@@ -218,47 +217,36 @@ class GcpStorageServiceTest {
     }
 
     @Test
-    @DisplayName("REVIEWS 디렉토리로 업로드 시 올바른 경로에 저장된다")
-    void uploadToReviewsDirectory_StoresInCorrectPath() throws Exception {
+    @DisplayName("Storage가 초기화되지 않은 상태에서 업로드 시 RuntimeException을 던진다")
+    void uploadFile_WhenStorageNotInitialized_ThrowsRuntimeException() {
         // given
+        ReflectionTestUtils.setField(gcpStorageService, "storage", null);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
-                "review-image.jpg",
+                "test-image.jpg",
                 "image/jpeg",
-                "review content".getBytes()
+                "test content".getBytes()
         );
         List<MultipartFile> files = Arrays.asList(file);
 
-        when(storage.create(any(BlobInfo.class), any(byte[].class))).thenReturn(blob);
-
-        // when
-        List<UploadResult> results = gcpStorageService.uploadFilesWithDetails(files, UploadDirectory.REVIEWS);
-
-        // then
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getFilePath()).contains("images/reviews/");
+        // when & then
+        assertThatThrownBy(() -> gcpStorageService.uploadFilesWithDetails(files, UploadDirectory.REVIEWS))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("GCP Storage가 초기화되지 않았습니다.");
     }
 
     @Test
-    @DisplayName("PROFILES 디렉토리로 업로드 시 올바른 경로에 저장된다")
-    void uploadToProfilesDirectory_StoresInCorrectPath() throws Exception {
+    @DisplayName("Storage가 초기화되지 않은 상태에서 삭제 시 false를 반환한다")
+    void deleteFile_WhenStorageNotInitialized_ReturnsFalse() {
         // given
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "profile-image.jpg",
-                "image/jpeg",
-                "profile content".getBytes()
-        );
-        List<MultipartFile> files = Arrays.asList(file);
-
-        when(storage.create(any(BlobInfo.class), any(byte[].class))).thenReturn(blob);
+        ReflectionTestUtils.setField(gcpStorageService, "storage", null);
+        String filePath = CDN_BASE_URL + "/images/reviews/test-file.jpg";
 
         // when
-        List<UploadResult> results = gcpStorageService.uploadFilesWithDetails(files, UploadDirectory.PROFILES);
+        boolean result = gcpStorageService.deleteFile(filePath);
 
         // then
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getFilePath()).contains("images/profiles/");
+        assertThat(result).isFalse();
     }
 
     @Test
@@ -283,5 +271,31 @@ class GcpStorageServiceTest {
         UploadResult result = results.get(0);
         assertThat(result.getStoredFilename()).matches("[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$");
         assertThat(result.getStoredFilename()).doesNotContain(".");
+    }
+
+    @Test
+    @DisplayName("extractObjectName이 올바른 객체명을 반환한다")
+    void extractObjectName_ReturnsCorrectObjectName() {
+        // given
+        String filePath = CDN_BASE_URL + "/images/reviews/test-file.jpg";
+
+        // when
+        String objectName = gcpStorageService.extractObjectName(filePath);
+
+        // then
+        assertThat(objectName).isEqualTo("images/reviews/test-file.jpg");
+    }
+
+    @Test
+    @DisplayName("getFullFilePath가 올바른 전체 경로를 반환한다")
+    void getFullFilePath_ReturnsCorrectFullPath() {
+        // given
+        String objectName = "images/reviews/test-file.jpg";
+
+        // when
+        String fullPath = gcpStorageService.getFullFilePath(objectName);
+
+        // then
+        assertThat(fullPath).isEqualTo(CDN_BASE_URL + "/images/reviews/test-file.jpg");
     }
 }

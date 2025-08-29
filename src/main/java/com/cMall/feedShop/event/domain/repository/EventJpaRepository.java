@@ -28,8 +28,8 @@ public interface EventJpaRepository extends JpaRepository<Event, Long> {
     /**
      * 피드 생성에 사용 가능한 이벤트 조회
      * - 삭제되지 않은 이벤트
-     * - 종료일이 현재 날짜보다 미래인 이벤트
+     * - 종료일이 현재 날짜와 같거나 미래인 이벤트 (종료일 포함)
      */
-    @Query("SELECT e FROM Event e WHERE e.deletedAt IS NULL AND e.eventDetail.eventEndDate > :currentDate")
+    @Query("SELECT e FROM Event e WHERE e.deletedAt IS NULL AND e.eventDetail.eventEndDate >= :currentDate")
     List<Event> findAvailableEvents(@Param("currentDate") LocalDate currentDate);
 } 

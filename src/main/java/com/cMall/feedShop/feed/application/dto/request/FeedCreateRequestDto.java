@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -33,4 +34,14 @@ public class FeedCreateRequestDto {
     private List<String> hashtags;  // 해시태그 목록
     
     private List<String> imageUrls;  // 이미지 URL 목록 (기존 호환성 유지)
+    
+    // 기본값 설정 메서드
+    public void setDefaultValues() {
+        if (this.hashtags == null) {
+            this.hashtags = new ArrayList<>();
+        }
+        if (this.imageUrls == null) {
+            this.imageUrls = new ArrayList<>();
+        }
+    }
 } 
