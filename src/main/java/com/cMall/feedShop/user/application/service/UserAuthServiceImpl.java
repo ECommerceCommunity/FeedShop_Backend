@@ -9,6 +9,7 @@ import com.cMall.feedShop.user.domain.enums.UserStatus;
 import com.cMall.feedShop.user.domain.exception.AccountNotVerifiedException;
 import com.cMall.feedShop.user.domain.model.PasswordResetToken;
 import com.cMall.feedShop.user.domain.model.User;
+import com.cMall.feedShop.user.domain.model.UserProfile;
 import com.cMall.feedShop.user.domain.repository.PasswordResetTokenRepository;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.domain.repository.UserProfileRepository;
@@ -65,15 +66,13 @@ public class UserAuthServiceImpl implements UserAuthService {
      */
 
     public UserLoginResponse login(UserLoginRequest request) {
-        // Spring Security의 AuthenticationManager를 사용하여 인증 시도
-        // React에서 email을 보내고 있으므로, email을 사용자명으로 사용합니다.
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
 
         try {
             // 먼저 사용자 상태를 확인
-            User user = userRepository.findByEmail(request.getEmail())
-                    .orElse(null);
+            User user = userRepository.findByEmailWithProfile(request.getEmail())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
             
             // 사용자가 존재하고 DELETED 상태인 경우
             if (user != null && user.getStatus() == UserStatus.DELETED) {
@@ -83,21 +82,14 @@ public class UserAuthServiceImpl implements UserAuthService {
             // AuthenticationManager가 CustomUserDetailsService를 통해 사용자를 로드하고 비밀번호를 검증합니다.
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
 
-            // 인증 성공 후, 사용자 정보 로드 (CustomUserDetailsService에서 이미 이메일로 찾았음)
-            // JWT 토큰 생성에 필요한 정보를 얻기 위해 User 객체를 다시 조회합니다.
-            user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "존재하지 않는 회원입니다."));
-
             if (user.getStatus() == UserStatus.PENDING) {
                 throw new AccountNotVerifiedException("이메일 인증이 완료되지 않은 계정입니다.");
             }
 
-            // UserProfile 정보 명시적으로 조회
             String nickname = null;
             String name = null;
-            var userProfileOpt = userProfileRepository.findByUser(user);
-            if (userProfileOpt.isPresent()) {
-                var userProfile = userProfileOpt.get();
+            UserProfile userProfile = user.getUserProfile();
+            if (userProfile != null) {
                 nickname = userProfile.getNickname();
                 name = userProfile.getName();
             }

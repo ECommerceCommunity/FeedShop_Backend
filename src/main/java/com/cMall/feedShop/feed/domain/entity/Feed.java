@@ -203,4 +203,11 @@ public class Feed extends BaseTimeEntity {
     public boolean isDailyFeed() {
         return this.feedType == FeedType.DAILY;
     }
+
+    /**
+     * 피드 타입 업데이트
+     */
+    public void updateFeedType(FeedType newFeedType) {
+        this.feedType = newFeedType;
+    }
 } 

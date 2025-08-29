@@ -7,7 +7,9 @@ import com.cMall.feedShop.product.application.dto.request.ProductUpdateRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductCreateResponse;
 import com.cMall.feedShop.product.application.dto.response.ProductPageResponse;
 import com.cMall.feedShop.product.application.service.ProductReadService;
-import com.cMall.feedShop.product.application.service.ProductService;
+import com.cMall.feedShop.product.application.service.ProductCreateService;
+import com.cMall.feedShop.product.application.service.ProductUpdateService;
+import com.cMall.feedShop.product.application.service.ProductDeleteService;
 import com.cMall.feedShop.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,8 +34,11 @@ import java.util.List;
 @RequestMapping("/api/seller")
 @RequiredArgsConstructor
 public class ProductSellerController {
-    private final ProductService productService;
+    
     private final ProductReadService productReadService;
+    private final ProductCreateService productCreateService;
+    private final ProductUpdateService productUpdateService;
+    private final ProductDeleteService productDeleteService;
 
     @Operation(
             summary = "판매자 상품 목록 조회",
@@ -98,7 +103,7 @@ public class ProductSellerController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        ProductCreateResponse data = productService.createProduct(request, mainImages, detailImages, currentUser.getLoginId());
+        ProductCreateResponse data = productCreateService.createProduct(request, mainImages, detailImages, currentUser.getLoginId());
         return ApiResponse.success(data);
     }
 
@@ -139,7 +144,7 @@ public class ProductSellerController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        productService.updateProduct(productId, request, mainImages, detailImages, currentUser.getLoginId());
+        productUpdateService.updateProduct(productId, request, mainImages, detailImages, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 
@@ -174,7 +179,7 @@ public class ProductSellerController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails)
     {
         User currentUser = (User) userDetails;
-        productService.deleteProduct(productId, currentUser.getLoginId());
+        productDeleteService.deleteProduct(productId, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 }

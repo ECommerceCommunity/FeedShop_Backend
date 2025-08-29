@@ -97,11 +97,11 @@ class EventReadServiceTest {
     @DisplayName("전체 이벤트 목록 조회 성공")
     void getAllEvents_Success() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
-        EventListResponseDto result = eventReadService.getAllEvents(1, 20);
+        EventListResponseDto result = eventReadService.getAllEvents(1, 20, null);
 
         // Then
         assertThat(result).isNotNull();
@@ -141,11 +141,11 @@ class EventReadServiceTest {
     @DisplayName("기본 페이징 파라미터로 조회")
     void getAllEvents_WithDefaultPaging() {
         // Given
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPage);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
-        EventListResponseDto result = eventReadService.getAllEvents(null, null);
+        EventListResponseDto result = eventReadService.getAllEvents(null, null, null);
 
         // Then
         assertThat(result).isNotNull();
@@ -213,18 +213,75 @@ class EventReadServiceTest {
                 .deletedAt(LocalDateTime.now()) // 소프트 딜리트됨
                 .build();
         
-        // findAll은 소프트 딜리트되지 않은 이벤트만 반환해야 함
+        // findAllByDeletedAtIsNull은 소프트 딜리트되지 않은 이벤트만 반환해야 함
         Page<Event> eventPageWithoutSoftDeleted = new PageImpl<>(List.of(testEvent), PageRequest.of(0, 20), 1);
-        when(eventRepository.findAll(any(Pageable.class))).thenReturn(eventPageWithoutSoftDeleted);
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPageWithoutSoftDeleted);
         when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
 
         // When
-        EventListResponseDto result = eventReadService.getAllEvents(1, 20);
+        EventListResponseDto result = eventReadService.getAllEvents(1, 20, null);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).getEventId()).isEqualTo(1L);
         // 소프트 딜리트된 이벤트(ID: 2)는 결과에 포함되지 않아야 함
+    }
+
+    @Test
+    @DisplayName("정렬 파라미터와 함께 이벤트 목록 조회 성공")
+    void getAllEvents_WithSorting_Success() {
+        // Given
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
+        when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
+
+        // When
+        EventListResponseDto result = eventReadService.getAllEvents(1, 20, "createdAt,desc");
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getPage()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(20);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("오름차순 정렬 파라미터와 함께 이벤트 목록 조회 성공")
+    void getAllEvents_WithAscendingSort_Success() {
+        // Given
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
+        when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
+
+        // When
+        EventListResponseDto result = eventReadService.getAllEvents(1, 20, "createdAt,asc");
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getPage()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(20);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("잘못된 정렬 파라미터로 이벤트 목록 조회 성공")
+    void getAllEvents_WithInvalidSort_Success() {
+        // Given
+        when(eventRepository.findAllByDeletedAtIsNull(any(Pageable.class))).thenReturn(eventPage);
+        when(eventMapper.toSummaryDto(testEvent)).thenReturn(testEventSummaryDto);
+
+        // When
+        EventListResponseDto result = eventReadService.getAllEvents(1, 20, "invalidSort");
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getPage()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(20);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(1);
     }
 } 

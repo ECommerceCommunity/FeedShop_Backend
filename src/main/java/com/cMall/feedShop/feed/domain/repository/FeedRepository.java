@@ -20,6 +20,9 @@ public interface FeedRepository extends FeedQueryRepository {
     // 피드 목록 조회 (페이징)
     Page<Feed> findAll(Pageable pageable);
     
+    // 활성 피드 목록 조회 (삭제되지 않은 피드만)
+    Page<Feed> findAllActive(Pageable pageable);
+    
     // 사용자별 피드 조회
     Page<Feed> findByUserId(Long userId, Pageable pageable);
     
