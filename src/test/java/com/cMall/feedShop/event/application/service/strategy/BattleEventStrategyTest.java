@@ -163,10 +163,16 @@ class BattleEventStrategyTest {
         // given
         List<Feed> participants = Arrays.asList();
 
-        // when & then
-        assertThatThrownBy(() -> battleEventStrategy.calculateResult(testEvent, participants))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("배틀 이벤트는 최소 2명의 참여자가 필요합니다");
+        // when
+        EventResult result = battleEventStrategy.calculateResult(testEvent, participants);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getEvent()).isEqualTo(testEvent);
+        assertThat(result.getResultType()).isEqualTo(EventResult.ResultType.BATTLE_WINNER);
+        assertThat(result.getTotalParticipants()).isEqualTo(0);
+        assertThat(result.getTotalVotes()).isEqualTo(0L);
+        assertThat(result.getResultDetails()).isEmpty();
     }
 
     @Test
@@ -176,10 +182,23 @@ class BattleEventStrategyTest {
         List<Feed> participants = Arrays.asList(feed1);
         lenient().when(feedVoteRepository.countByFeed_Id(1L)).thenReturn(5L);
 
-        // when & then
-        assertThatThrownBy(() -> battleEventStrategy.calculateResult(testEvent, participants))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("배틀 이벤트는 최소 2명의 참여자가 필요합니다");
+        // when
+        EventResult result = battleEventStrategy.calculateResult(testEvent, participants);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getEvent()).isEqualTo(testEvent);
+        assertThat(result.getResultType()).isEqualTo(EventResult.ResultType.BATTLE_WINNER);
+        assertThat(result.getTotalParticipants()).isEqualTo(1);
+        assertThat(result.getTotalVotes()).isEqualTo(5L);
+        assertThat(result.getResultDetails()).hasSize(1);
+
+        // 단독 우승자 상세 정보 확인
+        var winnerDetail = result.getResultDetails().get(0);
+        assertThat(winnerDetail.getUser()).isEqualTo(user1);
+        assertThat(winnerDetail.getFeedTitle()).isEqualTo("테스트 피드 1");
+        assertThat(winnerDetail.getRankPosition()).isEqualTo(1);
+        assertThat(winnerDetail.getVoteCount()).isEqualTo(5L);
     }
 
     @Test
