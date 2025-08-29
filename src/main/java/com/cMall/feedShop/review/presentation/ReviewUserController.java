@@ -141,7 +141,7 @@ public class ReviewUserController {
             @Parameter(description = "리뷰 제목", required = true) @Valid @NotBlank(message = "리뷰 제목은 필수입니다.") @RequestParam String title,
             @Parameter(description = "평점 (1-5점)", required = true) @Valid @NotNull(message = "평점은 필수입니다.") @Min(1) @Max(5) @RequestParam Integer rating,
             @Parameter(description = "리뷰 내용", required = true) @Valid @NotBlank(message = "리뷰 내용은 필수입니다.") @RequestParam String content,
-            @Parameter(description = "사이즈 착용감 (SMALL: 작음, NORMAL: 적당, LARGE: 큼)", required = true) @Valid @NotBlank(message = "사이즈 착용감은 필수입니다.") @RequestParam String sizeFit,
+            @Parameter(description = "사이즈 착용감 (VERY_SMALL: 매우 작음, SMALL: 작음, NORMAL: 적당함, BIG: 큼, VERY_BIG: 매우 큼)", required = true) @Valid @NotBlank(message = "사이즈 착용감은 필수입니다.") @RequestParam String sizeFit,
             @Parameter(description = "쿠션감 (HARD: 딱딱, MODERATE: 보통, SOFT: 부드러움, VERY_SOFT: 매우 부드러움)", required = true) @Valid @NotBlank(message = "쿠션감은 필수입니다.") @RequestParam String cushion,
             @Parameter(description = "안정성 (UNSTABLE: 불안정, MODERATE: 보통, STABLE: 안정적)", required = true) @Valid @NotBlank(message = "안정성은 필수입니다.") @RequestParam String stability,
             @Parameter(description = "리뷰 이미지 파일들 (선택사항, 최대 5개)") @RequestPart(value = "images", required = false) List<MultipartFile> images,
