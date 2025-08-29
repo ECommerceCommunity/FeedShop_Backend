@@ -169,15 +169,15 @@ public class GcpStorageService implements StorageService {
 
     /**
      * 파일 경로에서 객체명 추출
-     * gs://feedshop-dev-bucket/images/reviews/filename.jpg -> images/reviews/filename.jpg
+     * {cdnBaseUrl}/images/reviews/filename.jpg -> images/reviews/filename.jpg
      */
     public String extractObjectName(String filePath) {
-        if (filePath == null || !filePath.startsWith("gs://")) {
+        if (filePath == null || !filePath.startsWith("https://")) {
             return null;
         }
 
-        String prefix = "gs://" + bucketName + "/";
-        if (filePath.startsWith(prefix)) {
+        if (filePath.startsWith(cdnBaseUrl)) {
+            String prefix = cdnBaseUrl + "/";
             return filePath.substring(prefix.length());
         }
         return null;
@@ -185,13 +185,13 @@ public class GcpStorageService implements StorageService {
 
     /**
      * 전체 파일 경로 생성
-     * gs://feedshop-dev-bucket/images/reviews/filename.jpg
+     * {cdnBaseUrl}/images/reviews/filename.jpg
      */
     public String getFullFilePath(String objectName) {
         if (objectName == null || objectName.isEmpty()) {
             return null;
         }
-        return String.format("gs://%s/%s", bucketName, objectName);
+        return cdnBaseUrl + "/" + objectName;
     }
 
     /**
