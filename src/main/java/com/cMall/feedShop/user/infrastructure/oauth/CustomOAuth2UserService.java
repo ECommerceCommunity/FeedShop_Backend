@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -32,12 +33,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest); // Network call is now outside the transaction
         try {
-            // Call the new transactional method
-            return processAndSaveOAuth2User(userRequest, oAuth2User);
+            // Call the new transactional method with new transaction
+            return processAndSaveOAuth2UserInNewTransaction(userRequest, oAuth2User);
         } catch (Exception e) {
             log.error("OAuth2 사용자 처리 중 오류 발생", e);
             throw new OAuth2AuthenticationException("OAuth2 사용자 처리 실패");
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public OAuth2User processAndSaveOAuth2UserInNewTransaction(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
+        return processAndSaveOAuth2User(userRequest, oAuth2User);
     }
 
     @Transactional

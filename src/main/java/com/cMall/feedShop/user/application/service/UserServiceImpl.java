@@ -72,8 +72,50 @@ public class UserServiceImpl implements UserService{
                 sendVerificationEmail(existingUser, "회원가입 재인증을 완료해주세요.", "회원가입 재인증을 요청하셨습니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
                 // 재인증 메일 발송 후 예외 처리 (DUPLICATE_EMAIL과 함께 메시지 전달)
                 throw new UserException(DUPLICATE_EMAIL, "재인증 메일이 발송되었습니다. 메일을 확인하여 인증을 완료해주세요.");
+            } else if (existingUser.getStatus() == UserStatus.DELETED) {
+                // DELETED 상태의 사용자는 재가입을 허용하되, 기존 사용자 정보를 업데이트
+                log.info("DELETED 상태의 사용자 재가입 시도: {}", request.getEmail());
+                
+                // 기존 사용자 정보 업데이트
+                String finalPasswordToSave = passwordEncoder.encode(request.getPassword());
+                existingUser.setPassword(finalPasswordToSave);
+                existingUser.setStatus(UserStatus.PENDING);
+                existingUser.setPasswordChangedAt(LocalDateTime.now());
+                existingUser.setRole(UserRole.USER); // 역할을 USER로 재설정
+
+                updateVerificationToken(existingUser);
+
+                // UserProfile 업데이트
+                UserProfile userProfile = existingUser.getUserProfile();
+                if (userProfile == null) {
+                    userProfile = UserProfile.builder()
+                            .user(existingUser)
+                            .name(request.getName())
+                            .nickname(request.getNickname())
+                            .phone(request.getPhone())
+                            .build();
+                    existingUser.setUserProfile(userProfile);
+                } else {
+                    userProfile.updateProfile(
+                            request.getName(),
+                            request.getNickname(),
+                            request.getPhone(),
+                            null, // height
+                            null, // weight
+                            null, // footSize
+                            null, // footWidth
+                            null, // footArchType
+                            null, // gender
+                            null  // birthDate
+                    );
+                }
+
+                userRepository.save(existingUser);
+                sendVerificationEmail(existingUser, "회원가입을 완료해주세요.", "cMall 회원가입을 환영합니다. 아래 링크를 클릭하여 이메일 인증을 완료해주세요:");
+
+                return UserResponse.from(existingUser);
             }
-            // 기타 다른 상태 (DELETED 등)에 대한 처리도 추가할 수 있습니다.
+            // 기타 다른 상태 (INACTIVE, BLOCKED 등)에 대한 처리도 추가할 수 있습니다.
         }
 
         // loginId 자동 생성 (UUID 사용)
@@ -216,20 +258,31 @@ public class UserServiceImpl implements UserService{
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UserException(UNAUTHORIZED, "로그인된 사용자만 탈퇴할 수 있습니다.");
         }
-        String currentLoggedInUserEmail = authentication.getName();
-        if (!currentLoggedInUserEmail.equals(email)) {
-            log.warn("Forbidden withdrawal attempt: User '{}' tried to delete account of '{}'.", currentLoggedInUserEmail, email); // 로그 추가
+        
+        // authentication.getName()은 loginId를 반환하므로, 이를 이메일로 변환해야 함
+        String currentLoginId = authentication.getName();
+        log.debug("Current authenticated loginId: {}", currentLoginId);
+        
+        // loginId로 사용자를 찾아서 실제 이메일과 비교
+        User currentUser = userRepository.findByLoginId(currentLoginId)
+                .orElseThrow(() -> new UserException(UNAUTHORIZED, "현재 로그인된 사용자 정보를 찾을 수 없습니다."));
+        
+        String currentUserEmail = currentUser.getEmail();
+        log.debug("Current user email: {}", currentUserEmail);
+        
+        // 요청된 이메일과 현재 로그인된 사용자의 이메일이 일치하는지 확인
+        if (!currentUserEmail.equals(email)) {
+            log.warn("Forbidden withdrawal attempt: User '{}' (loginId: {}) tried to delete account of '{}'.", 
+                    currentUserEmail, currentLoginId, email);
             throw new UserException(FORBIDDEN, "다른 사용자의 계정을 탈퇴할 수 없습니다.");
         }
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserException(USER_NOT_FOUND, "사용자를 찾을 수 없습니다. 이메일: " + email)); // UserException 사용
-
-        if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(rawPassword, currentUser.getPassword())) {
             throw new UserException(INVALID_PASSWORD);
         }
 
-        deleteUser(user);
+        deleteUser(currentUser);
     }
 
     @Transactional(readOnly = true)
