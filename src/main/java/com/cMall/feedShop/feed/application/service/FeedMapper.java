@@ -180,7 +180,7 @@ public class FeedMapper {
                 .participantVoteCount(feed.getParticipantVoteCount())
                 .userId(getUserId(feed.getUser()))
                 .userNickname(getUserNickname(feed.getUser()))
-                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userProfileImg(getUserProfileImg(feed.getUser()))
                 .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
                 .orderItemId(getOrderItemId(feed.getOrderItem()))
                 .productName(getProductName(feed.getOrderItem()))
@@ -224,7 +224,7 @@ public class FeedMapper {
                 .participantVoteCount(feed.getParticipantVoteCount())
                 .userId(getUserId(feed.getUser()))
                 .userNickname(getUserNickname(feed.getUser()))
-                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userProfileImg(getUserProfileImg(feed.getUser()))
                 .productName(getProductName(feed.getOrderItem()))
                 .eventId(getEventId(feed.getEvent()))
                 .eventTitle(getEventTitle(feed.getEvent()))
@@ -264,7 +264,7 @@ public class FeedMapper {
                 .participantVoteCount(feed.getParticipantVoteCount())
                 .userId(getUserId(feed.getUser()))
                 .userNickname(getUserNickname(feed.getUser()))
-                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userProfileImg(getUserProfileImg(feed.getUser()))
                 .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
                 .userGender(null) // TODO: 추후 UserProfile에 gender 필드 추가 시 구현
                 .userHeight(null) // TODO: 추후 UserProfile에 height 필드 추가 시 구현
