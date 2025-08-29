@@ -51,6 +51,11 @@ public class FeedRepositoryImpl implements FeedRepository {
     }
     
     @Override
+    public Page<Feed> findAllActive(Pageable pageable) {
+        return feedJpaRepository.findAllActive(pageable);
+    }
+    
+    @Override
     public Page<Feed> findByUserId(Long userId, Pageable pageable) {
         return feedJpaRepository.findByUserId(userId, pageable);
     }
