@@ -1,5 +1,6 @@
 package com.cMall.feedShop.review.application.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,12 +15,22 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "리뷰 이미지 삭제 성공 응늵")
 public class ReviewImageDeleteResponse {
     
+    @Schema(description = "리뷰 ID", example = "123")
     private Long reviewId;
+    
+    @Schema(description = "삭제된 이미지 ID 목록", example = "[1, 2, 3]")
     private List<Long> deletedImageIds;
+    
+    @Schema(description = "삭제된 이미지 개수", example = "3")
     private int deletedImageCount;
+    
+    @Schema(description = "남은 이미지 개수", example = "2")
     private int remainingImageCount;
+    
+    @Schema(description = "성공 메시지", example = "3개의 이미지가 성공적으로 삭제되었습니다.")
     private String message;
     
     /**

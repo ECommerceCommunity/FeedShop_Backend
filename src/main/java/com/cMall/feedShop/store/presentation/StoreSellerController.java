@@ -3,7 +3,7 @@ package com.cMall.feedShop.store.presentation;
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.store.application.dto.response.StoreDetailResponse;
-import com.cMall.feedShop.store.application.service.StoreService;
+import com.cMall.feedShop.store.application.service.StoreReadService;
 import com.cMall.feedShop.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/seller")
 @RequiredArgsConstructor
 public class StoreSellerController {
-    private final StoreService storeService;
+    private final StoreReadService storeReadService;
 
     @Operation(
             summary = "내 가게 상세 정보 조회",
@@ -52,7 +52,7 @@ public class StoreSellerController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        StoreDetailResponse data = storeService.getMyStoreDetail(currentUser.getId());
+        StoreDetailResponse data = storeReadService.getMyStoreDetail(currentUser.getId());
         return ApiResponse.success(data);
     }
 }

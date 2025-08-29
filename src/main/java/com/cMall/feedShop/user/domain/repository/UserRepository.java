@@ -22,6 +22,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByUserProfile_NameAndUserProfile_Phone(String name, String phone);
 
+    @Query("SELECT u FROM User u LEFT JOIN FETCH u.userProfile WHERE u.email = :email")
+    Optional<User> findByEmailWithProfile(@Param("email") String email);
+
     /**
      * 통계 정보가 없는 사용자들 조회
      */

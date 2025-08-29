@@ -6,7 +6,7 @@ import com.cMall.feedShop.product.application.dto.request.ProductOptionCreateReq
 import com.cMall.feedShop.product.application.dto.request.ProductOptionUpdateRequest;
 import com.cMall.feedShop.product.application.dto.response.ProductOptionCreateResponse;
 import com.cMall.feedShop.product.application.dto.response.info.ProductOptionInfo;
-import com.cMall.feedShop.product.application.service.ProductOptionService;
+import com.cMall.feedShop.product.application.service.*;
 import com.cMall.feedShop.user.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,7 +29,11 @@ import java.util.List;
 @RequestMapping("/api/seller")
 @RequiredArgsConstructor
 public class ProductSellerOptionController {
-    private final ProductOptionService productOptionService;
+    
+    private final ProductOptionReadService productOptionReadService;
+    private final ProductOptionCreateService productOptionCreateService;
+    private final ProductOptionUpdateService productOptionUpdateService;
+    private final ProductOptionDeleteService productOptionDeleteService;
 
     @Operation(
             summary = "상품 옵션 목록 조회",
@@ -61,7 +65,7 @@ public class ProductSellerOptionController {
         User currentUser = (User) userDetails;
 
         // 상품 ID로 상품 옵션 정보를 조회
-        List<ProductOptionInfo> options = productOptionService.getProductOptions(productId, currentUser.getLoginId());
+        List<ProductOptionInfo> options = productOptionReadService.getProductOptions(productId, currentUser.getLoginId());
 
         // 조회된 옵션 정보를 ApiResponse로 감싸서 반환
         return ApiResponse.success(options);
@@ -102,7 +106,7 @@ public class ProductSellerOptionController {
     ) {
         User currentUser = (User) userDetails;
 
-        ProductOptionCreateResponse option = productOptionService.addProductOption(productId, request, currentUser.getLoginId());
+        ProductOptionCreateResponse option = productOptionCreateService.addProductOption(productId, request, currentUser.getLoginId());
         return ApiResponse.success(option);
     }
 
@@ -140,7 +144,7 @@ public class ProductSellerOptionController {
     ) {
         User currentUser = (User) userDetails;
 
-        productOptionService.updateProductOption(optionId, request, currentUser.getLoginId());
+        productOptionUpdateService.updateProductOption(optionId, request, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 
@@ -176,7 +180,7 @@ public class ProductSellerOptionController {
     ) {
         User currentUser = (User) userDetails;
 
-        productOptionService.deleteProductOption(optionId, currentUser.getLoginId());
+        productOptionDeleteService.deleteProductOption(optionId, currentUser.getLoginId());
         return ApiResponse.success(null);
     }
 }

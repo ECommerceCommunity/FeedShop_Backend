@@ -34,16 +34,16 @@ import java.util.Map;
 import static com.cMall.feedShop.order.application.constants.OrderConstants.MAX_ORDER_QUANTITY;
 
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class OrderService {
 
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
-    private final OrderCommonService orderCommonService;
+    private final OrderHelper orderHelper;
 
     /**
      * 주문 생성
@@ -54,9 +54,9 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createOrder(OrderCreateRequest request, String loginId) {
         log.info("주문 생성 시작 - 사용포인트: {}", request.getUsedPoints());
-      
+
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(loginId);
+        User currentUser = orderHelper.validateUser(loginId);
 
         // 2. 선택된 장바구니 아이템 조회 (selected = true 인 아이템들만)
         List<CartItem> selectedCartItems = getSelectedCartItems(currentUser.getId());
@@ -64,26 +64,26 @@ public class OrderService {
 
         // 3. 어댑터로 변환해서 OrderCommonService 사용
         List<OrderItemData> adapters = OrderItemData.fromCartItems(selectedCartItems);
-        Map<Long, ProductOption> optionMap = orderCommonService.getValidProductOptions(adapters);
-        Map<Long, ProductImage> imageMap = orderCommonService.getProductImages(adapters);
+        Map<Long, ProductOption> optionMap = orderHelper.getValidProductOptions(adapters);
+        Map<Long, ProductImage> imageMap = orderHelper.getProductImages(adapters);
 
         // 4. 주문 금액 계산
-        OrderCalculation calculation = orderCommonService.calculateOrderAmount(adapters, optionMap, request.getUsedPoints());
+        OrderCalculation calculation = orderHelper.calculateOrderAmount(adapters, optionMap, request.getUsedPoints());
 
         // 5. 포인트 사용 가능 여부 확인
-        orderCommonService.validatePointUsage(currentUser, calculation.getActualUsedPoints());
+        orderHelper.validatePointUsage(currentUser, calculation.getActualUsedPoints());
 
         // 6. 주문 및 주문 아이템 생성
-        Order order = orderCommonService.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
+        Order order = orderHelper.createAndSaveOrder(currentUser, OrderRequestData.from(request), calculation, adapters, optionMap, imageMap);
 
         // 7. 주문 후 처리
-        orderCommonService.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
+        orderHelper.processPostOrder(currentUser, adapters, optionMap, calculation, order.getOrderId());
 
         // 8. 장바구니 아이템 삭제
         cartItemRepository.deleteAll(selectedCartItems);
 
         // 9. 뱃지 자동 수여 체크
-        orderCommonService.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
+        orderHelper.checkAndAwardBadgesAfterOrder(currentUser.getId(), order.getOrderId());
 
         // 10. 주문 생성 응답 반환
         OrderCreateResponse response = OrderCreateResponse.from(order);
@@ -104,9 +104,9 @@ public class OrderService {
     @Transactional(readOnly = true)
     public OrderPageResponse getOrderListForUser(int page, int size, String status, String loginId) {
         log.debug("사용자 주문 목록 조회 - page: {}, size: {}, status: {}", page, size, status);
-      
+
         // 1. 현재 사용자 조회를 하고 사용자 권한을 검증
-        User currentUser = orderCommonService.validateUser(loginId);
+        User currentUser = orderHelper.validateUser(loginId);
 
         // 2. 페이지 파라미터 검증
         if (page < 0) {
@@ -201,7 +201,7 @@ public class OrderService {
         log.debug("주문 상세 조회 - orderId: {}", orderId);
 
         // 1. 현재 사용자 조회 및 권한 검증
-        User currentUser = orderCommonService.validateUser(loginId);
+        User currentUser = orderHelper.validateUser(loginId);
 
         // 2. 주문 조회 및 권한 검증
         Order order = orderRepository.findByOrderIdAndUser(orderId, currentUser)

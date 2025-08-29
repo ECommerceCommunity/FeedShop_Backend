@@ -1,8 +1,10 @@
 package com.cMall.feedShop.cart.presentation;
 
 import com.cMall.feedShop.cart.application.dto.request.WishListRequest;
-import com.cMall.feedShop.cart.application.dto.response.WishListAddResponse;
-import com.cMall.feedShop.cart.application.service.WishlistService;
+import com.cMall.feedShop.cart.application.dto.response.WishListCreateResponse;
+import com.cMall.feedShop.cart.application.service.WishlistCreateService;
+import com.cMall.feedShop.cart.application.service.WishlistDeleteService;
+import com.cMall.feedShop.cart.application.service.WishlistReadService;
 import com.cMall.feedShop.common.aop.ApiResponseFormat;
 import com.cMall.feedShop.common.dto.ApiResponse;
 import com.cMall.feedShop.user.domain.model.User;
@@ -30,7 +32,9 @@ import org.springframework.validation.annotation.Validated;
 @RequiredArgsConstructor
 @Validated
 public class WishListController {
-    private final WishlistService wishlistService;
+    private final WishlistCreateService wishlistCreateService;
+    private final WishlistReadService wishlistReadService;
+    private final WishlistDeleteService wishlistDeleteService;
 
     @Operation(
             summary = "상품 찜하기",
@@ -40,7 +44,7 @@ public class WishListController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "찜하기 성공",
-                    content = @Content(schema = @Schema(implementation = WishListAddResponse.class))
+                    content = @Content(schema = @Schema(implementation = WishListCreateResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
@@ -53,13 +57,13 @@ public class WishListController {
     })
     @PostMapping("/wishlist")
     @ApiResponseFormat(message = "상품이 찜 목록에 추가되었습니다.")
-    public ApiResponse<WishListAddResponse> addWishList(
+    public ApiResponse<WishListCreateResponse> addWishList(
             @Parameter(description = "찜할 상품 정보", required = true)
             @Valid @RequestBody WishListRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        WishListAddResponse response = wishlistService.addWishList(request, currentUser.getUsername());
+        WishListCreateResponse response = wishlistCreateService.addWishList(request, currentUser.getUsername());
         return ApiResponse.success(response);
     }
 
@@ -93,7 +97,7 @@ public class WishListController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        WishListResponse data = wishlistService.getWishList(page, size, currentUser.getUsername());
+        WishListResponse data = wishlistReadService.getWishList(page, size, currentUser.getUsername());
         return ApiResponse.success(data);
     }
 
@@ -119,7 +123,7 @@ public class WishListController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
         User currentUser = (User) userDetails;
-        wishlistService.deleteWishList(productId, currentUser.getUsername());
+        wishlistDeleteService.deleteWishList(productId, currentUser.getUsername());
         return ApiResponse.success(null);
     }
 }

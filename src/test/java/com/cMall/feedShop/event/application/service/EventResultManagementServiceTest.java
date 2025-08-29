@@ -13,6 +13,7 @@ import com.cMall.feedShop.event.domain.repository.EventRepository;
 import com.cMall.feedShop.feed.domain.entity.Feed;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.feed.domain.repository.FeedRepository;
+import com.cMall.feedShop.feed.application.service.FeedClassificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class EventResultManagementServiceTest {
 
     @Mock
     private FeedRepository feedRepository;
+
+    @Mock
+    private FeedClassificationService feedClassificationService;
 
     @Mock
     private BattleEventStrategy battleEventStrategy;
@@ -169,6 +173,7 @@ class EventResultManagementServiceTest {
         when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
         when(eventResultRepository.save(any())).thenReturn(testEventResult);
         when(eventResultRepository.findByEventId(1L)).thenReturn(Optional.of(testEventResult));
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
         // when
         EventResultResponseDto result = eventResultManagementService.createEventResult(requestDto);
@@ -208,11 +213,19 @@ class EventResultManagementServiceTest {
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
         when(eventResultRepository.existsByEventId(1L)).thenReturn(false);
         when(feedRepository.findByEventId(1L)).thenReturn(Arrays.asList());
+        when(strategyFactory.getStrategy(EventType.BATTLE)).thenReturn(battleEventStrategy);
+        when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
+        when(eventResultRepository.save(any())).thenReturn(testEventResult);
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
-        // when & then
-        assertThatThrownBy(() -> eventResultManagementService.createEventResult(requestDto))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("이벤트에 참여자가 없습니다");
+        // when
+        EventResultResponseDto result = eventResultManagementService.createEventResult(requestDto);
+
+        // then
+        assertThat(result).isNotNull();
+        verify(strategyFactory).getStrategy(EventType.BATTLE);
+        verify(battleEventStrategy).calculateResult(testEvent, Arrays.asList());
+        verify(eventResultRepository).save(any(EventResult.class));
     }
 
     @Test
@@ -289,6 +302,7 @@ class EventResultManagementServiceTest {
         when(battleEventStrategy.calculateResult(any(), any())).thenReturn(testEventResult);
         when(eventResultRepository.save(any())).thenReturn(testEventResult);
         when(eventResultRepository.findByEventId(1L)).thenReturn(Optional.of(testEventResult));
+        doNothing().when(feedClassificationService).classifyFeedsAfterEventResult(any(Long.class));
 
         // when
         EventResultResponseDto result = eventResultManagementService.recalculateEventResult(1L);

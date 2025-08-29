@@ -61,7 +61,7 @@ class OrderServiceTest {
     @Mock
     private OrderRepository orderRepository; // 주문 저장소
     @Mock
-    private OrderCommonService orderCommonService; // 공통 주문 서비스
+    private OrderHelper orderHelper; // 공통 주문 서비스
 
     // 테스트에서 공통으로 사용할 데이터들
     private User testUser; // 테스트용 사용자
@@ -105,30 +105,30 @@ class OrderServiceTest {
         // Given: 테스트 준비 단계
 
         // 사용자 검증이 성공한다고 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
 
         // 선택된 장바구니 아이템 조회가 성공한다고 설정
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(testCartItems);
 
         // 상품 옵션 조회가 성공한다고 설정
         Map<Long, ProductOption> optionMap = Map.of(1L, testProductOption);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(optionMap);
+        given(orderHelper.getValidProductOptions(any())).willReturn(optionMap);
 
         // 상품 이미지 조회가 성공한다고 설정
         Map<Long, ProductImage> imageMap = Map.of(1L, testProductImage);
-        given(orderCommonService.getProductImages(any())).willReturn(imageMap);
+        given(orderHelper.getProductImages(any())).willReturn(imageMap);
 
         // 주문 금액 계산이 성공한다고 설정
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
 
         // 포인트 검증이 통과한다고 설정
-        willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
+        willDoNothing().given(orderHelper).validatePointUsage(any(), anyInt());
 
         // 주문 생성 및 저장이 성공한다고 설정
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 주문 후 처리가 성공한다고 설정
-        willDoNothing().given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+        willDoNothing().given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // 장바구니 아이템 삭제가 성공한다고 설정
         willDoNothing().given(cartItemRepository).deleteAll(testCartItems);
@@ -148,14 +148,14 @@ class OrderServiceTest {
         assertThat(response.getStatus()).isEqualTo(OrderStatus.ORDERED);
 
         // 모든 메서드가 올바른 순서로 호출되었는지 검증
-        verify(orderCommonService).validateUser("testUser"); // 1. 사용자 검증
+        verify(orderHelper).validateUser("testUser"); // 1. 사용자 검증
         verify(cartItemRepository).findByUserIdWithCart(1L); // 2. 장바구니 조회
-        verify(orderCommonService).getValidProductOptions(any()); // 3. 상품 옵션 조회
-        verify(orderCommonService).getProductImages(any()); // 4. 상품 이미지 조회
-        verify(orderCommonService).calculateOrderAmount(any(), any(), anyInt()); // 5. 금액 계산
-        verify(orderCommonService).validatePointUsage(any(), anyInt()); // 6. 포인트 검증
-        verify(orderCommonService).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 7. 주문 생성
-        verify(orderCommonService).processPostOrder(any(), any(), any(), any(), any()); // 8. 후처리
+        verify(orderHelper).getValidProductOptions(any()); // 3. 상품 옵션 조회
+        verify(orderHelper).getProductImages(any()); // 4. 상품 이미지 조회
+        verify(orderHelper).calculateOrderAmount(any(), any(), anyInt()); // 5. 금액 계산
+        verify(orderHelper).validatePointUsage(any(), anyInt()); // 6. 포인트 검증
+        verify(orderHelper).createAndSaveOrder(any(), any(), any(), any(), any(), any()); // 7. 주문 생성
+        verify(orderHelper).processPostOrder(any(), any(), any(), any(), any()); // 8. 후처리
         verify(cartItemRepository).deleteAll(testCartItems); // 9. 장바구니 삭제
     }
 
@@ -166,7 +166,7 @@ class OrderServiceTest {
     @DisplayName("빈 장바구니로 주문 시 예외 발생")
     void createOrder_EmptyCart_ThrowsException() {
         // Given: 빈 장바구니 설정
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(Collections.emptyList()); // 빈 장바구니
 
         // When & Then: 예외가 발생하는지 확인
@@ -175,9 +175,9 @@ class OrderServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_CART_EMPTY); // 에러 코드 확인
 
         // 사용자 검증과 장바구니 조회만 호출되었는지 확인
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
         verify(cartItemRepository).findByUserIdWithCart(1L);
-        verify(orderCommonService, never()).getValidProductOptions(any()); // 이후 메서드들은 호출되지 않아야 함
+        verify(orderHelper, never()).getValidProductOptions(any()); // 이후 메서드들은 호출되지 않아야 함
     }
 
     /**
@@ -190,7 +190,7 @@ class OrderServiceTest {
         List<Order> mockOrders = createMockOrders(); // 2개의 주문
         Page<Order> orderPage = new PageImpl<>(mockOrders, PageRequest.of(0, 10), 2);
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class))).willReturn(orderPage);
 
         // When: 주문 목록 조회 실행
@@ -202,7 +202,7 @@ class OrderServiceTest {
         assertThat(response.getTotalElement()).isEqualTo(2); // 총 2개 요소
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
         verify(orderRepository).findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class));
     }
 
@@ -216,7 +216,7 @@ class OrderServiceTest {
         Long orderId = 1L;
         Order detailOrder = createDetailOrder(); // 상세 정보가 포함된 주문
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByOrderIdAndUser(orderId, testUser)).willReturn(Optional.of(detailOrder));
 
         // When: 주문 상세 조회 실행
@@ -229,7 +229,7 @@ class OrderServiceTest {
         assertThat(response.getTotalPrice()).isEqualTo(BigDecimal.valueOf(100000)); // 총 가격 확인
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
         verify(orderRepository).findByOrderIdAndUser(orderId, testUser);
     }
 
@@ -242,7 +242,7 @@ class OrderServiceTest {
         // Given: 존재하지 않는 주문 ID
         Long orderId = 999L;
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByOrderIdAndUser(orderId, testUser)).willReturn(Optional.empty()); // 주문이 없음
 
         // When & Then: 예외가 발생하는지 확인
@@ -251,7 +251,7 @@ class OrderServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_NOT_FOUND); // 에러 코드 확인
 
         // 메서드 호출 검증
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
         verify(orderRepository).findByOrderIdAndUser(orderId, testUser);
     }
 
@@ -264,7 +264,7 @@ class OrderServiceTest {
         // Given: 모든 장바구니 아이템이 선택되지 않음
         List<CartItem> unselectedItems = createUnselectedCartItems();
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(unselectedItems);
 
         // When & Then
@@ -272,7 +272,7 @@ class OrderServiceTest {
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.ORDER_CART_EMPTY);
 
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
         verify(cartItemRepository).findByUserIdWithCart(1L);
     }
 
@@ -285,7 +285,7 @@ class OrderServiceTest {
         // Given: 최대 수량을 초과하는 장바구니 아이템
         List<CartItem> excessiveQuantityItems = createExcessiveQuantityCartItems();
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(excessiveQuantityItems);
 
         // When & Then
@@ -301,7 +301,7 @@ class OrderServiceTest {
     @DisplayName("사용자 검증 실패 시 예외 발생")
     void createOrder_InvalidUser_ThrowsException() {
         // Given: 유효하지 않은 사용자
-        given(orderCommonService.validateUser("testUser"))
+        given(orderHelper.validateUser("testUser"))
                 .willThrow(new OrderException(ErrorCode.USER_NOT_FOUND));
 
         // When & Then
@@ -309,7 +309,7 @@ class OrderServiceTest {
                 .isInstanceOf(OrderException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.USER_NOT_FOUND);
 
-        verify(orderCommonService).validateUser("testUser");
+        verify(orderHelper).validateUser("testUser");
     }
 
     /**
@@ -322,15 +322,15 @@ class OrderServiceTest {
         List<CartItem> cartItems = createTestCartItems();
         OrderCalculation calculation = createTestOrderCalculation();
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(calculation);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(calculation);
 
         // 포인트 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.INVALID_POINT))
-                .given(orderCommonService).validatePointUsage(any(), anyInt());
+                .given(orderHelper).validatePointUsage(any(), anyInt());
 
         // When & Then
         assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
@@ -347,9 +347,9 @@ class OrderServiceTest {
         // Given: 존재하지 않는 상품 옵션
         List<CartItem> cartItems = createTestCartItems();
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
-        given(orderCommonService.getValidProductOptions(any()))
+        given(orderHelper.getValidProductOptions(any()))
                 .willThrow(new OrderException(ErrorCode.PRODUCT_OPTION_NOT_FOUND));
 
         // When & Then
@@ -367,17 +367,17 @@ class OrderServiceTest {
         // Given: 재고 부족 상황
         List<CartItem> cartItems = createTestCartItems();
 
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(cartItemRepository.findByUserIdWithCart(1L)).willReturn(cartItems);
-        given(orderCommonService.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
-        given(orderCommonService.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
-        given(orderCommonService.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
-        willDoNothing().given(orderCommonService).validatePointUsage(any(), anyInt());
-        given(orderCommonService.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
+        given(orderHelper.getValidProductOptions(any())).willReturn(Map.of(1L, testProductOption));
+        given(orderHelper.getProductImages(any())).willReturn(Map.of(1L, testProductImage));
+        given(orderHelper.calculateOrderAmount(any(), any(), anyInt())).willReturn(testCalculation);
+        willDoNothing().given(orderHelper).validatePointUsage(any(), anyInt());
+        given(orderHelper.createAndSaveOrder(any(), any(), any(), any(), any(), any())).willReturn(testOrder);
 
         // 재고 부족으로 예외 발생
         willThrow(new OrderException(ErrorCode.OUT_OF_STOCK))
-                .given(orderCommonService).processPostOrder(any(), any(), any(), any(), any());
+                .given(orderHelper).processPostOrder(any(), any(), any(), any(), any());
 
         // When & Then
         assertThatThrownBy(() -> orderService.createOrder(testRequest, "testUser"))
@@ -397,7 +397,7 @@ class OrderServiceTest {
     void getOrderListForUser_NegativePage_CorrectedToZero() {
         // Given: 음수 페이지
         Page<Order> emptyPage = new PageImpl<>(Collections.emptyList());
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class)))
                 .willReturn(emptyPage);
 
@@ -417,7 +417,7 @@ class OrderServiceTest {
     void getOrderListForUser_InvalidSize_CorrectedToDefault() {
         // Given: 잘못된 페이지 크기
         Page<Order> emptyPage = new PageImpl<>(Collections.emptyList());
-        given(orderCommonService.validateUser("testUser")).willReturn(testUser);
+        given(orderHelper.validateUser("testUser")).willReturn(testUser);
         given(orderRepository.findByUserOrderByCreatedAtDesc(eq(testUser), any(Pageable.class)))
                 .willReturn(emptyPage);
 
