@@ -370,6 +370,7 @@ class ProductRecommendationServiceTest {
         // when
         List<Product> result = service.recommendProducts(user, prompt, 3);
 
+
         // then
         assertThat(result).isNotNull();
         assertThat(result.size()).isLessThanOrEqualTo(3);

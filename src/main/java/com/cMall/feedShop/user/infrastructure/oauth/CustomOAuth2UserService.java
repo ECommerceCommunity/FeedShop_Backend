@@ -43,7 +43,35 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OAuth2User processAndSaveOAuth2UserInNewTransaction(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
-        return processAndSaveOAuth2User(userRequest, oAuth2User);
+        // 1. Get user info (same as before)
+        String registrationId = userRequest.getClientRegistration().getRegistrationId();
+        OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
+
+        String email = oAuth2UserInfo.getEmail();
+        if (email == null || email.isEmpty()) {
+            throw new OAuth2AuthenticationException("소셜 로그인 제공자에서 이메일을 가져올 수 없습니다.");
+        }
+
+        // 2. Find or create user (move your existing logic here)
+        UserSocialProvider socialProvider = socialProviderRepository
+                .findByProviderAndProviderSocialUserId(registrationId, oAuth2UserInfo.getId())
+                .orElse(null);
+
+        User user;
+        if (socialProvider != null) {
+            user = handleExistingSocialUser(socialProvider, oAuth2UserInfo);
+        } else {
+            user = handleNewSocialUser(oAuth2UserInfo, registrationId);
+        }
+
+        // 3. Return a CustomOAuth2User object (same as before)
+        return new CustomOAuth2User(
+                oAuth2User,
+                registrationId,
+                oAuth2UserInfo.getId(),
+                oAuth2UserInfo.getEmail(),
+                oAuth2UserInfo.getName()
+        );
     }
 
     @Transactional
