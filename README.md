@@ -401,13 +401,6 @@ docsreadme: API 문서 업데이트
 
 ---
 
-## 📝 라이선스
-
-이 프로젝트는 **MIT 라이선스**를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참고하세요.
-
----
-
-
 <div align="center">
 
 **FeedShop Backend Team** 🚀
