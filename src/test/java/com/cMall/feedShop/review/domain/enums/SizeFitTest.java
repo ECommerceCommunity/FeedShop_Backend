@@ -14,7 +14,7 @@ class SizeFitTest {
         // when & then
         assertThat(SizeFit.VERY_SMALL.getDescription()).isEqualTo("매우 작음");
         assertThat(SizeFit.SMALL.getDescription()).isEqualTo("작음");
-        assertThat(SizeFit.NORMAL.getDescription()).isEqualTo("보통");
+        assertThat(SizeFit.NORMAL.getDescription()).isEqualTo("적당함");
         assertThat(SizeFit.BIG.getDescription()).isEqualTo("큼");
         assertThat(SizeFit.VERY_BIG.getDescription()).isEqualTo("매우 큼");
     }
