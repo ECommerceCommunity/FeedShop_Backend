@@ -29,7 +29,7 @@ public class WishlistCreateService {
         Product product = wishlistHelper.getProduct(request.getProductId());
 
         // 3. 중복 찜 검증
-        if (wishlistRepository.existsByUserIdAndProductIdAndDeletedAtIsNull(user.getId(), product.getProductId())) {
+        if (wishlistRepository.existsByUserIdAndProduct_ProductIdAndDeletedAtIsNull(user.getId(), product.getProductId())) {
             throw new CartException(ErrorCode.ALREADY_WISHED_PRODUCT);
         }
 

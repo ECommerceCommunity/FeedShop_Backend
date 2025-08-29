@@ -22,7 +22,7 @@ public class WishlistDeleteService {
         User currentUser = wishlistHelper.getCurrentUser(loginId);
 
         // 2. 찜한 상품 조회
-        WishList wishlist = wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(
+        WishList wishlist = wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(
                         currentUser.getId(), productId)
                 .orElseThrow(() -> new CartException(ErrorCode.WISHLIST_ITEM_NOT_FOUND));
 

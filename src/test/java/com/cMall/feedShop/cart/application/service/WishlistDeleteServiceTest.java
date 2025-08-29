@@ -89,7 +89,7 @@ class WishlistDeleteServiceTest {
         String loginId = "testuser";
 
         given(wishlistHelper.getCurrentUser(loginId)).willReturn(testUser);
-        given(wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId))
+        given(wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId))
                 .willReturn(Optional.of(testWishList));
         given(wishlistRepository.save(any(WishList.class))).willReturn(testWishList);
 
@@ -98,7 +98,7 @@ class WishlistDeleteServiceTest {
 
         // then
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, times(1)).findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId);
+        verify(wishlistRepository, times(1)).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId);
         verify(wishlistRepository, times(1)).save(testWishList);
         verify(wishlistRepository, times(1)).decreaseWishCount(productId);
 
@@ -120,7 +120,7 @@ class WishlistDeleteServiceTest {
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.USER_NOT_FOUND);
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, never()).findByUserIdAndProductIdAndDeletedAtIsNull(any(), any());
+        verify(wishlistRepository, never()).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(any(), any());
         verify(wishlistRepository, never()).save(any());
         verify(wishlistRepository, never()).decreaseWishCount(any());
     }
@@ -133,7 +133,7 @@ class WishlistDeleteServiceTest {
         String loginId = "testuser";
 
         given(wishlistHelper.getCurrentUser(loginId)).willReturn(testUser);
-        given(wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId))
+        given(wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -142,7 +142,7 @@ class WishlistDeleteServiceTest {
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.WISHLIST_ITEM_NOT_FOUND);
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, times(1)).findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId);
+        verify(wishlistRepository, times(1)).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId);
         verify(wishlistRepository, never()).save(any());
         verify(wishlistRepository, never()).decreaseWishCount(any());
     }
@@ -158,7 +158,7 @@ class WishlistDeleteServiceTest {
         ReflectionTestUtils.setField(otherUser, "id", 2L);
 
         given(wishlistHelper.getCurrentUser(loginId)).willReturn(testUser);
-        given(wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId))
+        given(wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -167,7 +167,7 @@ class WishlistDeleteServiceTest {
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.WISHLIST_ITEM_NOT_FOUND);
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, times(1)).findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId);
+        verify(wishlistRepository, times(1)).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId);
         verify(wishlistRepository, never()).save(any());
         verify(wishlistRepository, never()).decreaseWishCount(any());
     }
@@ -180,7 +180,7 @@ class WishlistDeleteServiceTest {
         String loginId = "testuser";
 
         given(wishlistHelper.getCurrentUser(loginId)).willReturn(testUser);
-        given(wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId))
+        given(wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId))
                 .willReturn(Optional.empty());
 
         // when & then
@@ -189,7 +189,7 @@ class WishlistDeleteServiceTest {
 
         assertThat(thrown.getErrorCode()).isEqualTo(ErrorCode.WISHLIST_ITEM_NOT_FOUND);
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, times(1)).findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId);
+        verify(wishlistRepository, times(1)).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId);
         verify(wishlistRepository, never()).save(any());
         verify(wishlistRepository, never()).decreaseWishCount(any());
     }
@@ -204,7 +204,7 @@ class WishlistDeleteServiceTest {
         assertThat(testWishList.getDeletedAt()).isNull();
 
         given(wishlistHelper.getCurrentUser(loginId)).willReturn(testUser);
-        given(wishlistRepository.findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId))
+        given(wishlistRepository.findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId))
                 .willReturn(Optional.of(testWishList));
         given(wishlistRepository.save(any(WishList.class))).willAnswer(invocation -> {
             WishList savedWishList = invocation.getArgument(0);
@@ -217,7 +217,7 @@ class WishlistDeleteServiceTest {
 
         // then
         verify(wishlistHelper, times(1)).getCurrentUser(loginId);
-        verify(wishlistRepository, times(1)).findByUserIdAndProductIdAndDeletedAtIsNull(testUser.getId(), productId);
+        verify(wishlistRepository, times(1)).findByUserIdAndProduct_ProductIdAndDeletedAtIsNull(testUser.getId(), productId);
         verify(wishlistRepository, times(1)).save(testWishList);
         verify(wishlistRepository, times(1)).decreaseWishCount(productId);
 
