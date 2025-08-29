@@ -41,8 +41,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public OAuth2User processAndSaveOAuth2UserInNewTransaction(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
+    private OAuth2User processAndSaveOAuth2UserInNewTransaction(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
         // 1. Get user info (same as before)
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
