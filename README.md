@@ -14,6 +14,7 @@
 ## 📚 목차
 
 - [✨ 주요 기능](#-주요-기능)
+- [📊 도메인 모델 (ERD)](#-도메인-모델-erd)
 - [🏗️ 아키텍처](#️-아키텍처)
 - [📊 도메인별 구현 현황](#-도메인별-구현-현황)
 - [🛠️ 기술 스택](#️-기술-스택)
@@ -21,7 +22,7 @@
 - [📖 API 문서](#-api-문서)
 - [🧪 테스트](#-테스트)
 - [🔧 개발 환경](#-개발-환경)
-- [📈 CI/CD](#cicd)
+- [📈 CI/CD](#-cicd)
 - [🤝 기여 방법](#-기여-방법)
 - [📝 라이선스](#-라이선스)
 
@@ -68,6 +69,16 @@
 - **스마트 검색**: AI 기반 상품 검색 및 필터링
 
 ---
+
+
+## 📊 도메인 모델 (ERD)
+
+프로젝트의 데이터베이스 스키마를 시각화한 개체-관계 다이어그램입니다.
+<img width="1326" height="952" alt="ERD" src="https://github.com/user-attachments/assets/f0573c10-7c34-44b3-9a6f-de2c2409f409" />
+
+
+_FeedShop 프로젝트의 전체 ERD _
+
 
 ## 🏗️ 아키텍처
 
@@ -193,14 +204,8 @@ src/main/java/com/cMall/feedShop/
 
 ### 빠른 시작
 
-1. **레포지토리 클론**
 
-   ```bash
-   git clone https://github.com/ECommerceCommunity/FeedShop_Backend.git
-   cd FeedShop_Backend
-   ```
-
-2. **환경 설정**
+1. **환경 설정**
 
    ```bash
    # application.properties.example을 복사하여 설정 파일 생성
@@ -217,13 +222,13 @@ src/main/java/com/cMall/feedShop/
    export KAKAO_CLIENT_SECRET=your_kakao_client_secret
    ```
 
-3. **데이터베이스 설정**
+2. **데이터베이스 설정**
 
    ```sql
    CREATE DATABASE feedshop_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 
-4. **애플리케이션 실행**
+3. **애플리케이션 실행**
 
    ```bash
    # 개발 환경
@@ -402,13 +407,6 @@ docsreadme: API 문서 업데이트
 
 ---
 
-## 📞 문의 및 지원
-
-- **이슈 리포트**: [GitHub Issues](https://github.com/ECommerceCommunity/FeedShop_Backend/issues)
-- **기술 문서**: [Wiki](https://github.com/ECommerceCommunity/FeedShop_Backend/wiki)
-- **개발자 가이드**: [개발 가이드 문서](docs/DEVELOPMENT.md)
-
----
 
 <div align="center">
 
