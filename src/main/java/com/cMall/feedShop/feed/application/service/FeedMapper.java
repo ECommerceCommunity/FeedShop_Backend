@@ -138,7 +138,7 @@ public class FeedMapper {
                 .participantVoteCount(feed.getParticipantVoteCount())
                 .userId(getUserId(feed.getUser()))
                 .userNickname(getUserNickname(feed.getUser()))
-                .userProfileImg(null) // TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
+                .userProfileImg(getUserProfileImg(feed.getUser()))
                 .userLevel(null) // TODO: 추후 UserProfile에 level 필드 추가 시 구현
                 .orderItemId(getOrderItemId(feed.getOrderItem()))
                 .productName(getProductName(feed.getOrderItem()))
@@ -298,10 +298,12 @@ public class FeedMapper {
     
     /**
      * 사용자 프로필 이미지를 안전하게 가져오기
-     * TODO: 추후 UserProfile에 profileImg 필드 추가 시 구현
      */
     private String getUserProfileImg(User user) {
-        return null; // TODO: 추후 구현
+        if (user != null && user.getUserProfile() != null) {
+            return user.getUserProfile().getProfileImageUrl();
+        }
+        return null;
     }
     
     /**
