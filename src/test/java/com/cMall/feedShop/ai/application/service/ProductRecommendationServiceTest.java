@@ -74,7 +74,7 @@ class ProductRecommendationServiceTest {
         p2 = createProduct("Product 2", 20000);
         p3 = createProduct("Product 3", 30000);
         p4 = createProduct("Product 4", 40000);
-        
+
         // 공통 mock 설정
         try {
             when(objectMapper.writeValueAsString(any())).thenReturn("[]");
@@ -92,7 +92,7 @@ class ProductRecommendationServiceTest {
                 .store(null)
                 .category(null)
                 .build();
-        
+
         // productId 설정 (테스트용) - 고정된 값 사용
         try {
             java.lang.reflect.Field productIdField = Product.class.getDeclaredField("productId");
@@ -110,7 +110,7 @@ class ProductRecommendationServiceTest {
         } catch (Exception e) {
             // Reflection 실패시 기본값 사용
         }
-        
+
         return product;
     }
 
@@ -121,7 +121,7 @@ class ProductRecommendationServiceTest {
             java.lang.reflect.Field productIdsField = ProductRecommendationAIResponse.class.getDeclaredField("productIds");
             productIdsField.setAccessible(true);
             productIdsField.set(response, productIds);
-            
+
             java.lang.reflect.Field statusField = response.getClass().getSuperclass().getDeclaredField("status");
             statusField.setAccessible(true);
             statusField.set(response, success ? "OK" : "ERROR");
@@ -145,7 +145,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-            Arrays.asList(p2.getProductId(), p1.getProductId(), p3.getProductId()), true);
+                Arrays.asList(p2.getProductId(), p1.getProductId(), p3.getProductId()), true);
 
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -175,7 +175,7 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
-        
+
         ProductRecommendationAIResponse mockResponse = createMockResponse(Collections.emptyList(), false);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -207,9 +207,9 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
-        
+
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-            Arrays.asList(p2.getProductId(), 99999L, p1.getProductId()), true);
+                Arrays.asList(p2.getProductId(), 99999L, p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
 
@@ -236,7 +236,7 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(2))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
-        
+
         ProductRecommendationAIResponse mockResponse = createMockResponse(Collections.emptyList(), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -266,7 +266,7 @@ class ProductRecommendationServiceTest {
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
 
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-            Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()), true);
+                Arrays.asList(p1.getProductId(), p2.getProductId(), p3.getProductId(), p4.getProductId()), true);
 
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
@@ -355,9 +355,9 @@ class ProductRecommendationServiceTest {
 
         when(template.buildPrompt(eq(user), eq(prompt), eq(3))).thenReturn(aiPrompt);
         when(baseAIService.generateText(aiPrompt)).thenReturn(aiResponse);
-        
+
         ProductRecommendationAIResponse mockResponse = createMockResponse(
-            Arrays.asList(p2.getProductId(), p2.getProductId(), p1.getProductId()), true);
+                Arrays.asList(p2.getProductId(), p2.getProductId(), p1.getProductId()), true);
         when(baseAIService.parseAIResponse(eq(aiResponse), eq(ProductRecommendationAIResponse.class)))
                 .thenReturn(mockResponse);
 
@@ -369,6 +369,7 @@ class ProductRecommendationServiceTest {
 
         // when
         List<Product> result = service.recommendProducts(user, prompt, 3);
+
 
         // then
         assertThat(result).isNotNull();
