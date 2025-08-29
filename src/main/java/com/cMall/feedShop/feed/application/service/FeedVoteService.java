@@ -203,9 +203,9 @@ public class FeedVoteService {
      */
     @Transactional
     public void syncAllVoteCounts() {
-        // Pageable을 사용하여 모든 피드를 조회
+        // Pageable을 사용하여 활성 피드만 조회 (삭제된 피드는 제외)
         Pageable pageable = PageRequest.of(0, 1000); // 한 번에 1000개씩 처리
-        Page<Feed> feedPage = feedRepository.findAll(pageable);
+        Page<Feed> feedPage = feedRepository.findAllActive(pageable);
         List<Feed> feeds = feedPage.getContent();
         
         int syncedCount = 0;

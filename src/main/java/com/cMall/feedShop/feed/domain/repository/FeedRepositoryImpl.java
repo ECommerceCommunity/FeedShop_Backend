@@ -40,11 +40,13 @@ public class FeedRepositoryImpl implements FeedRepository {
     
     @Override
     public Page<Feed> findAll(Pageable pageable) {
-        return feedJpaRepository.findAllActive(pageable);
+        // 삭제된 피드도 포함하여 조회 (관리자용 또는 특수한 경우)
+        return feedJpaRepository.findAll(pageable);
     }
     
     @Override
     public Page<Feed> findAllActive(Pageable pageable) {
+        // 삭제되지 않은 피드만 조회 (일반 사용자용)
         return feedJpaRepository.findAllActive(pageable);
     }
     
