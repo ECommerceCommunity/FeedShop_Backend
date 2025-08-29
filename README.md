@@ -1,8 +1,7 @@
 # 👟 FeedShop | 신발 전문 이커머스 백엔드
 
 [![CI](https://github.com/ECommerceCommunity/FeedShop_Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/ECommerceCommunity/FeedShop_Backend/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ECommerceCommunity_FeedShop_Backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ECommerceCommunity_FeedShop_Backend)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=ECommerceCommunity_FeedShop_Backend&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=ECommerceCommunity_FeedShop_Backend)
+
 
 신발 전문 쇼핑몰 FeedShop의 백엔드 API 서버입니다. Spring Boot 3.3 기반으로 클린 아키텍처 패턴을 적용하여 구현된 현대적인 이커머스 플랫폼입니다.
 
@@ -35,7 +34,6 @@
 - **상품 관리**: 상품 등록, 수정, 삭제, 옵션 관리, 이미지 업로드
 - **장바구니**: 상품 추가/삭제, 수량 변경, 선택 상품 관리
 - **주문 시스템**: 주문 생성, 주문 내역 조회, 재고 관리, 포인트 사용
-- **결제 연동**: 다양한 결제 수단 지원 (구현 예정)
 
 ### 👤 사용자 관리
 
@@ -67,97 +65,15 @@
 ### 🤖 AI 기능
 
 - **상품 추천**: OpenAI 기반 개인화 상품 추천
-- **AI 챗봇**: 상품 문의 및 고객 지원 (구현 예정)
-- **스마트 검색**: AI 기반 상품 검색 및 필터링 (구현 예정)
+- **스마트 검색**: AI 기반 상품 검색 및 필터링
 
 ---
 
 ## 🏗️ 아키텍처
 
 ### 전체 시스템 아키텍처
+<img width="1172" height="747" alt="image" src="https://github.com/user-attachments/assets/e993975b-4e9e-40bf-8302-364e640c938e" />
 
-```mermaid
-graph TB
-    %% Frontend Layer
-    subgraph "Frontend (Vercel)"
-        FE["React Frontend<br/>🌐 www.feedshop.store"]
-    end
-
-    %% CDN & Storage
-    subgraph "Static Assets"
-        CDN["CDN<br/>📁 cdn-feedshop.store<br/>(Google Cloud Storage)"]
-    end
-
-    %% Backend Services
-    subgraph "GCP Backend Services"
-        subgraph "Development Environment"
-            DEV_APP["Development API<br/>🔧 Spring Boot<br/>(Local/Dev Server)"]
-            DEV_DB[(Development DB<br/>🗄️ MySQL<br/>Compute Engine + Docker)]
-        end
-
-        subgraph "Production Environment"
-            PROD_APP["Production API<br/>🚀 Spring Boot<br/>Cloud Run<br/>feedshop-springboot-561086069695.asia-northeast3.run.app"]
-            PROD_DB[(Production DB<br/>☁️ Cloud SQL MySQL<br/>feedshop-db)]
-        end
-    end
-
-    %% External Services
-    subgraph "External Services"
-        MAILGUN["Mailgun<br/>📧 Email Service"]
-        RECAPTCHA["Google reCAPTCHA<br/>🛡️ Bot Protection"]
-        SONAR["SonarCloud<br/>📊 Code Quality"]
-        OPENAI["OpenAI<br/>🤖 AI Services"]
-        OAUTH["OAuth2 Providers<br/>🔐 Google, Kakao"]
-    end
-
-    %% CI/CD Pipeline
-    subgraph "CI/CD Pipeline"
-        GITHUB["GitHub Repository<br/>📚 Source Code"]
-        GH_ACTIONS["GitHub Actions<br/>⚙️ CI/CD Pipeline"]
-    end
-
-    %% User Interactions
-    USER["👤 Users"]
-    DEV["👨‍💻 Developers"]
-
-    %% Frontend Connections
-    USER --> FE
-    FE --> PROD_APP
-    FE --> CDN
-
-    %% Development Flow
-    DEV --> GITHUB
-    DEV_APP --> DEV_DB
-
-    %% Production Flow
-    PROD_APP --> PROD_DB
-    PROD_APP --> CDN
-    PROD_APP --> MAILGUN
-    PROD_APP --> RECAPTCHA
-    PROD_APP --> OPENAI
-    PROD_APP --> OAUTH
-
-    %% CI/CD Flow
-    GITHUB --> GH_ACTIONS
-    GH_ACTIONS --> SONAR
-    GH_ACTIONS -->|Deploy to Main| PROD_APP
-    GH_ACTIONS -->|Build & Test| DEV_APP
-
-    %% Styling
-    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef backend fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef database fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef external fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef cicd fill:#fff8e1,stroke:#ff6f00,stroke-width:2px
-    classDef user fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-
-    class FE frontend
-    class DEV_APP,PROD_APP backend
-    class DEV_DB,PROD_DB database
-    class MAILGUN,RECAPTCHA,SONAR,OPENAI,OAUTH external
-    class GITHUB,GH_ACTIONS cicd
-    class USER,DEV user
-```
 
 ### 인프라 구성 요소
 
@@ -217,7 +133,7 @@ src/main/java/com/cMall/feedShop/
 | **Feed**    | ✅ 완료   | 피드 작성, 조회, 좋아요, 댓글                             | 높음            |
 | **Event**   | ✅ 완료   | 이벤트 관리, 검색, 필터링                                 | 높음            |
 | **Store**   | ✅ 완료   | 스토어 정보 관리                                          | 높음            |
-| **AI**      | 🔄 진행중 | OpenAI 기반 상품 추천                                     | 중간            |
+| **AI**      | ✅ 완료 | OpenAI 기반 상품 추천                                     | 높음            |
 
 ---
 
@@ -242,6 +158,7 @@ src/main/java/com/cMall/feedShop/
 | **MySQL 8.0**            | 메인 데이터베이스    |
 | **H2**                   | 테스트용 인메모리 DB |
 | **Google Cloud Storage** | 파일 저장소          |
+| **Google Cloud SQL** | 클라우드 데이터베이스 |
 
 ### DevOps & Quality
 
@@ -259,7 +176,6 @@ src/main/java/com/cMall/feedShop/
 | -------------------- | --------------------- |
 | **Mailgun**          | 이메일 발송           |
 | **Google reCAPTCHA** | 봇 방지               |
-| **Google Cloud SQL** | 클라우드 데이터베이스 |
 | **OpenAI API**       | AI 상품 추천          |
 | **Google OAuth2**    | 소셜 로그인           |
 | **Kakao OAuth2**     | 소셜 로그인           |
@@ -421,14 +337,15 @@ logging:
 
 ### GitHub Actions 워크플로우
 
-1. **CI Pipeline** (`.github/workflows/ci.yml`)
+**CI Pipeline** (`.github/workflows/ci.yml`)
 
    - Pull Request 시 자동 실행
    - 빌드, 테스트, 코드 분석 수행
    - SonarCloud 품질 게이트 검증
+<img width="1908" height="1020" alt="ci build" src="https://github.com/user-attachments/assets/cff9a741-9485-4095-9120-5185b1d7fb94" />
 
-2. **Jira 연동** (`.github/workflows/create-jira-issue.yml`)
-   - GitHub 이슈 생성 시 Jira 태스크 자동 생성
+<img width="1897" height="1065" alt="test" src="https://github.com/user-attachments/assets/fcec5d7d-e0af-41c0-9c3d-ddba4c44e984" />
+
 
 ### 배포 환경
 
@@ -439,10 +356,12 @@ logging:
 ### 모니터링
 
 - **애플리케이션 메트릭**: Spring Boot Actuator
-- **로그 관리**: 구조화된 로깅
-- **성능 모니터링**: APM 도구 연동 (구현 예정)
-- **시각화 대시보드**: Grafana (구현 예정)
-- **클라우드 모니터링**: Google Cloud Monitoring (구현 예정)
+- **로그 관리**: 구조화된 로깅(Google Cloud Logging)
+- **시각화 대시보드**: Grafana
+- **클라우드 모니터링**: Google Cloud Monitoring
+<img width="1277" height="872" alt="image" src="https://github.com/user-attachments/assets/cca37753-9f9d-4686-8975-3c891ba6ea5c" />
+
+
 
 ---
 
@@ -459,12 +378,12 @@ logging:
 ### 커밋 메시지 규칙
 
 ```
-type(scope): description
+MYCE-001 type/scope: description
 
-feat(user): 사용자 회원가입 기능 추가
-fix(order): 주문 생성 시 재고 검증 버그 수정
-refactor(product): 상품 조회 로직 개선
-docs(readme): API 문서 업데이트
+feat/user: 사용자 회원가입 기능 추가
+fix/order: 주문 생성 시 재고 검증 버그 수정
+refactor/product: 상품 조회 로직 개선
+docsreadme: API 문서 업데이트
 ```
 
 ### 코드 리뷰 체크리스트
