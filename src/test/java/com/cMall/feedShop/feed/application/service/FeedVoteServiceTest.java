@@ -14,6 +14,10 @@ import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.application.service.UserLevelService;
 import com.cMall.feedShop.user.domain.model.ActivityType;
 import com.cMall.feedShop.user.application.service.PointService;
+import com.cMall.feedShop.event.domain.Event;
+import com.cMall.feedShop.event.domain.enums.EventStatus;
+import com.cMall.feedShop.event.application.service.EventStatusService;
+import com.cMall.feedShop.common.util.TimeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -68,6 +72,9 @@ class FeedVoteServiceTest {
     @Mock
     private UserLevelService userLevelService;
 
+    @Mock
+    private EventStatusService eventStatusService;
+
     @InjectMocks
     private FeedVoteService feedVoteService;
 
@@ -86,9 +93,10 @@ class FeedVoteServiceTest {
 
         when(feed.isEventFeed()).thenReturn(true);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(feed.getEvent()).thenReturn(mock(com.cMall.feedShop.event.domain.Event.class));
+        when(feed.getEvent()).thenReturn(mock(Event.class));
         when(feed.getEvent().getId()).thenReturn(eventId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(eventStatusService.calculateEventStatus(any(Event.class), any())).thenReturn(EventStatus.ONGOING);
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
         when(feedVoteRepository.save(any(FeedVote.class))).thenReturn(mock(FeedVote.class));
         when(feed.getParticipantVoteCount()).thenReturn(0); // 초기값 0
@@ -119,9 +127,10 @@ class FeedVoteServiceTest {
 
         when(feed.isEventFeed()).thenReturn(true);
         when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
-        when(feed.getEvent()).thenReturn(mock(com.cMall.feedShop.event.domain.Event.class));
+        when(feed.getEvent()).thenReturn(mock(Event.class));
         when(feed.getEvent().getId()).thenReturn(eventId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(eventStatusService.calculateEventStatus(any(Event.class), any())).thenReturn(EventStatus.ONGOING);
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(true);
         when(feed.getParticipantVoteCount()).thenReturn(1); // 이미 투표된 상태
 
@@ -173,6 +182,28 @@ class FeedVoteServiceTest {
         assertThatThrownBy(() -> feedVoteService.voteFeed(feedId, userId))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REQUEST);
+
+        verify(feedVoteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("피드 투표 실패 - 이벤트가 종료됨")
+    void voteFeed_eventEnded() {
+        // given
+        Long feedId = 1L;
+        Long userId = 1L;
+
+        when(feed.isEventFeed()).thenReturn(true);
+        when(feedRepository.findById(feedId)).thenReturn(Optional.of(feed));
+        when(feed.getEvent()).thenReturn(mock(Event.class));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(eventStatusService.calculateEventStatus(any(Event.class), any())).thenReturn(EventStatus.ENDED);
+
+        // when & then
+        assertThatThrownBy(() -> feedVoteService.voteFeed(feedId, userId))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_REQUEST)
+                .hasMessageContaining("이벤트가 종료되어 투표할 수 없습니다");
 
         verify(feedVoteRepository, never()).save(any());
     }
@@ -303,10 +334,10 @@ class FeedVoteServiceTest {
         Feed feed1 = mock(Feed.class);
         Feed feed2 = mock(Feed.class);
 
-        // feedRepository.findAll() Mock 설정
+        // feedRepository.findAllActive() Mock 설정
         Pageable pageable = PageRequest.of(0, 1000);
         Page<Feed> feedPage = new PageImpl<>(List.of(feed1, feed2), pageable, 2);
-        when(feedRepository.findAll(pageable)).thenReturn(feedPage);
+        when(feedRepository.findAllActive(pageable)).thenReturn(feedPage);
         
         when(feed1.getId()).thenReturn(1L);
         when(feed2.getId()).thenReturn(2L);

@@ -1,5 +1,6 @@
 package com.cMall.feedShop.review.application.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -7,11 +8,21 @@ import java.util.List;
 
 @Getter
 @Builder
+@Schema(description = "리뷰 작성 성공 응늵")
 public class ReviewCreateResponse {
+    @Schema(description = "생성된 리뷰 ID", example = "123")
     private Long reviewId;
+    
+    @Schema(description = "성공 메시지", example = "리뷰가 성공적으로 작성되었습니다.")
     private String message;
+    
+    @Schema(description = "업로드된 이미지 URL 목록", example = "[\"/api/reviews/images/2025/08/28/abc123.jpg\"]")
     private List<String> imageUrls;
+    
+    @Schema(description = "이번에 적립된 포인트", example = "10")
     private Integer pointsEarned;    // 이번에 적립된 포인트
+    
+    @Schema(description = "현재 총 보유 포인트", example = "150")
     private Integer currentPoints;   // 현재 총 보유 포인트
 
     public static ReviewCreateResponse of(Long reviewId) {

@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 애플리케이션 시작 시 초기 데이터를 설정하는 클래스
@@ -216,11 +217,12 @@ public class DataInitializer {
             return;
         }
 
+        String newPassword = UUID.randomUUID().toString();
+
         try {
-            // 테스트 사용자 생성 - PasswordEncoder를 사용하여 비밀번호 암호화
             User testUser = new User(
                     loginId,
-                    passwordEncoder.encode("password123!"), // 실제 암호화
+                    passwordEncoder.encode(newPassword),
                     email,
                     role
             );

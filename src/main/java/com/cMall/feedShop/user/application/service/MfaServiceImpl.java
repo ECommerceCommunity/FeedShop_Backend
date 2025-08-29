@@ -284,7 +284,43 @@ public class MfaServiceImpl implements MfaService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean verifyBackupCodeInNewTransaction(String email, String backupCode) {
-        return verifyBackupCode(email, backupCode);
+        String maskedEmail = LogMaskingUtil.maskEmail(email);
+        String maskedBackupCode = LogMaskingUtil.maskBackupCode(backupCode);
+        
+        try {
+            UserMfa userMfa = findUserMfaByEmail(email);
+            
+            if (userMfa.getBackupCodes() == null) {
+                log.warn("백업 코드가 설정되지 않음 - 사용자: {}", maskedEmail);
+                return false;
+            }
+
+            List<String> backupCodes = objectMapper.readValue(
+                    userMfa.getBackupCodes(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)
+            );
+
+            if (backupCodes.contains(backupCode)) {
+                // 사용된 백업 코드 제거
+                backupCodes.remove(backupCode);
+                userMfa.setBackupCodes(objectMapper.writeValueAsString(backupCodes));
+                userMfaRepository.save(userMfa);
+
+                log.info("백업 코드 인증 성공 (새 트랜잭션) - 사용자: {}, 남은 백업 코드 수: {}", maskedEmail, backupCodes.size());
+                return true;
+            }
+
+            log.warn("백업 코드 인증 실패 - 잘못된 코드 - 사용자: {}, 코드: {}", maskedEmail, maskedBackupCode);
+            return false;
+            
+        } catch (MfaException e) {
+            log.warn("백업 코드 검증 실패 - 사용자: {}, 코드: {}, 오류: {}", maskedEmail, maskedBackupCode, e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("백업 코드 검증 중 예상치 못한 오류 발생 - 사용자: {}, 코드: {}, 오류: {}", 
+                     maskedEmail, maskedBackupCode, e.getMessage());
+            return false;
+        }
     }
 
     // =========================== Private Helper Methods ===========================

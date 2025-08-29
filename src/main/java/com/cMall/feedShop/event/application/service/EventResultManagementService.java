@@ -58,7 +58,8 @@ public class EventResultManagementService {
         // 3. 이벤트 참여자 조회
         List<Feed> participants = feedRepository.findByEventId(event.getId());
         if (participants.isEmpty()) {
-            throw new IllegalStateException("이벤트에 참여자가 없습니다.");
+            log.warn("이벤트에 참여자가 없습니다. 빈 결과로 생성합니다. - eventId: {}", event.getId());
+            // 참여자가 없어도 빈 결과 생성 허용
         }
         
         // 4. 전략 패턴을 사용하여 결과 계산

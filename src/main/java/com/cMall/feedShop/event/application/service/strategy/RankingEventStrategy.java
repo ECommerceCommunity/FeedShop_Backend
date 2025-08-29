@@ -45,7 +45,18 @@ public class RankingEventStrategy implements EventStrategy {
         log.info("랭킹 이벤트 결과 계산 시작 - eventId: {}, 참여자 수: {}", event.getId(), participants.size());
         
         if (participants.isEmpty()) {
-            throw new IllegalStateException("랭킹 이벤트에 참여자가 없습니다.");
+            log.warn("랭킹 이벤트에 참여자가 없습니다. 빈 결과를 생성합니다. - eventId: {}", event.getId());
+            
+            // 빈 결과 생성
+            EventResult eventResult = EventResult.createForEvent(
+                    event,
+                    EventResult.ResultType.RANKING_TOP3,
+                    0,
+                    0L
+            );
+            
+            log.info("빈 랭킹 이벤트 결과 생성 완료 - eventId: {}", event.getId());
+            return eventResult;
         }
         
         // 투표 수 기준으로 정렬 (내림차순)

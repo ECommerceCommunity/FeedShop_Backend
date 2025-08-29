@@ -2,8 +2,8 @@ name: Deploy to GCP Cloud Run
 
 on:
   push:
-    branches: ["main"] # main 브랜치로 push될 때만 배포
-  workflow_dispatch: # 수동 배포도 가능하도록
+    branches: ["main"]
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # OIDC 토큰 발급을 위해 필요
+      id-token: write
 
     steps:
       - name: Checkout Repository
@@ -37,100 +37,98 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: prod
 
-      # GCP 인증 (Service Account Key 방식)
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      # 또는 Workload Identity Federation 사용 시 (더 안전함)
-      # - name: Authenticate to Google Cloud
-      #   uses: google-github-actions/auth@v2
-      #   with:
-      #     workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-      #     service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
-        
+
       - name: Build Docker Image
         run: |
           docker build -t $IMAGE_NAME:$GITHUB_SHA \
                        -t $IMAGE_NAME:latest \
                        .
-                       
+
       - name: Push Docker Image to GCR
         run: |
           docker push $IMAGE_NAME:$GITHUB_SHA
           docker push $IMAGE_NAME:latest
-          
-      - name: Clear existing environment variables and secrets
-        run: |
-          echo "Clearing existing environment variables and secrets..."
-          gcloud run services update $SERVICE_NAME \
-            --region $REGION \
-            --clear-env-vars \
-            --clear-secrets || echo "Service might not exist yet, continuing..."
-            
+
       - name: Deploy to Cloud Run
         run: |
-          # Cloud Run 서비스 배포
           gcloud run deploy $SERVICE_NAME \
           --image $IMAGE_NAME:$GITHUB_SHA \
           --platform managed \
           --region $REGION \
           --allow-unauthenticated \
-          --add-cloudsql-instances onyx-oxygen-462722-c0:asia-northeast3:feedshop-db \
+          --add-cloudsql-instances ${{ secrets.GCP_PROJECT_ID }}:asia-northeast3:feedshop-db \
           --memory 4Gi \
-          --cpu 4 \
-          --concurrency 1000 \
+          --cpu 2 \
+          --concurrency 200 \
           --max-instances 10 \
           --min-instances 0 \
-          --timeout=300 \
-          --cpu-throttling \
+          --timeout=900 \
+          --cpu-boost \
           --execution-environment gen2 \
-          --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},SPRING_APPLICATION_NAME=feedshop" \
+          --port=8080 \
+          --set-env-vars="SPRING_PROFILES_ACTIVE=prod,DB_NAME=${{ secrets.DB_NAME }},DB_USERNAME=cmall,SPRING_APPLICATION_NAME=feedshop,PORT=8080,SERVER_SSL_ENABLED=false,SERVER_ADDRESS=0.0.0.0" \
           --update-secrets="DB_PASSWORD=shopchat-db-password:latest,MAILGUN_API_KEY=mailgun_api_key:latest,MAILGUN_DOMAIN=mailgun_domain:latest,MAILGUN_EMAIL=mailgun_email:latest,GCS_ID=gcs_id:latest,GCS_BUCKET=gcs_prod_bucket:latest,JWT_SECRET=feedshop-jwt-secret-key:latest,RECAPTCHA_SECRET_KEY=recaptcha_secret_key:latest,GOOGLE_CLIENT_ID=google_client_id:latest,GOOGLE_CLIENT_SECRET=google_client_secret:latest,KAKAO_CLIENT_ID=kakao_client_id:latest,KAKAO_CLIENT_SECRET=kakao_client_secret:latest,OPENAI_API_KEY=openAI_api_key:latest"
-      
-      - name: Check deployment status
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 60
+          
+          # 서비스 상태 확인
+          gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.conditions[0].status,status.conditions[0].message)"
+
+      - name: Check deployment status and logs
         if: failure()
         run: |
-          echo "Getting service details..."
-          gcloud run services describe $SERVICE_NAME --region=$REGION --format="export"
+          echo "=== Deployment failed, checking logs ==="
           
-          echo "Getting latest revision details..."
-          LATEST_REVISION=$(gcloud run revisions list --service=$SERVICE_NAME --region=$REGION --limit=1 --format="value(metadata.name)" || echo "none")
-          if [ "$LATEST_REVISION" != "none" ]; then
-            gcloud run revisions describe $LATEST_REVISION --region=$REGION --format="export"
-          fi
+          # 최근 로그 확인
+          gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" \
+            --limit=50 \
+            --format="table(timestamp,severity,textPayload)" \
+            --freshness=10m
           
+          echo "=== Service Status ==="
+          gcloud run services describe $SERVICE_NAME --region=$REGION --format="yaml(status)"
+
       - name: Get Service URL
         run: |
           SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format="value(status.url)")
           echo "Service deployed at: $SERVICE_URL"
           echo "SERVICE_URL=$SERVICE_URL" >> $GITHUB_ENV
-          
+
       - name: Health Check
         run: |
           echo "Waiting for service to be ready..."
-          sleep 60  # Spring Boot 시작 시간 고려하여 증가
+          sleep 180  # Spring Boot + AI 초기화 시간 고려
           
-          # 헬스체크 재시도 로직 추가
-          for i in {1..5}; do
-            echo "Health check attempt $i/5..."
-            if curl -f --max-time 30 $SERVICE_URL/actuator/health; then
+          for i in {1..15}; do
+            echo "Health check attempt $i/15..."
+            if curl -f --max-time 120 --connect-timeout 60 "$SERVICE_URL/actuator/health" || curl -f --max-time 120 --connect-timeout 60 "$SERVICE_URL/"; then
               echo "✅ Deployment successful and service is healthy!"
               exit 0
             else
-              echo "❌ Health check failed, retrying in 30 seconds..."
-              sleep 30
+              echo "❌ Health check failed, retrying in 45 seconds..."
+              sleep 45
             fi
           done
           
-          echo "❌ Health check failed after 5 attempts"
+          echo "❌ Health check failed after 15 attempts"
+          echo "Checking recent logs..."
+          gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" \
+            --limit=30 \
+            --format="table(timestamp,severity,textPayload)" \
+            --freshness=5m
           exit 1
 
   notification:

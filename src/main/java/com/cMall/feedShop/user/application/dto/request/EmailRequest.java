@@ -8,4 +8,8 @@ import lombok.Getter;
 public class EmailRequest {
     @Schema(description = "이메일 주소", example = "user@example.com", required = true)
     private String email;
+    
+    public void setEmail(String email) {
+        this.email = email;
+    }
 }

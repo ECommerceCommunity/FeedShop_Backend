@@ -53,11 +53,11 @@ public class FeedReadService {
         Page<Feed> feedPage;
         
         if (feedType != null) {
-            // 특정 타입의 피드만 조회
+            // 특정 타입의 피드만 조회 (삭제되지 않은 피드만)
             feedPage = feedRepository.findByFeedType(feedType.name(), pageable);
         } else {
-            // 전체 피드 조회
-            feedPage = feedRepository.findAll(pageable);
+            // 전체 피드 조회 (삭제되지 않은 피드만)
+            feedPage = feedRepository.findAllActive(pageable);
         }
         
         // Feed 엔티티를 DTO로 변환
