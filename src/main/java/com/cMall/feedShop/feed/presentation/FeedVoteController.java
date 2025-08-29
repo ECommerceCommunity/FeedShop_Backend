@@ -8,6 +8,7 @@ import com.cMall.feedShop.feed.application.dto.response.FeedVoteResponseDto;
 import com.cMall.feedShop.feed.application.service.FeedVoteService;
 import com.cMall.feedShop.user.domain.model.User;
 import com.cMall.feedShop.user.domain.repository.UserRepository;
+import java.util.Optional;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,8 +47,12 @@ public class FeedVoteController {
                     .body(ApiResponse.error("인증이 필요합니다."));
         }
 
-        // UserDetails에서 userId 추출 (실제 구현에서는 JWT 토큰에서 추출)
+        // UserDetails에서 userId 추출
         Long userId = extractUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
         
         FeedVoteResponseDto response = feedVoteService.voteFeed(feedId, userId);
         
@@ -72,6 +77,10 @@ public class FeedVoteController {
         }
 
         Long userId = extractUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("사용자 정보를 찾을 수 없습니다."));
+        }
         
         feedVoteService.cancelVote(feedId, userId);
         
@@ -94,6 +103,9 @@ public class FeedVoteController {
         }
 
         Long userId = extractUserIdFromUserDetails(userDetails);
+        if (userId == null) {
+            return ResponseEntity.ok(ApiResponse.success(false));
+        }
         boolean hasVoted = feedVoteService.hasVoted(feedId, userId);
 
         return ResponseEntity.ok(ApiResponse.success(hasVoted));
@@ -145,16 +157,35 @@ public class FeedVoteController {
     }
 
     /**
-     * UserDetails에서 userId 추출 (임시 구현)
-     * 실제 구현에서는 JWT 토큰에서 userId를 추출해야 함
+     * UserDetails에서 userId 추출
+     * 다른 컨트롤러와 동일한 방식으로 구현
      */
     private Long extractUserIdFromUserDetails(UserDetails userDetails) {
-        // TODO: JWT 토큰에서 userId 추출 로직 구현
-        // 현재는 임시로 username을 Long으로 변환
-        try {
-            return Long.parseLong(userDetails.getUsername());
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("유효하지 않은 사용자 ID입니다.");
+        if (userDetails == null) {
+            log.warn("UserDetails가 null입니다.");
+            return null;
         }
+
+        String username = userDetails.getUsername(); // JWT 토큰의 subject
+        log.info("UserDetails에서 추출한 username: {}", username);
+
+        // 1. 먼저 email로 시도
+        Optional<User> userOptional = userRepository.findByEmail(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            log.info("email로 사용자 찾음 - ID: {} (email: {})", user.getId(), username);
+            return user.getId();
+        }
+
+        // 2. email로 찾지 못하면 loginId로 시도
+        userOptional = userRepository.findByLoginId(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            log.info("loginId로 사용자 찾음 - ID: {} (loginId: {})", user.getId(), username);
+            return user.getId();
+        }
+
+        log.warn("username '{}'로 사용자를 찾을 수 없습니다 (email, loginId 모두 시도)", username);
+        return null;
     }
 }

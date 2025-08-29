@@ -253,7 +253,9 @@ public class FeedLikeService {
      * 사용자 프로필 이미지 URL 조회
      */
     private String getUserProfileImageUrl(User user) {
-        // TODO: 추후 UserProfile에 profileImageUrl 필드 추가 시 구현
+        if (user != null && user.getUserProfile() != null) {
+            return user.getUserProfile().getProfileImageUrl();
+        }
         return null;
     }
     
