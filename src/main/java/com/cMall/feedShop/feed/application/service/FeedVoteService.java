@@ -13,6 +13,10 @@ import com.cMall.feedShop.user.domain.repository.UserRepository;
 import com.cMall.feedShop.user.application.service.UserLevelService;
 import com.cMall.feedShop.user.domain.model.ActivityType;
 import com.cMall.feedShop.user.application.service.PointService;
+import com.cMall.feedShop.event.domain.Event;
+import com.cMall.feedShop.event.domain.enums.EventStatus;
+import com.cMall.feedShop.event.application.service.EventStatusService;
+import com.cMall.feedShop.common.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,7 @@ public class FeedVoteService {
     private final UserRepository userRepository;
     private final UserLevelService userLevelService;
     private final PointService pointService;
+    private final EventStatusService eventStatusService;
 
     /**
      * 피드 투표
@@ -61,6 +66,14 @@ public class FeedVoteService {
         // 3. 이벤트 참여 피드인지 확인
         if (!feed.isEventFeed()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "이벤트 참여 피드에만 투표할 수 있습니다.");
+        }
+
+        // 4. 이벤트가 진행중인지 확인
+        Event event = feed.getEvent();
+        EventStatus eventStatus = eventStatusService.calculateEventStatus(event, TimeUtil.nowDate());
+        if (eventStatus != EventStatus.ONGOING) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, 
+                String.format("이벤트가 종료되어 투표할 수 없습니다. 현재 상태: %s", eventStatus));
         }
 
         // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인
