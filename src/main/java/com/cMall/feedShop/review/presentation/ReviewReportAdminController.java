@@ -7,6 +7,8 @@ import com.cMall.feedShop.review.application.dto.response.ReportedReviewResponse
 import com.cMall.feedShop.review.application.service.ReviewReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,8 +21,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin/reviews")
 @RequiredArgsConstructor
-@Tag(name = "리뷰 신고 관리 API", description = "관리자용 리뷰 신고 관리 API")
-@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "리뷰 신고 관리 API", description = "관리자용 리뷰 신고 관리 API (관리자 권한 필요)")
+@SecurityRequirement(name = "jwtAuth")
 @PreAuthorize("hasRole('ADMIN')")
 public class ReviewReportAdminController {
 
@@ -28,14 +30,28 @@ public class ReviewReportAdminController {
 
     @GetMapping("/reports")
     @ApiResponseFormat(message = "신고된 리뷰 목록을 성공적으로 조회했습니다.")
-    @Operation(summary = "신고된 리뷰 목록 조회", description = "관리자가 신고된 리뷰 목록을 조회합니다.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "신고된 리뷰 목록을 성공적으로 조회했습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "관리자 권한이 필요합니다.")
+    @Operation(
+            summary = "신고된 리뷰 목록 조회",
+            description = "관리자가 신고된 리뷰 목록을 페이지네이션으로 조회합니다. 신고 내용, 신고자 정보, 리뷰 상태 등을 포함합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "신고된 리뷰 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = PaginatedResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음"
+            )
     })
     public ApiResponse<PaginatedResponse<ReportedReviewResponse>> getReportedReviews(
-            @Parameter(description = "페이지 번호 (0부터 시작)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size) {
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (1-100)", example = "20") @RequestParam(defaultValue = "20") int size) {
 
         PaginatedResponse<ReportedReviewResponse> response = reviewReportService.getReportedReviews(page, size);
         return ApiResponse.success(response);
@@ -43,15 +59,31 @@ public class ReviewReportAdminController {
 
     @PostMapping("/{reviewId}/hide")
     @ApiResponseFormat(message = "리뷰가 성공적으로 숨김 처리되었습니다.")
-    @Operation(summary = "리뷰 숨김 처리", description = "관리자가 신고된 리뷰를 숨김 처리합니다.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "리뷰가 성공적으로 숨김 처리되었습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "숨김 처리할 리뷰를 찾을 수 없습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "관리자 권한이 필요합니다.")
+    @Operation(
+            summary = "리뷰 숨김 처리",
+            description = "관리자가 신고된 리뷰를 숨김 처리하여 일반 사용자에게 보이지 않도록 합니다. 비공개 처리된 리뷰는 리뷰 목록에서 제외됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "리뷰 숨김 처리 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "숨김 처리할 리뷰를 찾을 수 없음"
+            )
     })
     public ApiResponse<Void> hideReview(
-            @Parameter(description = "리뷰 ID") @PathVariable Long reviewId,
-            Authentication authentication) {
+            @Parameter(description = "숨김 처리할 리뷰 ID", required = true, example = "123") @PathVariable Long reviewId,
+            @Parameter(hidden = true) Authentication authentication) {
 
         String adminLoginId = getUserLoginIdFromAuthentication(authentication);
 
@@ -61,15 +93,31 @@ public class ReviewReportAdminController {
 
     @PostMapping("/{reviewId}/show")
     @ApiResponseFormat(message = "리뷰 숨김이 성공적으로 해제되었습니다.")
-    @Operation(summary = "리뷰 숨김 해제", description = "관리자가 숨김 처리된 리뷰를 다시 노출시킵니다.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "리뷰 숨김이 성공적으로 해제되었습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "숨김 해제할 리뷰를 찾을 수 없습니다."),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "관리자 권한이 필요합니다.")
+    @Operation(
+            summary = "리뷰 숨김 해제",
+            description = "관리자가 숨김 처리된 리뷰를 다시 공개 상태로 전환하여 일반 사용자에게 보이도록 합니다. 오인으로 신고되었거나 비공개 처리가 필요 없는 경우 사용합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "리뷰 숨김 해제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "숨김 해제할 리뷰를 찾을 수 없음"
+            )
     })
     public ApiResponse<Void> showReview(
-            @Parameter(description = "리뷰 ID") @PathVariable Long reviewId,
-            Authentication authentication) {
+            @Parameter(description = "숨김 해제할 리뷰 ID", required = true, example = "123") @PathVariable Long reviewId,
+            @Parameter(hidden = true) Authentication authentication) {
 
         String adminLoginId = getUserLoginIdFromAuthentication(authentication);
 
