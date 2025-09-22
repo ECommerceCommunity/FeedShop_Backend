@@ -30,6 +30,9 @@ public class EventDeleteService {
             log.info("이벤트 이미지 삭제 완료");
         }
         
+        // 소프트 삭제 실행 (EventRepositoryImpl.delete()에서 자동으로 저장됨)
         eventRepository.delete(event);
+        
+        log.info("이벤트 소프트 삭제 완료 - eventId: {}", eventId);
     }
 } 
