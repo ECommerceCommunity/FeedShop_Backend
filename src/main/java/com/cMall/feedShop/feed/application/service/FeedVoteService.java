@@ -41,6 +41,7 @@ public class FeedVoteService {
     private final UserLevelService userLevelService;
     private final PointService pointService;
     private final EventStatusService eventStatusService;
+    private final VoteCacheService voteCacheService;
 
     /**
      * 피드 투표
@@ -93,10 +94,15 @@ public class FeedVoteService {
 
         // 6. 피드 투표 수 증가
         feed.incrementVoteCount();
+        
+        // 7. Redis 캐시 업데이트
+        voteCacheService.incrementVoteCount(feedId);
+        voteCacheService.incrementEventVoteCount(feed.getEvent().getId());
+        voteCacheService.cacheUserVote(userId, feedId);
 
         log.info("피드 투표 완료 - feedId: {}, userId: {}, voteId: {}", feedId, userId, savedVote.getId());
 
-        // 7. 투표 리워드 지급 (포인트 100점 + 뱃지 점수 2점)
+        // 8. 투표 리워드 지급 (포인트 100점 + 뱃지 점수 2점)
         try {
             // 포인트 100점 지급
             pointService.earnPoints(user, 100, "피드 투표 리워드", feedId);
@@ -142,6 +148,11 @@ public class FeedVoteService {
 
         // 5. 피드 투표 수 감소
         feed.decrementVoteCount();
+        
+        // 6. Redis 캐시 업데이트
+        voteCacheService.decrementVoteCount(feedId);
+        voteCacheService.decrementEventVoteCount(feed.getEvent().getId());
+        voteCacheService.removeUserVote(userId, feedId);
 
         log.info("피드 투표 취소 완료 - feedId: {}, userId: {}", feedId, userId);
     }
@@ -153,21 +164,59 @@ public class FeedVoteService {
         if (userId == null) {
             return false;
         }
-        return feedVoteRepository.existsByFeed_IdAndVoter_Id(feedId, userId);
+        
+        // Redis 캐시에서 먼저 확인
+        if (voteCacheService.hasUserVoted(userId, feedId)) {
+            return true;
+        }
+        
+        // 캐시에 없으면 DB에서 확인
+        boolean voted = feedVoteRepository.existsByFeed_IdAndVoter_Id(feedId, userId);
+        
+        // DB에서 확인된 결과를 캐시에 저장
+        if (voted) {
+            voteCacheService.cacheUserVote(userId, feedId);
+        }
+        
+        return voted;
     }
 
     /**
      * 특정 피드의 투표 개수 조회
      */
     public long getVoteCount(Long feedId) {
-        return feedVoteRepository.countByFeed_Id(feedId);
+        // Redis 캐시에서 먼저 조회
+        Integer cachedCount = voteCacheService.getVoteCount(feedId);
+        if (cachedCount != null) {
+            return cachedCount.longValue();
+        }
+        
+        // 캐시에 없으면 DB에서 조회
+        long actualCount = feedVoteRepository.countByFeed_Id(feedId);
+        
+        // DB 조회 결과를 캐시에 저장
+        voteCacheService.updateVoteCount(feedId, (int) actualCount);
+        
+        return actualCount;
     }
 
     /**
      * 특정 이벤트의 투표 개수 조회
      */
     public long getEventVoteCount(Long eventId) {
-        return feedVoteRepository.countByEvent_Id(eventId);
+        // Redis 캐시에서 먼저 조회
+        Integer cachedCount = voteCacheService.getEventVoteCount(eventId);
+        if (cachedCount != null) {
+            return cachedCount.longValue();
+        }
+        
+        // 캐시에 없으면 DB에서 조회
+        long actualCount = feedVoteRepository.countByEvent_Id(eventId);
+        
+        // DB 조회 결과를 캐시에 저장
+        voteCacheService.incrementEventVoteCount(eventId);
+        
+        return actualCount;
     }
 
     /**

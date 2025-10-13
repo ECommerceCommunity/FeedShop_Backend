@@ -14,8 +14,21 @@ services:
     networks:
       - springboot-network
     restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - springboot-network
+    restart: always
+    command: redis-server --appendonly yes
 volumes:
   mysql_data:
+  redis_data:
 
 networks:
   springboot-network:
