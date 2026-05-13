@@ -1,5 +1,10 @@
-package com.cMall.feedShop.product.domain.enums;
+package com.cMall.feedShop.product.application.service;
 
+import com.cMall.feedShop.product.domain.enums.Color;
+import com.cMall.feedShop.product.domain.enums.DiscountType;
+import com.cMall.feedShop.product.domain.enums.Gender;
+import com.cMall.feedShop.product.domain.enums.ImageType;
+import com.cMall.feedShop.product.domain.enums.Size;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
