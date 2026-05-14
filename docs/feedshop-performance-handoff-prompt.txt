@@ -27,6 +27,39 @@ FeedShop_Backend — 성능 개선 작업 이어하기용 프롬프트 (develop 
 - Phase 3: Result 문서에 실제 적용분·실측 수치만 반영
 - Phase 4: docs/event-performance-troubleshooting.md (코드 변경 없이 트러블슈팅만)
 
+[문제 해결 섹션 — 문서·포폴에 넣을 때 채울 항목]
+로드맵 Phase 4(`docs/event-performance-troubleshooting.md` 예정)와 동일한 뼈대로, 이슈마다 아래를 짧게라도 적어 둘 것.
+- 증상: 사용자/운영 관점에서 무엇이 이상했는지(느림, 500, 숫자 불일치 등)
+- 재현: API·파라미터·동시성·데이터량·프로파일(예: redis 유무)
+- 기대 vs 실제: 기대 동작 한 줄, 실제 관측 한 줄
+- 원인: 쿼리(fetchJoin+페이징, N+1), 캐시 직렬화/TTL/stale, Redis 연결·타임아웃, 투표 경쟁 등 가설과 근거
+- 해결: 적용한 코드·설정 변경 요약(파일/PR 링크)
+- 롤백: 되돌리는 방법 한 줄
+- 설정 스냅샷: Redis 호스트/포트, spring.cache.*, 캐시 이름(availableEvents), 키 규칙(가명화 가능)
+- 함정 메모: 페이징+컬렉션 fetchJoin, JDK 직렬화와 DTO 변경, 캐시 스탬피드, @CacheEvict와 트랜잭션 순서 등
+
+[성능·캐시·투표 동작 확인 — 테스트해야 할 API 목록]
+아래는 EventReadController·FeedVoteController 기준 경로다. 인증 필요 API는 JWT 등 실제 토큰으로 호출할 것. 측정 시 page/size·keyword·정렬을 Before/After에서 동일하게 맞출 것.
+
+| 우선순위 | HTTP | 경로 | 인증 | 비고·측정 포인트 |
+|----------|------|------|------|------------------|
+| P0 | GET | /api/events/feed-available | 공개(설정에 따름) | Phase 2-A 캐시 대상 후보. 연속 2회 호출 시 지연·DB 쿼리 수 비교(캐시 hit/miss) |
+| P0 | GET | /api/events/search | 공개 | QueryDSL 검색. page,size,status,type,keyword,sort 조합 고정 후 p95·쿼리 로그 |
+| P0 | GET | /api/events/all?page=&size=&sort= | 공개 | Phase 1-3 N+1 완화 대상. 목록 + 연관 로딩 쿼리 수 |
+| P1 | GET | /api/events/{eventId} | 공개 | 상세 1건. 참고용 베이스라인 |
+| P1 | POST | /api/events (JSON 또는 multipart 생성 엔드포인트) | 인증 | Swagger에서 consumes 구분. 생성 후 GET /feed-available로 캐시 무효화 검증 |
+| P1 | PUT | /api/events/{eventId} 및 /api/events/{eventId}/multipart | 인증 | 수정 후 캐시·목록 일관성 |
+| P1 | DELETE | /api/events/{eventId} | 인증 | 삭제 후 목록·캐시 |
+| P2 | POST | /api/feeds/{feedId}/vote | 인증 | Phase 2-B 전후 동시 투표·숫자 정합. 리워드 부가 로직 있음 |
+| P2 | DELETE | /api/feeds/{feedId}/vote | 인증 | 취소 후 카운트 감소 |
+| P2 | GET | /api/feeds/{feedId}/vote/count | 공개 | 투표 수 조회. Redis 도입 시 Redis vs DB 순서 검증에 사용 |
+| P2 | GET | /api/feeds/events/{eventId}/vote/count | 공개 | 이벤트 단위 투표 합 |
+| P2 | GET | /api/feeds/{feedId}/vote/check | 인증 | 투표 여부 |
+| P3 | POST | /api/feeds/{feedId}/vote/sync | ADMIN | 관리용 동기화. 부하 테스트 전후 정합성 |
+| P3 | POST | /api/feeds/vote/sync-all | ADMIN | 전체 동기화. 운영 주의 |
+
+보조: Swagger UI `/swagger-ui/index.html`에서 동일 API 반복 호출·Timing 캡처. 부하는 `perf/` k6 스크립트가 있으면 해당 시나리오와 맞출 것.
+
 [포트폴리오·이미지 보강 — 반드시 Before/After]
 - docs/event-performance-roadmap.md 안의 「포트폴리오·시각 자료」절과 체크리스트 표를 따를 것
 - 개선 전(Before): develop 이전 커밋에서 동일 시나리오 재측정하거나, 당시 수치를 표로 남긴 뒤 스크린샷 보강
@@ -35,7 +68,7 @@ FeedShop_Backend — 성능 개선 작업 이어하기용 프롬프트 (develop 
 [커밋 메시지 선호]
 - 한글로 작성해 달라는 요청이 있었음
 
-[다음에 LLM에게 시킬 때 예시 한 줄]
-"FeedShop_Backend develop 기준으로 docs/event-performance-roadmap.md를 따라 Phase 1-1 Before 측정과 캡처 절차부터 진행해줘. 커밋 메시지는 한글로."
+[다음에 LLM에게 시킬 때 예시]
+"FeedShop_Backend develop 기준으로 docs/event-performance-roadmap.md와 docs/feedshop-performance-handoff-prompt.txt의 API 표를 따라 Phase 1-1 Before를 측정하고, 문제 해결 섹션 뼈대에 맞춰 트러블슈팅 초안을 작성해줘. 커밋 메시지는 한글로."
 
 ================================================================================
