@@ -8,6 +8,7 @@ FeedShop_Backend — 성능 개선 작업 이어하기용 프롬프트 (develop 
 - 원격: origin = dbp-jack/FeedShop_Backend_Refactoring, upstream = ECommerceCommunity/FeedShop_Backend
 - 현재 정책: 성능 개선 전용 브랜치(feature/event-feed-performance)는 삭제하고, develop에서 이어가거나 새 브랜치를 따서 진행
 - 로드맵 파일: docs/event-performance-roadmap.md (Phase 1~4 + 포트폴리오 Before/After 캡처 가이드 포함)
+- 주의: 위 feature 브랜치를 삭제했기 때문에, Redis/캐시 분기·searchEvents 2-step 등 구현 커밋은 develop 기본 트리에 포함되어 있지 않을 수 있음. 코드가 필요하면 Git reflog / GitHub에서 삭제 직전 브랜치 SHA 복구 또는 아래 로드맵대로 재적용
 
 [이미 해둔 작업 — 과거 feature 브랜치에 있던 내용 요약]
 - 이벤트 검색: EventQueryRepositoryImpl 등에서 searchEvents 페이징 + 컬렉션 fetchJoin 충돌을 피하기 위한 2-step 조회(페이징된 ID 조회 후 detail/rewards fetch join) 구조
