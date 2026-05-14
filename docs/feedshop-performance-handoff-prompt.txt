@@ -1,0 +1,40 @@
+================================================================================
+FeedShop_Backend — 성능 개선 작업 이어하기용 프롬프트 (develop 기준)
+================================================================================
+이 텍스트를 새 대화에 붙여 넣고, 아래 맥락으로 작업을 이어가면 됩니다.
+
+[저장소·브랜치]
+- 경로: FeedShop_Backend (Gradle, Spring Boot 3.3, Java 17)
+- 원격: origin = dbp-jack/FeedShop_Backend_Refactoring, upstream = ECommerceCommunity/FeedShop_Backend
+- 현재 정책: 성능 개선 전용 브랜치(feature/event-feed-performance)는 삭제하고, develop에서 이어가거나 새 브랜치를 따서 진행
+- 로드맵 파일: docs/event-performance-roadmap.md (Phase 1~4 + 포트폴리오 Before/After 캡처 가이드 포함)
+
+[이미 해둔 작업 — 과거 feature 브랜치에 있던 내용 요약]
+- 이벤트 검색: EventQueryRepositoryImpl 등에서 searchEvents 페이징 + 컬렉션 fetchJoin 충돌을 피하기 위한 2-step 조회(페이징된 ID 조회 후 detail/rewards fetch join) 구조
+- Redis: docker-compose에 Redis, application-redis.properties + 프로파일 redis, spring-boot-starter-cache + spring-data-redis 명시
+- 캐시: redis 프로파일에서 spring.cache.* 로 Redis 캐시, 그 외 ConcurrentMapCacheManager(CacheConfig). 피드 노출 이벤트 목록 @Cacheable("availableEvents")
+- 직렬화: Boot 기본 JDK 직렬화 → EventSummaryDto(및 내부 Reward) Serializable
+- @CacheEvict: EventCreate/Update/Delete, EventStatusService(전체·단건 상태 갱신)에서 availableEvents 무효화
+- 기타: IDE용 feedshop-*.code-workspace, .vscode 일부, README 일부, perf/k6 스켈레톤 등이 feature에 포함되어 있었음 — develop에는 cherry-pick 등으로 일부만 들어올 수 있으니 파일 존재 여부를 확인할 것
+
+[아직 하지 않았거나 미완인 작업 — 로드맵 순]
+- Phase 1-1: 기준선 Before 수치·재현 조건(대상 API, p95, 쿼리 수, k6 등) 문서화
+- Phase 1-3: getAllEvents 경로 N+1 완화(fetch join 전용 쿼리, @EntityGraph, batch size 등 확정·적용)
+- Phase 1-4: Phase 1 Before/After 1차 정리
+- Phase 2A-5: 캐시 miss → DB → 재적재 흐름 점검·After 2차 메모
+- Phase 2-B 전체: 투표 Redis INCR/DECR, DB 유니크, SoT·동기화, k6 동시성 스모크 등 (현재 FeedVoteService는 DB+엔티티 카운터 중심)
+- Phase 3: Result 문서에 실제 적용분·실측 수치만 반영
+- Phase 4: docs/event-performance-troubleshooting.md (코드 변경 없이 트러블슈팅만)
+
+[포트폴리오·이미지 보강 — 반드시 Before/After]
+- docs/event-performance-roadmap.md 안의 「포트폴리오·시각 자료」절과 체크리스트 표를 따를 것
+- 개선 전(Before): develop 이전 커밋에서 동일 시나리오 재측정하거나, 당시 수치를 표로 남긴 뒤 스크린샷 보강
+- 개선 후(After): Swagger/Postman + Network Timing, SQL/Hibernate 로그, k6 summary, Docker/Redis 키 화면 등
+
+[커밋 메시지 선호]
+- 한글로 작성해 달라는 요청이 있었음
+
+[다음에 LLM에게 시킬 때 예시 한 줄]
+"FeedShop_Backend develop 기준으로 docs/event-performance-roadmap.md를 따라 Phase 1-1 Before 측정과 캡처 절차부터 진행해줘. 커밋 메시지는 한글로."
+
+================================================================================
