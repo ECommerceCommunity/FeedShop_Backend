@@ -230,13 +230,32 @@ src/main/java/com/cMall/feedShop/
    java -jar build/libs/FeedShop_Backend-0.0.1-SNAPSHOT.jar
    ```
 
-### Docker 실행
+### Docker 실행 (로컬 MySQL만)
+
+1. **환경 파일**  
+   `cp .env.example .env` 후 `MYSQL_*`, `DB_PASSWORD`, `JWT_SECRET` 등을 로컬에 맞게 수정합니다.  
+   **`DB_USERNAME` / `DB_PASSWORD`는 `MYSQL_USER` / `MYSQL_PASSWORD`와 동일**해야 Spring이 컨테이너 DB에 붙습니다.
+
+2. **MySQL 기동**
+
+   ```bash
+   docker compose up -d mysql
+   ```
+
+   첫 기동 시 `MYSQL_DATABASE`(`feedshop_db`)가 생성됩니다. **테이블은 앱 기동 시** `spring.jpa.hibernate.ddl-auto=update` 로 자동 생성·갱신됩니다.
+
+3. **Spring 실행** (터미널에서 `.env` 값을 적용한 뒤)
+
+   ```bash
+   set -a && source .env && set +a
+   ./gradlew bootRun
+   ```
+
+   (또는 IDE Run Configuration에 위 변수를 동일하게 등록해도 됩니다.)
+
+#### 백엔드 이미지로 실행 (선택)
 
 ```bash
-# Docker Compose로 전체 환경 실행
-docker-compose up -d
-
-# 또는 개별 컨테이너 실행
 docker build -t feedshop-backend .
 docker run -p 8080:8080 feedshop-backend
 ```

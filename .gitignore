@@ -8,6 +8,8 @@ Thumbs.db             # Windows system files
 *.tar.gz              # Archive files
 
 # Additions for sensitive configuration files
+.env
+!.env.example
 .env.development
 .env.production
 application.properties
