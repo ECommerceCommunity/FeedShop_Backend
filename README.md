@@ -1,5 +1,59 @@
 # 👟 FeedShop | 신발 전문 이커머스 백엔드
 
+---
+
+## 🔧 로컬 개발 환경 리팩토링 변경 이력
+
+> 로컬 실행 환경을 외부 의존성 없이 독립적으로 동작하도록 정비한 작업입니다.
+
+### 변경 내용 (2026-06-01)
+
+#### 1. Spring AI 비활성화
+- `build.gradle` — `spring-ai-bom`, `spring-ai-openai-spring-boot-starter` 의존성 주석 처리
+- `application.properties` — `spring.autoconfigure.exclude`로 `OpenAiAutoConfiguration` 제외
+- `BaseAIService` — Spring AI(`ChatModel`) import 제거, 항상 폴백을 반환하는 Mock 구현으로 교체
+- AI 기능은 운영 환경(`prod` 프로파일)에서 의존성 복원 후 정상 동작
+
+#### 2. 데이터베이스 로컬 전환
+- `.env.dev` — 외부 GCP DB(`34.64.121.24`) → 로컬 MySQL(`localhost`)로 변경
+- 로컬 DB: `host=localhost`, `port=3306`, `db=shopgram`, `user=root`
+- 로컬에서 `shopgram` DB 미존재 시 아래 명령어로 생성
+  ```sql
+  CREATE DATABASE shopgram CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  ```
+
+#### 3. 인증/인가 간소화 (`dev` 프로파일 전용)
+- OAuth2(Google/Kakao/Naver) 설정 제거 — `application.properties`에서 주석 처리
+- `DevSecurityConfig` — OAuth2 의존성 제거, `DevAuthFilter` 연결
+- `DevAuthFilter` 신규 추가 — `X-User-Id` 헤더 값을 `SecurityContext`에 주입
+  - 헤더가 없으면 기본값 `dev-user`로 인증
+  - 컨트롤러의 `@AuthenticationPrincipal` 코드 변경 없이 동작
+
+  ```bash
+  # 사용 예시
+  curl -H "X-User-Id: user" http://localhost:8081/api/feeds
+  curl -H "X-User-Id: admin" http://localhost:8081/api/events/all
+  ```
+
+#### 4. 누락 설정 추가
+- `app.cdn.base-url` (기본값: `http://localhost:8081`)
+- `app.oauth2.authorized-redirect-uri` (기본값: `http://localhost:3000/oauth2/redirect`)
+- `spring.profiles.active=dev` 활성화
+
+#### 5. 코드 정리
+- `feed/domain/FeedType.java` 삭제 — `feed/domain/enums/FeedType.java`와 중복된 미사용 파일
+
+### 로컬 실행 방법
+
+```bash
+# MySQL 기동 확인 후
+bash "run-local 2.sh"
+
+# 기동 시 dev-user / user / admin / seller 테스트 계정이 자동 생성됩니다
+```
+
+---
+
 [![CI](https://github.com/ECommerceCommunity/FeedShop_Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/ECommerceCommunity/FeedShop_Backend/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ECommerceCommunity_FeedShop_Backend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ECommerceCommunity_FeedShop_Backend)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=ECommerceCommunity_FeedShop_Backend&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=ECommerceCommunity_FeedShop_Backend)
