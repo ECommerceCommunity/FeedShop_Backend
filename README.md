@@ -446,6 +446,41 @@ logging:
 <img width="1897" height="1065" alt="test" src="https://github.com/user-attachments/assets/fcec5d7d-e0af-41c0-9c3d-ddba4c44e984" />
 
 
+### SonarCloud 코드 품질 분석
+
+**SonarCloud** (SonarQube 클라우드 버전)를 GitHub Actions CI 파이프라인에 연동하여 PR마다 자동으로 코드 품질을 분석합니다.
+
+**분석 파이프라인 흐름**
+
+```
+PR / Push 이벤트
+    ↓
+gradle test          → 전체 테스트 실행
+    ↓
+jacocoTestReport     → 커버리지 XML 리포트 생성
+    ↓
+gradle sonar         → SonarCloud 분석 및 결과 업로드
+```
+
+**분석 항목**
+
+| 항목 | 설명 |
+|---|---|
+| **코드 커버리지** | Jacoco XML 연동, 테스트 커버리지 % 측정 |
+| **신뢰성 (Reliability)** | 런타임 오류 가능성 탐지 (Bugs) |
+| **보안 (Security)** | 취약점 및 보안 핫스팟 탐지 |
+| **유지보수성 (Maintainability)** | Code Smells, 중복 코드 측정 |
+| **인지 복잡도 (Cognitive Complexity)** | 메서드 복잡도 경고 |
+
+**실제 개선 사례**
+
+| PR | SonarCloud 지적 | 개선 내용 |
+|---|---|---|
+| `#606` | Reliability **C등급** — `while(true)` 무한 루프 위험 | `for` 루프로 교체, 최대 반복 횟수 명시 |
+| `#320` | `EventValidator` 인지 복잡도 경고 | 검증 로직을 역할별 메서드로 분리 |
+
+---
+
 ### 배포 환경
 
 - **개발 환경**: 로컬 개발용 설정
