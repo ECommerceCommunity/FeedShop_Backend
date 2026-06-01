@@ -2,11 +2,12 @@
 
 ---
 
-## 🔧 로컬 개발 환경 리팩토링 변경 이력
+<details>
+<summary>🔧 로컬 개발 환경 리팩토링 변경 이력 (2026-06-01)</summary>
 
 > 로컬 실행 환경을 외부 의존성 없이 독립적으로 동작하도록 정비한 작업입니다.
 
-### 변경 내용 (2026-06-01)
+### 변경 내용
 
 #### 1. Spring AI 비활성화
 - `build.gradle` — `spring-ai-bom`, `spring-ai-openai-spring-boot-starter` 의존성 주석 처리
@@ -51,6 +52,8 @@ bash "run-local 2.sh"
 
 # 기동 시 dev-user / user / admin / seller 테스트 계정이 자동 생성됩니다
 ```
+
+</details>
 
 ---
 
