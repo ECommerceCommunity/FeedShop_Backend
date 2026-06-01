@@ -86,7 +86,7 @@ bash "run-local 2.sh"
 ---
 
 <details>
-<summary>👤 담당 도메인 — 피드 & 이벤트 (정민수)</summary>
+<summary><h3>👤 담당 도메인 — 피드 & 이벤트 (정민수)</h3></summary>
 
 ### 담당 도메인
 
