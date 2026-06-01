@@ -86,7 +86,7 @@ bash "run-local 2.sh"
 ---
 
 <details>
-<summary>👤 담당 도메인 — 피드 & 이벤트 (minsujeong)</summary>
+<summary>👤 담당 도메인 — 피드 & 이벤트 (정민수)</summary>
 
 ### 담당 도메인
 
@@ -101,6 +101,12 @@ bash "run-local 2.sh"
 - [🏗️ 아키텍처 — 도메인별 모듈화](#도메인별-모듈화) — Feed · Event 모듈 구조
 - [📊 도메인별 구현 현황](#-도메인별-구현-현황) — Feed · Event 구현 상태 및 테스트 커버리지
 - [📖 주요 API 엔드포인트](#-주요-api-엔드포인트) — `/api/feeds/*` · `/api/events/*`
+
+### Wiki
+
+- [🎯 Event 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Event-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
+- [📰 Feed 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Feed-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
+- [🔥 트러블슈팅](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/%ED%8A%B8%EB%9F%AC%EB%B8%94%EC%8A%88%ED%8C%85) — 전체 이슈 모음
 
 </details>
 
