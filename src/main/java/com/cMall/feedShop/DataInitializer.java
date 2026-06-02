@@ -2,6 +2,7 @@ package com.cMall.feedShop;
 
 import com.cMall.feedShop.event.domain.Event;
 import com.cMall.feedShop.event.domain.EventDetail;
+import com.cMall.feedShop.event.domain.EventReward;
 import com.cMall.feedShop.event.domain.enums.EventStatus;
 import com.cMall.feedShop.event.domain.enums.EventType;
 import com.cMall.feedShop.event.domain.repository.EventRepository;
@@ -193,10 +194,9 @@ public class DataInitializer implements CommandLineRunner {
             event.setEventDetail(detail);
 
             // N+1 가시성 확보를 위한 EventReward 3개 추가
-            List<com.cMall.feedShop.event.domain.EventReward> rewards = new ArrayList<>();
+            List<EventReward> rewards = new ArrayList<>();
             for (int r = 1; r <= REWARDS_PER_EVENT; r++) {
-                com.cMall.feedShop.event.domain.EventReward reward =
-                    com.cMall.feedShop.event.domain.EventReward.createForEvent(
+                EventReward reward = EventReward.createForEvent(
                         event, String.valueOf(r), r + "등 보상_이벤트" + i, 1);
                 rewards.add(reward);
             }
