@@ -60,10 +60,11 @@ import java.util.stream.IntStream;
 public class DataInitializer implements CommandLineRunner {
 
     private static final String PERF_USER_001_LOGIN = "perf_user_001";
-    private static final int PERF_USER_COUNT = 50;
+    private static final int PERF_USER_COUNT = 1000;
     private static final int PERF_EVENT_COUNT = 20;
-    private static final int FEEDS_PER_PERF_EVENT = 10;
-    private static final int VOTES_PER_USER = 20;
+    private static final int FEEDS_PER_PERF_EVENT = 50;   // 20 × 50 = 1,000 feeds (유저 1인 1피드)
+    private static final int VOTES_PER_USER = 10;          // 1,000 × 10 = 10,000 votes
+    private static final int REWARDS_PER_EVENT = 3;        // N+1 가시성 확보
 
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
@@ -190,6 +191,17 @@ public class DataInitializer implements CommandLineRunner {
                     .imageUrl(null)
                     .build();
             event.setEventDetail(detail);
+
+            // N+1 가시성 확보를 위한 EventReward 3개 추가
+            List<com.cMall.feedShop.event.domain.EventReward> rewards = new ArrayList<>();
+            for (int r = 1; r <= REWARDS_PER_EVENT; r++) {
+                com.cMall.feedShop.event.domain.EventReward reward =
+                    com.cMall.feedShop.event.domain.EventReward.createForEvent(
+                        event, String.valueOf(r), r + "등 보상_이벤트" + i, 1);
+                rewards.add(reward);
+            }
+            event.setRewards(rewards);
+
             perfEvents.add(eventRepository.save(event));
         }
 
