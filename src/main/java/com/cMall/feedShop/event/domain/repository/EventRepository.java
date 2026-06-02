@@ -22,6 +22,9 @@ public interface EventRepository {
     Page<Event> findAllByDeletedAtIsNull(Pageable pageable);
     // 검색/동적 쿼리
     Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable);
+
+    // [Phase 1] fetchJoin으로 N+1 제거
+    Page<Event> findAllWithDetails(Pageable pageable);
     
     /**
      * 피드 생성에 사용 가능한 이벤트 조회

@@ -96,6 +96,37 @@ public class EventQueryRepositoryImpl implements EventQueryRepository {
         return new PageImpl<>(pagedEvents, pageable, total);
     }
 
+    // [Phase 1] fetchJoin으로 N+1 제거
+    // [BEFORE] findAllByDeletedAtIsNull(pageable) → eventDetail·rewards 지연 로딩 → 42쿼리
+    @Override
+    public Page<Event> findAllWithDetails(Pageable pageable) {
+        QEvent event = QEvent.event;
+        QEventDetail detail = QEventDetail.eventDetail;
+        QEventReward reward = QEventReward.eventReward;
+
+        // 메인 쿼리: eventDetail + rewards fetchJoin으로 한 번에 조회
+        List<Event> events = queryFactory
+                .selectFrom(event)
+                .leftJoin(event.eventDetail, detail).fetchJoin()
+                .leftJoin(event.rewards, reward).fetchJoin()
+                .where(event.deletedAt.isNull())
+                .orderBy(new OrderSpecifier<>(Order.DESC, event.createdAt))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        // count 쿼리: countDistinct로 rewards join 중복 제거
+        long total = queryFactory
+                .select(event.countDistinct())
+                .from(event)
+                .leftJoin(event.eventDetail, detail)
+                .leftJoin(event.rewards, reward)
+                .where(event.deletedAt.isNull())
+                .fetchOne();
+
+        return new PageImpl<>(events, pageable, total);
+    }
+
     @Override
     public Optional<Event> findDetailById(Long id) {
         QEvent event = QEvent.event;

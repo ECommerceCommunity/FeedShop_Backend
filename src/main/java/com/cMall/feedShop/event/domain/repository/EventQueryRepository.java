@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface EventQueryRepository {
     Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable);
     Optional<Event> findDetailById(Long id);
+
+    // [Phase 1] fetchJoin으로 N+1 제거 — eventDetail + rewards 한 번에 조회
+    Page<Event> findAllWithDetails(Pageable pageable);
 }
