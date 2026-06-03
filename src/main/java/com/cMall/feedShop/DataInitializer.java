@@ -64,7 +64,9 @@ public class DataInitializer implements CommandLineRunner {
     private static final int PERF_USER_COUNT = 1000;
     private static final int PERF_EVENT_COUNT = 20;
     private static final int FEEDS_PER_PERF_EVENT = 50;   // 20 × 50 = 1,000 feeds (유저 1인 1피드)
-    private static final int VOTES_PER_USER = 10;          // 1,000 × 10 = 10,000 votes
+    // [Phase 2-B] (event_id, voter_id) 유니크 제약 추가로 유저당 1표만 허용
+    // [BEFORE] private static final int VOTES_PER_USER = 10;  // 동일 (event_id, voter_id) 10회 insert → 유니크 제약 위반
+    private static final int VOTES_PER_USER = 1;            // 1,000 × 1 = 1,000 votes (유저당 1표)
     private static final int REWARDS_PER_EVENT = 3;        // N+1 가시성 확보
 
     private final UserRepository userRepository;
@@ -263,15 +265,14 @@ public class DataInitializer implements CommandLineRunner {
             throw new IllegalStateException("성능 테스트용 첫 피드가 생성되지 않았습니다.");
         }
 
+        // [Phase 2-B] 유저당 1표 — (event_id, voter_id) 유니크 제약 준수
         List<FeedVote> votes = new ArrayList<>(PERF_USER_COUNT * VOTES_PER_USER);
         for (User voter : users) {
-            for (int v = 0; v < VOTES_PER_USER; v++) {
-                votes.add(FeedVote.builder()
-                        .event(firstPerfFeed.getEvent())
-                        .feed(firstPerfFeed)
-                        .voter(voter)
-                        .build());
-            }
+            votes.add(FeedVote.builder()
+                    .event(firstPerfFeed.getEvent())
+                    .feed(firstPerfFeed)
+                    .voter(voter)
+                    .build());
         }
         feedVoteRepository.saveAll(votes);
         feedVoteRepository.flush();
