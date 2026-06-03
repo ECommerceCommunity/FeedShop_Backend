@@ -48,7 +48,8 @@ public class FeedVoteService {
      * - 이벤트 참여 피드에만 투표 가능
      * - 투표 시 자동으로 리워드 지급 (포인트 100점 + 뱃지 점수 2점)
      */
-    @Transactional
+    // [Phase 2-B] noRollbackFor 추가 — DataIntegrityViolationException catch 후 트랜잭션 rollback-only 방지
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public FeedVoteResponseDto voteFeed(Long feedId, Long userId) {
         log.info("피드 투표 요청 - feedId: {}, userId: {}", feedId, userId);
 
@@ -103,7 +104,11 @@ public class FeedVoteService {
         }
 
         // 6. 피드 투표 수 증가
-        feed.incrementVoteCount();
+        // [BEFORE] ORM 레벨 증가 → 동시 요청 시 충돌로 롤백 발생
+        // feed.incrementVoteCount();
+
+        // [Phase 2-B] 원자적 SQL UPDATE → 동시 요청에도 정확히 1씩 증가
+        feedRepository.incrementVoteCountAtomic(feedId);
 
         log.info("피드 투표 완료 - feedId: {}, userId: {}, voteId: {}", feedId, userId, savedVote.getId());
 

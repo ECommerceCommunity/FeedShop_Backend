@@ -5,6 +5,7 @@ import com.cMall.feedShop.feed.domain.enums.FeedType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -72,4 +73,9 @@ public interface FeedJpaRepository extends JpaRepository<Feed, Long> {
     // 사용자별 피드 타입 활성 개수 조회 (마이피드용)
     @Query("SELECT COUNT(f) FROM Feed f WHERE f.user.id = :userId AND f.feedType = :feedType AND f.deletedAt IS NULL")
     long countByUserIdAndFeedTypeActive(@Param("userId") Long userId, @Param("feedType") FeedType feedType);
+
+    // [Phase 2-B] 원자적 투표 수 증가 — 동시 요청 충돌 방지
+    @Modifying
+    @Query("UPDATE Feed f SET f.participantVoteCount = f.participantVoteCount + 1 WHERE f.id = :feedId")
+    void incrementVoteCountAtomic(@Param("feedId") Long feedId);
 } 
