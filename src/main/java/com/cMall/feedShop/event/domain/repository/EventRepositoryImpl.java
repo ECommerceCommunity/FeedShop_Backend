@@ -59,6 +59,12 @@ public class EventRepositoryImpl implements EventRepository {
     public Page<Event> searchEvents(EventListRequestDto requestDto, Pageable pageable) {
         return eventQueryRepository.searchEvents(requestDto, pageable);
     }
+
+    // [Phase 1] fetchJoin으로 N+1 제거
+    @Override
+    public Page<Event> findAllWithDetails(Pageable pageable) {
+        return eventQueryRepository.findAllWithDetails(pageable);
+    }
     
     @Override
     public List<Event> findAvailableEvents(LocalDate currentDate) {

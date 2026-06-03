@@ -58,7 +58,12 @@ public class EventReadService {
             pageable = PageRequest.of(page != null ? page - 1 : 0, size != null ? size : 20);
         }
         
-        Page<Event> eventPage = eventRepository.findAllByDeletedAtIsNull(pageable);
+        // [BEFORE] 단순 JPA 조회 → eventDetail·rewards 지연 로딩 → N+1 (42쿼리)
+        // Page<Event> eventPage = eventRepository.findAllByDeletedAtIsNull(pageable);
+
+        // [Phase 1] fetchJoin으로 N+1 제거 → eventDetail + rewards 한 번에 조회 (3쿼리)
+        Page<Event> eventPage = eventRepository.findAllWithDetails(pageable);
+
         List<EventSummaryDto> content = eventPage.getContent().stream()
                 .map(eventMapper::toSummaryDto)
                 .toList();
