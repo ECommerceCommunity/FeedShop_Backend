@@ -31,8 +31,10 @@ public class UserLevelService {
     /**
      * 사용자 활동 기록 및 점수 부여
      */
+    // [Phase 2-B] voteFeed가 NOT_SUPPORTED이므로 REQUIRED로 독립 트랜잭션 생성 — 충분
+    // [BEFORE] REQUIRES_NEW: 커넥션 × 2 소비 → 커넥션 풀 고갈
     @Transactional
-    public void recordActivity(Long userId, ActivityType activityType, String description, 
+    public void recordActivity(Long userId, ActivityType activityType, String description,
                               Long referenceId, String referenceType) {
         try {
             User user = getUserById(userId);

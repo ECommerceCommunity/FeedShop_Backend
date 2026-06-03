@@ -117,6 +117,8 @@ public class PointService {
     /**
      * 포인트 적립
      */
+    // [Phase 2-B] voteFeed가 NOT_SUPPORTED이므로 REQUIRED로 독립 트랜잭션 생성 — 충분
+    // [BEFORE] REQUIRES_NEW: 커넥션 × 2 소비 → 50 Vuser 동시 요청 시 커넥션 풀 고갈
     @Transactional
     public PointTransactionResponse earnPoints(User user, Integer points, String description, Long orderId) {
         if (points == null || points <= 0) {
