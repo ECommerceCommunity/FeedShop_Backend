@@ -19,6 +19,7 @@ import com.cMall.feedShop.event.application.service.EventStatusService;
 import com.cMall.feedShop.common.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
@@ -76,20 +77,30 @@ public class FeedVoteService {
                 String.format("이벤트가 종료되어 투표할 수 없습니다. 현재 상태: %s", eventStatus));
         }
 
-        // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인
+        // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인 (앱 레벨 1차 체크)
         if (feedVoteRepository.existsByEventIdAndUserId(feed.getEvent().getId(), userId)) {
             log.info("이미 해당 이벤트에 투표함 - 이벤트ID: {}, 사용자ID: {}", feed.getEvent().getId(), userId);
             return FeedVoteResponseDto.success(false, feed.getParticipantVoteCount());
         }
 
         // 5. 투표 생성
+        // [Phase 2-B] DB 유니크 제약 (event_id, voter_id)으로 동시 요청 시 중복 방지
+        // DataIntegrityViolationException 처리로 TOCTOU 취약점 해결
         FeedVote vote = FeedVote.builder()
                 .feed(feed)
                 .voter(user)
                 .event(feed.getEvent())
                 .build();
 
-        FeedVote savedVote = feedVoteRepository.save(vote);
+        FeedVote savedVote;
+        try {
+            savedVote = feedVoteRepository.save(vote);
+            feedVoteRepository.flush(); // DB 유니크 제약 즉시 검증
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청으로 인한 중복 투표 시 DB 유니크 제약에 의해 차단
+            log.info("[Phase 2-B] 동시 투표 중복 차단 - 이벤트ID: {}, 사용자ID: {}", feed.getEvent().getId(), userId);
+            return FeedVoteResponseDto.success(false, feed.getParticipantVoteCount());
+        }
 
         // 6. 피드 투표 수 증가
         feed.incrementVoteCount();
