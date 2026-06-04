@@ -85,8 +85,7 @@ bash "run-local 2.sh"
 
 ---
 
-<details>
-<summary><h3>👤 담당 도메인 — 피드 & 이벤트 (정민수)</h3></summary>
+## 👤 담당 도메인 — 피드 & 이벤트 (정민수)
 
 ### 담당 도메인
 
@@ -107,8 +106,6 @@ bash "run-local 2.sh"
 - [🎯 Event 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Event-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
 - [📰 Feed 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Feed-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
 - [🔥 트러블슈팅](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/%ED%8A%B8%EB%9F%AC%EB%B8%94%EC%8A%88%ED%8C%85) — 전체 이슈 모음
-
-</details>
 
 ---
 
