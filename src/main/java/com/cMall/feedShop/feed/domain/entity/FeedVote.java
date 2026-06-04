@@ -13,8 +13,20 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+// [BEFORE] DB 유니크 제약 없음 → 동시 요청 시 TOCTOU 취약 (앱 레벨 체크만 존재)
+// @Entity
+// @Table(name = "feed_votes")
+
+// [Phase 2-B] (event_id, voter_id) 유니크 제약 추가 → DB 레벨에서 중복 투표 방지
 @Entity
-@Table(name = "feed_votes")
+@Table(name = "feed_votes",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_feed_votes_event_voter",
+            columnNames = {"event_id", "voter_id"}
+        )
+    }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)

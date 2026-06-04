@@ -113,4 +113,10 @@ public class FeedRepositoryImpl implements FeedRepository {
     public Page<Feed> findWithSearchConditions(FeedSearchRequest request, Pageable pageable) {
         return feedQueryRepository.findWithSearchConditions(request, pageable);
     }
+
+    // [Phase 2-B] 원자적 투표 수 증가
+    @Override
+    public void incrementVoteCountAtomic(Long feedId) {
+        feedJpaRepository.incrementVoteCountAtomic(feedId);
+    }
 } 

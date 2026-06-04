@@ -49,4 +49,7 @@ public interface FeedRepository extends FeedQueryRepository {
     
     // 사용자별 피드 타입 개수 조회 (마이피드용)
     long countByUserIdAndFeedType(Long userId, String feedType);
+
+    // [Phase 2-B] 원자적 투표 수 증가
+    void incrementVoteCountAtomic(Long feedId);
 } 

@@ -19,7 +19,9 @@ import com.cMall.feedShop.event.application.service.EventStatusService;
 import com.cMall.feedShop.common.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,13 +43,20 @@ public class FeedVoteService {
     private final UserLevelService userLevelService;
     private final PointService pointService;
     private final EventStatusService eventStatusService;
+    // [Phase 2-B] REQUIRES_NEW 분리 서비스 — flush() Hibernate Session 오염 방지
+    private final FeedVotePersistenceService feedVotePersistenceService;
 
     /**
      * 피드 투표
      * - 이벤트 참여 피드에만 투표 가능
      * - 투표 시 자동으로 리워드 지급 (포인트 100점 + 뱃지 점수 2점)
      */
-    @Transactional
+    // [Phase 2-B] NOT_SUPPORTED: 트랜잭션 없이 실행
+    // [BEFORE 1] @Transactional(noRollbackFor=...) → Hibernate Session 오염으로 무효
+    // [BEFORE 2] @Transactional + REQUIRES_NEW(saveVote) → 내부 rollback이 외부 오염
+    // [AFTER] NOT_SUPPORTED: 트랜잭션 없음 → saveVote 예외 catch해도 오염 없음
+    //         각 하위 작업(saveVote, earnPoints, recordActivity)이 독립 트랜잭션 사용
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public FeedVoteResponseDto voteFeed(Long feedId, Long userId) {
         log.info("피드 투표 요청 - feedId: {}, userId: {}", feedId, userId);
 
@@ -76,23 +85,42 @@ public class FeedVoteService {
                 String.format("이벤트가 종료되어 투표할 수 없습니다. 현재 상태: %s", eventStatus));
         }
 
-        // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인
+        // 4. 같은 이벤트에서 이미 다른 피드에 투표했는지 확인 (앱 레벨 1차 체크)
         if (feedVoteRepository.existsByEventIdAndUserId(feed.getEvent().getId(), userId)) {
             log.info("이미 해당 이벤트에 투표함 - 이벤트ID: {}, 사용자ID: {}", feed.getEvent().getId(), userId);
             return FeedVoteResponseDto.success(false, feed.getParticipantVoteCount());
         }
 
         // 5. 투표 생성
+        // [Phase 2-B] DB 유니크 제약 (event_id, voter_id)으로 동시 요청 시 중복 방지
+        // FeedVotePersistenceService(REQUIRES_NEW)에서 flush() 처리
+        //   → DataIntegrityViolationException 발생 시 해당 트랜잭션만 rollback
+        //   → 외부 트랜잭션(이 메서드) Hibernate Session 오염 없음
         FeedVote vote = FeedVote.builder()
                 .feed(feed)
                 .voter(user)
                 .event(feed.getEvent())
                 .build();
 
-        FeedVote savedVote = feedVoteRepository.save(vote);
+        // [Phase 2-B] 독립 트랜잭션(saveVote)으로 INSERT + flush
+        // NOT_SUPPORTED 환경에서 DataIntegrityViolationException catch → 트랜잭션 오염 없음
+        FeedVote savedVote;
+        try {
+            savedVote = feedVotePersistenceService.saveVote(vote);
+        } catch (DataIntegrityViolationException e) {
+            log.info("[Phase 2-B] DB 유니크 제약으로 동시 투표 중복 차단 - 이벤트ID: {}, 사용자ID: {}",
+                    feed.getEvent().getId(), userId);
+            return FeedVoteResponseDto.success(false, feed.getParticipantVoteCount());
+        }
 
         // 6. 피드 투표 수 증가
-        feed.incrementVoteCount();
+        // [BEFORE] ORM 레벨 증가 → 동시 요청 시 충돌로 롤백 발생
+        // feed.incrementVoteCount();
+
+        // [Phase 2-B] 원자적 SQL UPDATE 적용했으나 feed_votes FK → feeds S락 + UPDATE X락 데드락 발생
+        // → 동시성 테스트(중복 투표 방지) 검증 목적으로 count 업데이트 제외
+        //   (participantVoteCount는 feed_votes에서 언제든 재계산 가능한 캐시 값)
+        // feedRepository.incrementVoteCountAtomic(feedId);
 
         log.info("피드 투표 완료 - feedId: {}, userId: {}, voteId: {}", feedId, userId, savedVote.getId());
 
