@@ -91,8 +91,8 @@ bash "run-local 2.sh"
 
 | 도메인 | 역할 | 바로가기 |
 |---|---|---|
-| **Feed** | 피드 작성·조회·수정·삭제, 좋아요, 댓글, 투표, 검색, 리워드 이벤트 연동 | [주요 기능 →](#-커뮤니티-기능) · [구현 현황 →](#-도메인별-구현-현황) |
-| **Event** | 이벤트 생성·조회·수정·삭제, 참여자 관리, 결과 처리, 상태 자동 업데이트 | [주요 기능 →](#-커뮤니티-기능) · [구현 현황 →](#-도메인별-구현-현황) |
+| **Feed** | 피드 작성·조회·수정·삭제, 좋아요, 댓글, **투표 동시성 처리(TOCTOU·Redis INCR)**, 검색, 리워드 이벤트 연동 | [주요 기능 →](#-커뮤니티-기능) · [구현 현황 →](#-도메인별-구현-현황) |
+| **Event** | 이벤트 CRUD, 참여자 관리, 결과 처리, **N+1 제거(QueryDSL fetchJoin) · Redis 캐싱 성능 개선** | [주요 기능 →](#-커뮤니티-기능) · [구현 현황 →](#-도메인별-구현-현황) |
 
 ### 관련 섹션 바로가기
 
@@ -105,6 +105,7 @@ bash "run-local 2.sh"
 
 - [🎯 Event 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Event-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
 - [📰 Feed 도메인](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/Feed-%EB%8F%84%EB%A9%94%EC%9D%B8) — PR별 구현 내용 · 코드 리뷰 · 트러블슈팅
+- [🚀 성능 개선 작업](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/%EC%84%B1%EB%8A%A5-%EA%B0%9C%EC%84%A0-%EC%9E%91%EC%97%85) — QueryDSL N+1 제거 · Redis 캐싱 · 투표 동시성(TOCTOU·Redis INCR)
 - [🔥 트러블슈팅](https://github.com/dbp-jack/FeedShop_Backend_Refactoring/wiki/%ED%8A%B8%EB%9F%AC%EB%B8%94%EC%8A%88%ED%8C%85) — 전체 이슈 모음
 
 ---
