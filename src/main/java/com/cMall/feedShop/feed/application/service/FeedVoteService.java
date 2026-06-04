@@ -20,6 +20,7 @@ import com.cMall.feedShop.common.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +46,10 @@ public class FeedVoteService {
     private final EventStatusService eventStatusService;
     // [Phase 2-B] REQUIRES_NEW 분리 서비스 — flush() Hibernate Session 오염 방지
     private final FeedVotePersistenceService feedVotePersistenceService;
+    // [Phase 2-B] Redis INCR — 투표 수 원자적 연산 (데드락 없이 정합성 보장)
+    private final StringRedisTemplate redisTemplate;
+
+    private static final String VOTE_COUNT_KEY = "vote:count:";
 
     /**
      * 피드 투표
@@ -114,13 +119,13 @@ public class FeedVoteService {
         }
 
         // 6. 피드 투표 수 증가
-        // [BEFORE] ORM 레벨 증가 → 동시 요청 시 충돌로 롤백 발생
+        // [BEFORE 1] ORM 레벨 증가 → 동시 요청 시 충돌로 롤백 발생
         // feed.incrementVoteCount();
-
-        // [Phase 2-B] 원자적 SQL UPDATE 적용했으나 feed_votes FK → feeds S락 + UPDATE X락 데드락 발생
-        // → 동시성 테스트(중복 투표 방지) 검증 목적으로 count 업데이트 제외
-        //   (participantVoteCount는 feed_votes에서 언제든 재계산 가능한 캐시 값)
+        // [BEFORE 2] 원자적 SQL UPDATE → feed_votes FK S-lock + feeds UPDATE X-lock 데드락 발생
         // feedRepository.incrementVoteCountAtomic(feedId);
+
+        // [Phase 2-B] Redis INCR 원자적 연산 — lock 없이 투표 수 정합성 보장
+        redisTemplate.opsForValue().increment(VOTE_COUNT_KEY + feedId);
 
         log.info("피드 투표 완료 - feedId: {}, userId: {}, voteId: {}", feedId, userId, savedVote.getId());
 
@@ -139,7 +144,8 @@ public class FeedVoteService {
             // 리워드 지급 실패가 투표에 영향을 주지 않도록 예외를 던지지 않음
         }
 
-        return FeedVoteResponseDto.success(true, feed.getParticipantVoteCount());
+        // Redis에서 최신 투표 수 반환
+        return FeedVoteResponseDto.success(true, (int) getVoteCount(feedId));
     }
 
     /**
@@ -186,8 +192,15 @@ public class FeedVoteService {
 
     /**
      * 특정 피드의 투표 개수 조회
+     * [Phase 2-B] Redis 우선 조회 → Redis 없으면 DB 조회 (SET 없음 — 경쟁 조건 방지)
      */
     public long getVoteCount(Long feedId) {
+        String redisKey = VOTE_COUNT_KEY + feedId;
+        String cached = redisTemplate.opsForValue().get(redisKey);
+        if (cached != null) {
+            return Long.parseLong(cached);
+        }
+        // Redis에 값 없으면 DB에서 직접 조회 (SET 하지 않음 → 동시 요청 시 잘못된 초기값 방지)
         return feedVoteRepository.countByFeed_Id(feedId);
     }
 
