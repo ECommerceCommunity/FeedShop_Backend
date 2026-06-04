@@ -73,9 +73,10 @@ dependencies {
 	annotationProcessor 'jakarta.annotation:jakarta.annotation-api:2.1.1'
 	annotationProcessor 'jakarta.persistence:jakarta.persistence-api:3.1.0'
   
-  // Spring AI 의존성 추가 (로컬 개발 환경에서는 비활성화)
-	// implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-M4')
-	// implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+  // Spring AI 의존성 — CI 테스트(BaseAIServiceTest) 컴파일 필요
+	// [BEFORE] 로컬 개발 편의로 주석 처리 → upstream CI compileTestJava 실패
+	implementation platform('org.springframework.ai:spring-ai-bom:1.0.0-M4')
+	implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
 
 	implementation 'com.warrenstrange:googleauth:1.5.0'
 
