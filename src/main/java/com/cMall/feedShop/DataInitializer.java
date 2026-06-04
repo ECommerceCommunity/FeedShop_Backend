@@ -61,7 +61,9 @@ import java.util.stream.IntStream;
 public class DataInitializer implements CommandLineRunner {
 
     private static final String PERF_USER_001_LOGIN = "perf_user_001";
-    private static final int PERF_USER_COUNT = 1000;
+    // [Phase 2-B V3000] 3000명으로 증가 — V3000 동시성 테스트 대응
+    // [BEFORE] private static final int PERF_USER_COUNT = 1000;
+    private static final int PERF_USER_COUNT = 3000;
     private static final int PERF_EVENT_COUNT = 20;
     private static final int FEEDS_PER_PERF_EVENT = 50;   // 20 × 50 = 1,000 feeds (유저 1인 1피드)
     // [Phase 2-B] (event_id, voter_id) 유니크 제약 추가로 유저당 1표만 허용
@@ -218,8 +220,10 @@ public class DataInitializer implements CommandLineRunner {
         EventDetail concurrencyDetail = EventDetail.builder()
                 .title("동시성테스트이벤트")
                 .description("성능테스트용이벤트상세_21")
+                // [Phase 2-B] eventEndDate를 30일로 연장 — 날짜 변경 시 이벤트 만료 방지
+                // [BEFORE] .eventEndDate(today) → 다음날 ENDED 상태로 투표 불가
                 .eventStartDate(today)
-                .eventEndDate(today)
+                .eventEndDate(today.plusDays(30))
                 .purchaseStartDate(null)
                 .purchaseEndDate(null)
                 .announcement(null)

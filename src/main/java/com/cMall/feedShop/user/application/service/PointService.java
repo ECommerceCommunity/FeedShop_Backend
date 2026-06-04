@@ -125,6 +125,12 @@ public class PointService {
             throw new UserException(ErrorCode.INVALID_POINT_AMOUNT);
         }
 
+        // [Phase 2-B] NOT_SUPPORTED 환경에서 전달된 User가 detached 상태일 수 있음
+        // → 이 트랜잭션 내에서 재조회하여 managed entity로 전환
+        // [BEFORE] 외부에서 받은 User 직접 사용 → detached entity passed to persist 오류 (V3000 테스트 시 발생)
+        user = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
         UserPoint userPoint = getUserPoint(user);
         userPoint.earnPoints(points);
         userPointRepository.save(userPoint);
