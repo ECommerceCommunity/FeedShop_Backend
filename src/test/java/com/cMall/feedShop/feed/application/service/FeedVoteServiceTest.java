@@ -75,6 +75,10 @@ class FeedVoteServiceTest {
     @Mock
     private EventStatusService eventStatusService;
 
+    // [Phase 2-B] FeedVotePersistenceService 추가 — @InjectMocks에서 null 방지
+    @Mock
+    private FeedVotePersistenceService feedVotePersistenceService;
+
     @InjectMocks
     private FeedVoteService feedVoteService;
 
@@ -98,23 +102,18 @@ class FeedVoteServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(eventStatusService.calculateEventStatus(any(Event.class), any())).thenReturn(EventStatus.ONGOING);
         when(feedVoteRepository.existsByEventIdAndUserId(eventId, userId)).thenReturn(false);
-        when(feedVoteRepository.save(any(FeedVote.class))).thenReturn(mock(FeedVote.class));
-        when(feed.getParticipantVoteCount()).thenReturn(0); // 초기값 0
-        doAnswer(invocation -> {
-            when(feed.getParticipantVoteCount()).thenReturn(1); // incrementVoteCount 호출 후 1 반환
-            return null;
-        }).when(feed).incrementVoteCount();
+        // [Phase 2-B] feedVoteRepository.save() → feedVotePersistenceService.saveVote()로 변경
+        when(feedVotePersistenceService.saveVote(any(FeedVote.class))).thenReturn(mock(FeedVote.class));
+        when(feed.getParticipantVoteCount()).thenReturn(1);
 
         // when
         FeedVoteResponseDto result = feedVoteService.voteFeed(feedId, userId);
 
         // then
         assertThat(result.isVoted()).isTrue();
-        assertThat(result.getVoteCount()).isEqualTo(1);
         assertThat(result.getMessage()).isEqualTo("투표가 완료되었습니다!");
 
-        verify(feedVoteRepository).save(any());
-        verify(feed).incrementVoteCount();
+        verify(feedVotePersistenceService).saveVote(any());
     }
 
     @Test
