@@ -3,13 +3,14 @@ package com.cMall.feedShop.event.application.dto.response;
 
 import com.cMall.feedShop.event.domain.enums.RewardConditionType;
 import lombok.*;
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class EventSummaryDto {
+public class EventSummaryDto implements Serializable {
     private Long eventId;
     private String title;
     private String type;
@@ -34,7 +35,7 @@ public class EventSummaryDto {
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @AllArgsConstructor
     @Builder
-    public static class Reward {
+    public static class Reward implements Serializable {
         private Integer rank;
         private String reward;
         @Builder.Default
